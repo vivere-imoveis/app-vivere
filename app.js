@@ -6,7 +6,7 @@
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj';
   var APP_URL = location.origin + location.pathname;
-  var VERSAO = 'app-vivere 2026-11-09.2';
+  var VERSAO = 'app-vivere 2026-11-09.3';
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -37,7 +37,10 @@
   if (codParam) { try { sessionStorage.setItem('acaptar-cod', codParam); } catch (e) { } history.replaceState(null, '', APP_URL + location.hash); }
   try { codParam = codParam || sessionStorage.getItem('acaptar-cod') || ''; } catch (e) { }
 
-  var estado = { sessao: null, eu: null, aba: codParam ? 'acaptar' : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
+  var abaParam = (new URLSearchParams(location.search).get('aba') || '').trim();
+  if (abaParam) history.replaceState(null, '', APP_URL + location.hash);
+
+  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
 
   sb.auth.onAuthStateChange(function (evento, sessao) {
     if (evento === 'PASSWORD_RECOVERY') modoSenha = true;
@@ -137,10 +140,19 @@
     };
   }
 
+  /* Painel do corretor no app (fatia 4b): em teste. Só o gestor abre por enquanto; o painel de teste é o do Hugo. */
+  var PAINEL_TESTE = 'hugo';
+  function cartaoPainel() {
+    if (estado.eu.papel !== 'gestor') return '<div class="cartao"><h3>Meu painel</h3><p>O seu painel do corretor vai abrir aqui, com o mesmo login.</p><span class="pill warn">Em construção</span></div>';
+    return '<div class="cartao"><h3>Meu painel</h3><p>Painel do corretor no app, em teste. Os dados são uma cópia: o artefato continua oficial.</p><div class="linha-acoes">' +
+      (estado.eu.painel ? '<a class="btn" href="painel.html">Abrir o meu</a>' : '') +
+      '<a class="btn pri" href="painel.html?ver=' + encodeURIComponent(PAINEL_TESTE) + '">Ver o painel de teste (' + esc(PAINEL_TESTE) + ')</a></div><span class="pill warn">Em teste</span></div>';
+  }
+
   function telaInicio(main) {
     titulo('Olá, ' + (estado.eu.nome || '').split(' ')[0]);
     main.innerHTML = '<div class="grade">' +
-      '<div class="cartao"><h3>Meu painel</h3><p>O seu painel do corretor vai abrir aqui, com o mesmo login.</p><span class="pill warn">Em construção</span></div>' +
+      cartaoPainel() +
       '<div class="cartao"><h3>A CAPTAR</h3><p id="acResumo">Imóveis a captar: os livres e os seus.</p><button class="btn pri" id="irAcaptar">Abrir o A CAPTAR</button></div>' +
       '<div class="cartao"><h3>Minha conta</h3><p data-sens>' + esc(estado.eu.email) + '</p><div class="linha-acoes"><button class="btn" id="irSenha">Trocar senha</button><button class="btn" id="sair">Sair</button></div></div>' +
       '</div><p class="s" style="margin-top:24px">' + VERSAO + '</p>';
@@ -152,7 +164,7 @@
 
   function contexto() { return { sb: sb, eu: estado.eu, sessaoUid: estado.sessao.user.id, esc: esc, toast: toast, titulo: titulo }; }
 
-  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
+  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
 
   /* ---------- Acessos (só o gestor) ---------- */
   async function chamar(corpo) {
@@ -191,6 +203,32 @@
   }
   function seta(c) { return estado.ordem.campo === c ? (estado.ordem.dir === 1 ? ' ▲' : ' ▼') : ' ↕'; }
 
+  /* Carga dos painéis: o arquivo traz { itens: [{ painel, colecao, doc_id, dados }] }. Vai em lotes; só o gestor consegue (o banco confere). */
+  async function carga(campo) {
+    var f = campo.files && campo.files[0], msg = $('#cargaMsg'); if (!f) return;
+    campo.disabled = true;
+    try {
+      var pac = JSON.parse(await f.text()), itens = pac && pac.itens;
+      if (!Array.isArray(itens) || !itens.length) throw new Error('o arquivo não tem a lista de documentos');
+      var lote = [], tam = 0, feitos = 0, mudou = 0;
+      var enviar = async function () {
+        if (!lote.length) return;
+        var r = await sb.rpc('painel_carga', { p_itens: lote });
+        if (r.error) throw new Error(r.error.message || 'o banco recusou');
+        mudou += r.data || 0; feitos += lote.length; lote = []; tam = 0;
+        msg.textContent = 'Enviando… ' + feitos + ' de ' + itens.length;
+      };
+      for (var i = 0; i < itens.length; i++) {
+        var t = JSON.stringify(itens[i]).length;
+        if (lote.length && (tam + t > 400000 || lote.length >= 200)) await enviar();
+        lote.push(itens[i]); tam += t;
+      }
+      await enviar();
+      msg.textContent = 'Carga concluída: ' + itens.length + ' documentos conferidos, ' + mudou + ' novos ou alterados.';
+    } catch (e) { msg.textContent = 'A carga parou: ' + (e && e.message || e); }
+    campo.disabled = false; campo.value = '';
+  }
+
   async function telaAcessos(main) {
     titulo('Acessos');
     if (!estado.acessos.length && !estado.carregando) { main.innerHTML = '<div class="vazio">Carregando os acessos…</div>'; await carregarAcessos(); }
@@ -219,8 +257,11 @@
       '<label>Nome<input name="nome" required></label><label>E-mail (é o login)<input name="email" type="email" required></label>' +
       '<label>Papel<select name="papel"><option value="corretor">Corretor</option><option value="diretor">Diretor</option><option value="gestor">Gestor</option></select></label>' +
       '<label>Painel (ex.: hugo)<input name="painel"></label><button class="btn pri" type="submit">Cadastrar</button></form><p class="s">Cadastrar não envia nada; o convite sai só quando você clicar em Enviar convite.</p></div>' +
+      '<div class="sec cartao"><h2>Carga de dados dos painéis</h2><p class="s">Arquivo de carga (.json) preparado pelo Claude. Grava os documentos dos painéis no banco; nada é apagado e o que já está igual não muda.</p>' +
+      '<input type="file" id="arqCarga" accept="application/json,.json"><p class="s" id="cargaMsg" role="status" aria-live="polite"></p></div>' +
       '<div class="sec cartao"><h2>Registro</h2>' + (reg ? '<ol class="registro">' + reg + '</ol>' : '<p class="s">Nada registrado ainda.</p>') + '</div>';
 
+    $('#arqCarga').onchange = function () { carga(this); };
     main.querySelectorAll('[data-o]').forEach(function (b) { b.onclick = function () { var c = b.dataset.o; estado.ordem = { campo: c, dir: estado.ordem.campo === c ? -estado.ordem.dir : 1 }; telaAcessos(main); }; });
     $('#atualizar').onclick = async function () { estado.link = null; estado.confirmar = null; await carregarAcessos(); telaAcessos(main); };
     $('#novo').onsubmit = async function (e) {

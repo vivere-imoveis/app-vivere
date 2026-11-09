@@ -1,0 +1,2 @@
+// modulos/mapa-ruas-10-1.js — vias da Ilha de Santa Catarina, bloco 10-1 (módulo Mapa, HUB Vivere). Gerado por ruas.py em 2026-10-25; © colaboradores do OpenStreetMap (ODbL).
+(window.HUB_MAPA_RUAS=window.HUB_MAPA_RUAS||{})["10-1"]={"v":[{"t":3,"g":[[-2745246,-4854085,111,90]]},{"t":4,"g":[[-2745133,-4853992,23,-34,5,-14,18,-23,12,2,13,15,11,-5],[-2745246,-4854085,7,-39],[-2745600,-4854204,13,8,12,20,1,24,21,34,5,25,12,19,14,15,27,46,20,4]]}],"n":[["Rua Recanto das Tulipas",3,152,[[-2745190,-4854041,-54],[-2745218,-4854063,-54],[-2745162,-4854018,-54]]]]};
