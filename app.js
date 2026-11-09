@@ -6,7 +6,7 @@
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj';
   var APP_URL = location.origin + location.pathname;
-  var VERSAO = 'app-vivere 2026-11-09.3';
+  var VERSAO = 'app-vivere 2026-11-09.4';
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -79,10 +79,14 @@
       $('#sair').onclick = sair; return;
     }
     var lista = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['senha', 'Minha senha']];
+    /* quem veio do painel (aba A CAPTAR ou botão Captar) ganha a aba de volta para ele */
+    var volta = ''; try { volta = sessionStorage.getItem('painel.volta') || ''; } catch (e) { }
+    if (!/^painel\.html(\?ver=[a-z0-9_-]{1,40})?$/.test(volta)) volta = '';
+    if (volta) lista.splice(1, 0, ['painel', volta.indexOf('?ver=') > 0 ? 'Painel · ' + esc(volta.split('?ver=')[1]) : 'Meu painel']);
     if (estado.eu.papel === 'gestor') lista.push(['acessos', 'Acessos']);
     abas.hidden = false;
     abas.innerHTML = lista.map(function (a) { return '<button role="tab" data-aba="' + a[0] + '" aria-selected="' + (estado.aba === a[0]) + '">' + a[1] + '</button>'; }).join('');
-    abas.querySelectorAll('button').forEach(function (b) { b.onclick = function () { estado.aba = b.dataset.aba; estado.link = null; estado.confirmar = null; desenhar(); }; });
+    abas.querySelectorAll('button').forEach(function (b) { b.onclick = function () { if (b.dataset.aba === 'painel') { location.href = volta; return; } estado.aba = b.dataset.aba; estado.link = null; estado.confirmar = null; desenhar(); }; });
     if (estado.aba === 'senha') return telaSenha(main, false);
     if (estado.aba === 'acessos' && estado.eu.papel === 'gestor') return telaAcessos(main);
     if (estado.aba === 'acaptar' && window.ACAPTAR) { var cod = codParam; codParam = ''; try { sessionStorage.removeItem('acaptar-cod'); } catch (e) { } return window.ACAPTAR.tela(main, contexto(), cod); }

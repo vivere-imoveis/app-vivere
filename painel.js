@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -995,7 +995,10 @@ const acapEhMinha = (x) => { if (!x) return false; const d = acapDono(); if (x.c
 const acapDaFoto = () => { const v = Object.values((S.G || {}).acapg || {}).filter((x) => x && x.travas); return v.length ? v.reduce((a, x) => ({ ...a, ...x, travas: { ...(a.travas || {}), ...x.travas } }), {}) : null; };
 const acapDoSlug = (slug) => { const tv = ((S.acap || {}).travas) || {}, nm = acapPn(gCurto(slug)); return Object.values(tv).filter((x) => x && x.uid && (x.chave === slug || (x.nome && acapPn(x.nome) === nm))).length; };
 const acapMinhas = () => !S.acap ? [] : Object.entries(S.acap.travas || {}).filter(([, x]) => x && x.uid && acapEhMinha(x)).map(([lead, x]) => ({ ...x, lead }));
-const linkAcap = (rot, cls) => `<a class="${cls || 'b'}" href="${esc(acapUrl())}" target="_blank" rel="noopener">${rot}</a>`;
+const acapVolta = () => { try { sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} };
+const linkAcap = (rot, cls) => `<a class="${cls || 'b'}" href="${esc(acapUrl())}" data-acapvai>${rot}</a>`;
+const linkAcapCod = (lead, rot, cls) => { const c = acapCod(lead); return `<a class="${cls || 'b'}" href="${esc(c ? 'index.html?cod=' + c : acapUrl())}" data-acapvai>${rot}</a>`; };
+document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('[data-acapvai]')) acapVolta(); }, true);
 const fotoCapt = (it) => it.foto_id ? `<img class="acap-foto" src="${esc('/_blob/' + it.foto_id)}" alt="Foto do imóvel" loading="lazy">` : '';
 function blocoAcapMinhas() {
   const M = acapMinhas(); if (!M.length) return '';
@@ -1012,9 +1015,9 @@ function acaoCapt(it, cliId) {
   if (ped) return `<span class="pill media">⚡ Captação pedida em ${dt(ped[1].enviado_em || ped[1].criado_em)} · aguardando a diretoria</span>`;
   if (captAprovada(it.lead)) return '<span class="pill ok">⚡ Captação aprovada · o proprietário chega em Meus leads na entrega das 7h43</span>';
   const tv = acapTrava(it.lead);
-  if (tv) return acapEhMinha(tv) ? `<span class="pill ok">🎯 Em captação por você${tv.vence ? ' · até ' + esc(dt(tv.vence)) : ''}</span>${linkAcap('Abrir no A CAPTAR')}` : `<span class="peq mut">🎯 Em captação por ${esc(tv.nome || 'outro corretor')}. Não oferte.</span>`;
-  if (acapNaBase(it.lead)) return linkAcap('🎯 Captar pelo A CAPTAR', 'b p');
-  if (acapNoCaptei(it.lead)) return linkAcap('🎯 Pedir o Captei no A CAPTAR (1 Capcoin)', 'b p');
+  if (tv) return acapEhMinha(tv) ? `<span class="pill ok">🎯 Em captação por você${tv.vence ? ' · até ' + esc(dt(tv.vence)) : ''}</span>${linkAcapCod(it.lead, 'Abrir a captação')}` : `<span class="peq mut">🎯 Em captação por ${esc(tv.nome || 'outro corretor')}. Não oferte.</span>`;
+  if (acapNaBase(it.lead)) return linkAcapCod(it.lead, '🎯 Captar', 'b p');
+  if (acapNoCaptei(it.lead)) return linkAcapCod(it.lead, '🎯 Pedir o Captei (1 Capcoin)', 'b p');
   return `<button class="b p" type="button" data-captpede="${esc(it.lead)}|${esc(cliId || '')}">⚡ Captar este imóvel primeiro</button>`;
 }
 // imóvel captado no cruzamento de quem procura: selo, sem Ofertar, sem link do anúncio de terceiro
@@ -1058,7 +1061,7 @@ function vOportTem() {
       <div class="acf-campos">${campo('Negócio', esc(it.fin || '—'))}${campo('Valor', esc(it.valor ? valCapt(it.fin, it.valor) : '—'), true)}${campo('Dorm.', esc(it.dorm != null ? String(it.dorm) : '—'))}${campo('Área', esc(it.area ? Math.round(it.area) + ' m²' : '—'))}${campo('Coletado', esc(it.coletado_em ? dt(it.coletado_em) : '—'))}${campo('Situação', esc(sit))}</div>
       <div class="acf-int">${n ? `<div class="op-int"><b>👥 ${n} cliente${n === 1 ? ' procura' : 's procuram'} um imóvel assim</b>${ints.slice(0, 8).map((y) => `<button class="copiar" type="button" data-lead="${esc(y.id)}">${esc(y.nome)}</button>`).join('')}${ints.length > 8 ? `<span class="mut peq">e mais ${ints.length - 8}</span>` : ''}${n > ints.length ? `<span class="mut peq">${ints.length ? 'e ' + (n - ints.length) + ' de outros corretores' : 'clientes de toda a Vivere'}</span>` : ''}</div>` : '<p class="mut peq" style="margin:0">Nenhum cliente seu com perfil parecido agora.</p>'}</div>
       <div class="acoes">${acaoCapt(it, ints[0] ? ints[0].id : '')}</div></article>`; };
-  let r = `<section class="sec"><div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2>Ofertas</h2>${linkAcap('🎯 Ver os imóveis a captar no A CAPTAR', 'b')}</div>
+  let r = `<section class="sec"><div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2>Ofertas</h2></div>
     ${LEG_OP}<p class="peq mut" style="margin:0">Imóveis <b>🟠 não captados</b>: proprietários localizados pela Vivere que anunciam direto. Quando um cliente seu procura um imóvel assim, a ★ sobe. Não se oferta: <b>⚡ Captar este imóvel primeiro</b> pede o lead à diretoria, e o telefone do proprietário chega em Meus leads quando ele for distribuído a você.${S.acap ? ' Com <b>🎯 A CAPTAR</b>, você trava o imóvel na hora e recebe o contato lá; sem telefone, o Captei (1 Capcoin) também se pede por lá.' : ''}</p>${ladosOp()}${blocoAcapMinhas()}
     ${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os imóveis não captados e nos seus clientes.</p>' : `<div class="chips" role="group" aria-label="Filtrar"><button type="button" data-optem="com" aria-pressed="${S.opTem !== 'todos'}">Com clientes interessados (${nCom})</button><button type="button" data-optem="todos" aria-pressed="${S.opTem === 'todos'}">Todos (${L0.length})</button></div>`}
     <div class="chips op-ord" role="group" aria-label="Ordenar por"><span class="mut peq">Ordenar por</span>${Object.entries(ORD).map(([k, [t]]) => `<button type="button" data-optemord="${k}" aria-pressed="${o.k === k}">${t}${o.k === k ? (o.d > 0 ? ' ▲' : ' ▼') : ' ↕'}</button>`).join('')}</div>`;
@@ -1425,7 +1428,7 @@ const DEM = DEM_NUCLEO({
 const vDemandas = () => DEM.render();
 
 // ---------- Abas ----------
-const ABAS = [['inicio', 'Início'], ['acaptar', '🎯 A CAPTAR'], ['tarefas', 'Tarefas'], ['leads', 'Meus leads'], ['pesquisa', 'Pesquisar imóveis'], ['imoveis', 'Meus imóveis'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['oportunidades', 'Ofertas'], ['demandas', 'Demandas extras'], ['solicitacoes', 'Solicitações']]; // ordem do menu (03/11/2026; 🎯 A CAPTAR logo depois do Início desde 09/11/2026)
+const ABAS = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['tarefas', 'Tarefas'], ['leads', 'Meus leads'], ['pesquisa', 'Pesquisar imóveis'], ['imoveis', 'Meus imóveis'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['oportunidades', 'Ofertas'], ['demandas', 'Demandas extras'], ['solicitacoes', 'Solicitações']]; // ordem do menu (03/11/2026; 🎯 A CAPTAR logo depois do Início desde 09/11/2026)
 const abasOrdenadas = () => ReordAbas.ordena(ABAS.map((a) => a[0]), S.ordemAbas).map((k) => ABAS.find((a) => a[0] === k));
 function desenharAbas() {
   if (ReordAbas.ativo()) return; // não redesenha no meio do arraste
@@ -1437,9 +1440,9 @@ function desenharAbas() {
   const dentro = Object.values(SUBS_P).flatMap((s) => s[1].map((x) => x[0]));
   document.getElementById('abas').innerHTML = abasOrdenadas().filter(([k]) => !dentro.includes(k)).map(([k, l]) => {
     const nop = k === 'oportunidades' ? leadsComOfertas().length + DEM.novas() + DEM.pedAbertos() : 0;   // demandas: novas não vistas + pedidos de alteração em aberto
-    const n = k === 'tarefas' && TF.selo() ? `<span class="n">${TF.selo()}</span>` : k === 'leads' && alt ? `<span class="n">${alt}</span>` : k === 'solicitacoes' && pend ? `<span class="n">${pend}</span>` : nop ? `<span class="n" style="background:var(--warn-bg);color:var(--warn)">${nop}</span>` : '';
+    const n = k === 'acaptar' ? (S.acap && acapContas().livres ? `<span class="n n-acap" title="Imóveis livres para captar">${acapContas().livres}</span>` : '') : k === 'tarefas' && TF.selo() ? `<span class="n">${TF.selo()}</span>` : k === 'leads' && alt ? `<span class="n">${alt}</span>` : k === 'solicitacoes' && pend ? `<span class="n">${pend}</span>` : nop ? `<span class="n" style="background:var(--warn-bg);color:var(--warn)">${nop}</span>` : '';
     return `<button type="button" role="tab" data-aba="${k}" aria-selected="${S.aba === k || paiP(S.aba) === k}">${l}${n}</button>`;
-  }).join('') + ReordAbas.botao(); // ↺ Ordem padrão sempre no fim do próprio menu (31/10/2026); na ordem original o clique não faz nada
+  }).join('') + (S.ordemAbas ? ReordAbas.botao() : ''); // ↺ Ordem padrão sempre no fim do próprio menu (31/10/2026); na ordem original o clique não faz nada
 }
 
 ReordAbas.liga(document.getElementById('abas'), { sel: 'button[data-aba]', attr: 'aba', aoSoltar: (o) => guardarOrdemAbas(o), redesenha: () => desenharAbas() });
@@ -1755,8 +1758,8 @@ document.addEventListener('click', (ev) => {
 (function () { const st = document.createElement('style'); st.id = 'css-acaptar-aba'; st.textContent = '.btn-acap{display:inline-flex;align-items:center;gap:6px;text-decoration:none;border-color:var(--brass);color:var(--ink)}.btn-acap:hover{background:var(--soft)}.btn-acap .ba-t{font-weight:600;letter-spacing:.06em}.btn-acap .ba-n{font-size:12px;color:var(--muted);white-space:nowrap;padding-left:6px;border-left:1px solid var(--line)}.btn-acap .ba-n b{color:var(--ok-selo);font-weight:700}.btn-acap .ba-m b{color:var(--brass)}.topo-mini .tm-acap{display:none}@media (max-width:700px){.marca{row-gap:8px}.btn-acap{order:5;flex:1 1 100%;justify-content:center;padding:8px 12px}.topo-mini .tm-acap{display:inline-flex;align-items:center;gap:2px;flex:none;border:1px solid var(--brass);background:var(--panel);color:var(--ink);border-radius:999px;padding:6px 10px;font:500 13px var(--body);text-decoration:none;white-space:nowrap}.topo-mini .tm-acap b{font-weight:700;color:var(--ok-selo)}.topo-mini .tm-acap b+b{color:var(--brass)}}.acap-cts .cartao{text-align:left;font:inherit;color:inherit;cursor:pointer}.acap-cts .cartao:hover{border-color:var(--brass)}.acap-fil{margin:12px 0 10px}.acap-como{margin:4px 0 12px;max-width:80ch}.pill.acap-lv{background:var(--ok-bg);color:var(--ok-selo)}.pill.acap-cp{background:var(--soft);color:var(--brass)}.acap-cod{font:600 11px/1.5 var(--body)!important;letter-spacing:.06em;color:var(--brass)!important;margin-top:2px}.acap-ft{display:block;width:72px;aspect-ratio:4/3;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--soft)}.acap-ft.sem{display:grid;place-items:center;font-size:22px}.acap-ft.g{width:96px;flex:none}.acap-lista .lista-m{container-type:inline-size}.acap-cg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;font-size:13px;font-variant-numeric:tabular-nums}.acap-cg>div{min-width:0}.acap-cg .r{display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}.acap-lista td .b{white-space:nowrap}.acap-ac{align-items:center;gap:6px 10px}.acap-ac .b{margin-left:auto}@container (min-width:520px){.acap-cg{grid-template-columns:repeat(4,minmax(0,1fr))}.acap-ft.g{width:132px}}@container (max-width:420px){.acap-ac .b{margin-left:0;flex:1 1 100%;justify-content:center}.acap-ft.g{width:84px}}'; document.head.appendChild(st); })();
 
 function render() {
+  if (S.aba === 'acaptar') { S.aba = 'inicio'; try { sessionStorage.setItem('painel.aba', 'inicio'); sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} location.href = acapUrl(); }
   desenharAbas();
-  pintaBtnAcap();
   document.getElementById('nomeCorretor').textContent = S.gestor ? rotGestor() : (S.info.corretor || 'Corretor');
   const el = document.getElementById('conteudo');
   if (S.dbEstado === 'carregando') { el.innerHTML = '<div class="vazio">Carregando os seus dados…</div>'; return; }
@@ -2066,7 +2069,7 @@ const OPL_CSS = `.opl-wrap{container-type:inline-size;min-width:0;display:grid;g
 .opl .c-int .pill{white-space:normal;overflow-wrap:break-word}.opl .falta{color:var(--warn)}.opl .c-seta{color:var(--muted);text-align:right}
 .opl-det{padding:10px;border-top:1px dashed var(--line);background:var(--soft)}.opl-det .op-lead{margin:0}
 .opl-pag{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-@container (max-width:760px){
+@container (max-width:1000px){
   .opl-cab{display:none}.opl-ord{display:flex}
   .opl-lin{grid-template-columns:minmax(0,1fr) auto auto 12px;grid-template-areas:"nome of ca seta" "int int int int" "meta meta meta meta" "perfil perfil etapa etapa";gap:3px 10px;padding:9px 12px}
   .opl .c-campanha,.opl .c-data{display:none}
@@ -2148,7 +2151,7 @@ function vOport() {
   if (S.opOrd && ORD_OPP[S.opOrd.k]) { const f = ORD_OPP[S.opOrd.k][1]; L.sort((a, b) => cmpOrdP(f(a), f(b), S.opOrd.dir)); }
   const chips = [['ofertas', `Com ofertas (${cont('ofertas')})`], ['abertos', `Em aberto (${cont('abertos')})`], ['sem_perfil', `Sem perfil (${cont('sem_perfil')})`], ['todos', `Todos (${cont('todos')})`]];
   const ORIG = { confirmado: ['Perfil confirmado', 'ok'], ia: ['Sugerido pela IA · confirme', 'ia'], auto: ['Automático · confirme', 'media'] };
-  let h = `<section class="sec"><div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2>Ofertas</h2>${linkAcap('🎯 Ver os imóveis a captar no A CAPTAR', 'b')}<span class="mut peq">${S.ia ? 'IA disponível neste acesso' : 'Sem IA neste acesso: cruzamento automático'}</span></div>
+  let h = `<section class="sec"><div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2>Ofertas</h2><span class="mut peq">${S.ia ? 'IA disponível neste acesso' : 'Sem IA neste acesso: cruzamento automático'}</span></div>
     ${LEG_OP}<details class="op-como"><summary>Como funciona</summary><p class="peq mut" style="margin:0">Imóveis que combinam com cada lead: anúncios do site, empreendimentos em lançamento e agenciamentos fora do site. O perfil vem da campanha, do imóvel de interesse e do histórico; ${S.ia ? 'toque em <b>✦ Pedir à IA</b> para a IA ler a conversa e escolher as ofertas.' : 'preencha o perfil do lead para refinar.'} <b>Ofertar</b> abre o WhatsApp com a mensagem pronta e registra no histórico. <b>⚡ Captar este imóvel primeiro</b> pede o imóvel 🟠 a captar à diretoria.</p></details>${ladosOp()}
     ${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads e nos imóveis sugeridos.</p>' : `<div class="chips" role="group" aria-label="Filtrar">${chips.map(([k, t]) => `<button type="button" data-opfiltro="${k}" aria-pressed="${S.opFiltro === k}">${esc(t)}</button>`).join('')}</div>`}`;
   if (!L.length && !OPLBP.length) h += `<div class="painel vazio">${busca ? 'Nenhum lead ou imóvel atende à busca.' : S.opFiltro === 'ofertas' ? 'Nenhum lead em aberto com oferta nova agora.' : 'Nenhum lead neste filtro.'}</div>`;
@@ -3891,7 +3894,7 @@ window.VZ_CFG={ ids:['qAba'], idAbas:'qAba',
   /* 08/11/2026 (pedido do Cleiton): lista sempre que a janela tiver 45% da largura da tela ou mais; cartão médio só abaixo
      disso; cartão pequeno só no celular (até 700 px, pelo CSS). A lista que não cabe se ajusta (quebra entre palavras e,
      se preciso, fica compacta) e, no limite, rola de lado — não vira cartão por falta de espaço. */
-  const estreito = () => !!(screen && screen.width > 0) && innerWidth < screen.width * 0.45;
+  const estreito = () => !!(screen && screen.width > 0) && (innerWidth < screen.width * 0.45 || (screen.width < 1280 && innerWidth < 1024));
   function roda() {
     pedido = 0;
     document.querySelectorAll('.tabela.tem-cm').forEach((t) => {
@@ -3903,6 +3906,7 @@ window.VZ_CFG={ ids:['qAba'], idAbas:'qAba',
       if (tab.scrollWidth <= t.clientWidth + 2) return;
       t.classList.add('ta-ajusta');
       if (tab.scrollWidth > t.clientWidth + 2) t.classList.add('ta-compacta');
+      if (tab.scrollWidth > t.clientWidth + 2) { t.classList.remove('ta-ajusta', 'ta-compacta'); pai.classList.add('modo-cartao'); }
     });
     if (obs) obs.takeRecords();
   }
@@ -3986,7 +3990,7 @@ try {
 (function () {
   const topo = document.querySelector('header.topo'); if (!topo || !('IntersectionObserver' in window) || document.querySelector('.topo-mini')) return;
   const mini = document.createElement('div'); mini.className = 'topo-mini'; mini.setAttribute('aria-hidden', 'true');
-  mini.innerHTML = '<span class="tm-aba"></span><a class="tm-acap" target="_blank" rel="noopener"></a><button type="button" class="tm-bt" aria-label="Voltar ao menu de abas">Abas ↑</button>';
+  mini.innerHTML = '<span class="tm-aba"></span><button type="button" class="tm-bt" aria-label="Voltar ao menu de abas">Abas ↑</button>';
   document.body.appendChild(mini);
   try { pintaBtnAcap(); } catch (e) {}
   const abaAtual = () => { const b = document.querySelector('#abas button[aria-selected="true"]'); if (!b) return ''; const t = [...b.childNodes].filter((x) => x.nodeType === 3).map((x) => x.nodeValue).join(' ').trim(); return t || (b.textContent || '').trim(); };

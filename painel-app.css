@@ -1,0 +1,40 @@
+/* painel-app.css — ajustes do painel dentro do app da Vivere (fatia 4b-2, 09/11/2026).
+   Carregado depois do painel.css do modelo, que continua igual. Três formatos: lista no computador (tela cheia),
+   cartão médio no tablet e cartão do celular; cabeçalho e menu compactos no celular. */
+
+/* A CAPTAR: a entrada é a aba (com o nº de imóveis livres); o botão do cabeçalho saiu */
+#btnAcap,.topo-mini .tm-acap{display:none!important}
+.abas .n.n-acap{background:var(--ok-bg);color:var(--ok-selo)}
+
+/* computador em tela cheia: a lista usa a largura da tela, sem margens largas vazias */
+@media (min-width:1280px){.wrap{max-width:min(1560px,94vw)}}
+
+/* celular: cabeçalho em uma linha e menu em linhas curtas */
+@media (max-width:700px){
+  .topo .wrap{padding-block:8px 0}
+  .volta-inicio{margin:0 0 2px;font-size:12px}
+  .marca{gap:8px;flex-wrap:nowrap}
+  .selo{width:38px;height:38px}
+  .marca h1{font-size:10.5px;letter-spacing:.22em}
+  .marca .nome{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .btn-tema{padding:6px 9px;font-size:12.5px}
+  .abas{margin-top:8px;column-gap:4px!important;row-gap:0!important}
+  .abas button[data-aba]{padding:6px 7px!important;font-size:12.5px!important;line-height:1.2!important;min-height:30px}
+  .abas .n{font-size:10.5px;padding:0 5px;margin-left:4px}
+  .abas.menu-cheio>*:not(.quebra-menu){margin-top:2px!important;margin-bottom:2px!important}
+  main{padding-top:12px}
+}
+
+/* tablet: cartões médios em duas colunas, ocupando a largura (o último, se sobrar sozinho, vai de ponta a ponta) */
+.modo-cartao>.lista-m{container-type:inline-size}
+@media (min-width:701px){
+  .modo-cartao>.lista-m{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
+  .modo-cartao>.lista-m>.cm:last-child:nth-child(odd),.modo-cartao>.lista-m>.vazio{grid-column:1/-1}
+}
+
+/* filtros da pesquisa: linhas cheias em toda largura (10 campos: 2 por linha no celular, 5 no tablet e no computador, 10 na tela cheia) */
+@media (min-width:701px){.pv-filtros .form{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media (min-width:1536px){.pv-filtros .form{grid-template-columns:repeat(10,minmax(0,1fr))}}
+
+/* "Ordem padrão" (só aparece com a ordem mudada) entra na conta das linhas do menu: sem margem automática, o menu não ganha linha a mais */
+nav[data-ord] .ord-reset{margin-left:0!important}

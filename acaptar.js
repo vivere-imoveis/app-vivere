@@ -244,7 +244,7 @@
     var corpo = A.sub === 'minhas' ? telaMinhas() : A.sub === 'captei' ? telaCaptei() : A.sub === 'dir' ? telaDir() : telaDisp();
     raiz.innerHTML =
       '<div class="resumo-ac"><div><b>' + livres + '</b><span>Livres</span></div><div><b>' + minhas + '</b><span>Minhas</span></div>' + (diretoria() ? '<div><b>' + A.tr.length + '</b><span>Em captação (equipe)</span></div>' : '<div><b>' + vencendo + '</b><span>Vencem em até 2 dias</span></div>') + '<div><b>' + A.im.filter(function (v) { return v.lista === 'captei'; }).length + '</b><span>No Captei</span></div></div>' +
-      '<div class="cod-ac"><label for="acCod">🎯 Código do painel</label><input id="acCod" placeholder="AC-XXXXXX" value="' + esc(A.cod) + '" autocomplete="off">' + (A.cod ? '<button class="btn" data-acao="limpar_cod">Limpar</button>' : '') + '</div>' +
+      '<div class="cod-ac"><label for="acCod">Código do imóvel</label><input id="acCod" placeholder="AC-XXXXXX" value="' + esc(A.cod) + '" autocomplete="off">' + (A.cod ? '<button class="btn" data-acao="limpar_cod">Limpar</button>' : '') + '</div>' +
       '<nav class="subabas" role="tablist">' + subs.map(function (s) { return '<button type="button" role="tab" data-sub="' + s[0] + '" aria-selected="' + (A.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</nav>' +
       '<div class="lista-acessos">' + corpo + '</div>' +
       '<p class="s" style="margin-top:20px">Base de ' + (A.atualizado || '—') + ' · a lista diária ainda é atualizada no A CAPTAR do claude.ai; aqui, por ora, é a cópia de 09/11/2026.</p>';
