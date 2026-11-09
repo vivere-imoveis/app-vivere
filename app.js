@@ -6,7 +6,7 @@
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj';
   var APP_URL = location.origin + location.pathname;
-  var VERSAO = 'app-vivere 2026-11-09.1';
+  var VERSAO = 'app-vivere 2026-11-09.2';
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -32,13 +32,18 @@
   var erroLink = /error_description=([^&]+)/.exec(hashInicial);
   var sb = window.supabase.createClient(SB_URL, SB_CHAVE, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' } });
 
-  var estado = { sessao: null, eu: null, aba: 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
+  /* Link direto ao imóvel do A CAPTAR: ?cod=AC-XXXXXX (guardado até depois do login). */
+  var codParam = (new URLSearchParams(location.search).get('cod') || '').trim();
+  if (codParam) { try { sessionStorage.setItem('acaptar-cod', codParam); } catch (e) { } history.replaceState(null, '', APP_URL + location.hash); }
+  try { codParam = codParam || sessionStorage.getItem('acaptar-cod') || ''; } catch (e) { }
+
+  var estado = { sessao: null, eu: null, aba: codParam ? 'acaptar' : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
 
   sb.auth.onAuthStateChange(function (evento, sessao) {
     if (evento === 'PASSWORD_RECOVERY') modoSenha = true;
     var mudou = (!!sessao) !== (!!estado.sessao) || evento === 'PASSWORD_RECOVERY';
     estado.sessao = sessao;
-    if (evento === 'SIGNED_OUT') { estado.eu = null; estado.aba = 'inicio'; }
+    if (evento === 'SIGNED_OUT') { estado.eu = null; estado.aba = 'inicio'; if (window.ACAPTAR) window.ACAPTAR.sair(); }
     if (mudou) setTimeout(iniciar, 0);
   });
 
@@ -70,13 +75,14 @@
       main.innerHTML = '<div class="form cartao"><h2>Acesso não liberado</h2><div class="msg erro">Este login não tem acesso ativo ao app da Vivere. Fale com a diretoria.</div><button class="btn" id="sair">Sair</button></div>';
       $('#sair').onclick = sair; return;
     }
-    var lista = [['inicio', 'Início'], ['senha', 'Minha senha']];
+    var lista = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['senha', 'Minha senha']];
     if (estado.eu.papel === 'gestor') lista.push(['acessos', 'Acessos']);
     abas.hidden = false;
     abas.innerHTML = lista.map(function (a) { return '<button role="tab" data-aba="' + a[0] + '" aria-selected="' + (estado.aba === a[0]) + '">' + a[1] + '</button>'; }).join('');
     abas.querySelectorAll('button').forEach(function (b) { b.onclick = function () { estado.aba = b.dataset.aba; estado.link = null; estado.confirmar = null; desenhar(); }; });
     if (estado.aba === 'senha') return telaSenha(main, false);
     if (estado.aba === 'acessos' && estado.eu.papel === 'gestor') return telaAcessos(main);
+    if (estado.aba === 'acaptar' && window.ACAPTAR) { var cod = codParam; codParam = ''; try { sessionStorage.removeItem('acaptar-cod'); } catch (e) { } return window.ACAPTAR.tela(main, contexto(), cod); }
     telaInicio(main);
   }
 
@@ -135,14 +141,18 @@
     titulo('Olá, ' + (estado.eu.nome || '').split(' ')[0]);
     main.innerHTML = '<div class="grade">' +
       '<div class="cartao"><h3>Meu painel</h3><p>O seu painel do corretor vai abrir aqui, com o mesmo login.</p><span class="pill warn">Em construção</span></div>' +
-      '<div class="cartao"><h3>A CAPTAR</h3><p>Os imóveis a captar do dia, livres e seus, vão abrir aqui.</p><span class="pill warn">Em construção</span></div>' +
+      '<div class="cartao"><h3>A CAPTAR</h3><p id="acResumo">Imóveis a captar: os livres e os seus.</p><button class="btn pri" id="irAcaptar">Abrir o A CAPTAR</button></div>' +
       '<div class="cartao"><h3>Minha conta</h3><p data-sens>' + esc(estado.eu.email) + '</p><div class="linha-acoes"><button class="btn" id="irSenha">Trocar senha</button><button class="btn" id="sair">Sair</button></div></div>' +
       '</div><p class="s" style="margin-top:24px">' + VERSAO + '</p>';
     $('#sair').onclick = sair;
     $('#irSenha').onclick = function () { estado.aba = 'senha'; desenhar(); };
+    $('#irAcaptar').onclick = function () { estado.aba = 'acaptar'; desenhar(); };
+    if (window.ACAPTAR) window.ACAPTAR.resumo(contexto()).then(function (r) { var p = $('#acResumo'); if (p) p.textContent = r.livres + ' livres para captar · ' + r.minhas + ' em captação por você.'; }).catch(function () { });
   }
 
-  async function sair() { await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
+  function contexto() { return { sb: sb, eu: estado.eu, sessaoUid: estado.sessao.user.id, esc: esc, toast: toast, titulo: titulo }; }
+
+  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
 
   /* ---------- Acessos (só o gestor) ---------- */
   async function chamar(corpo) {

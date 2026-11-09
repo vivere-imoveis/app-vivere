@@ -84,3 +84,48 @@ table.ac tr.desligado td{opacity:.6}
 .toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
 @media (max-width:560px){.marca .nome{font-size:19px}.selo{width:44px;height:44px}.btn-tema{padding:6px 10px;font-size:12px}}
 #novo button{grid-column:1/-1}
+/* A CAPTAR (fatia 3, 09/11/2026) */
+.resumo-ac{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.resumo-ac div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.resumo-ac b{display:block;font:500 24px/1.1 var(--display)}
+.resumo-ac span{font-size:12px;color:var(--muted)}
+.cod-ac{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;font-size:13px;color:var(--muted)}
+.cod-ac input{width:160px;flex:none;text-transform:uppercase}
+.subabas{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 14px}
+.subabas button{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:6px 12px;font:500 13px var(--body);cursor:pointer}
+.subabas button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.filtros-ac{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-bottom:10px}
+.cod{display:inline-block;margin-top:4px;font:500 11px var(--display);letter-spacing:.08em;color:var(--brass);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.est{color:var(--brass);letter-spacing:1px;white-space:nowrap}
+table.ac td.num{white-space:nowrap}
+table.ac tr.alvo td{background:var(--warn-bg)}
+.tit-sec{font:500 14px var(--display);letter-spacing:.18em;text-transform:uppercase;margin:0 0 10px;color:var(--muted)}
+.grade-cap{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+.cap .cap-topo{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.cap h3{font:500 18px var(--display);margin:0}
+.cap p.s{margin:4px 0 0}
+.cap{container-type:inline-size}
+dl.campos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 14px;margin:12px 0}
+@container (max-width:520px){dl.campos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+dl.campos div{min-width:0}
+dl.campos .largo{grid-column:1/-1}
+dl.campos dt{font:500 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+dl.campos dd{margin:2px 0 0;font-size:14px;overflow-wrap:anywhere}
+dl.campos a{color:var(--brass)}
+.copiar{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:1px 8px;font:12px var(--body);cursor:pointer}
+.cap textarea{width:100%;min-height:60px;margin:6px 0 10px;font:14px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;resize:vertical}
+@media (max-width:700px){.resumo-ac{grid-template-columns:repeat(2,minmax(0,1fr))}}
+table.ac td.c-acoes .btn{white-space:nowrap}
+table.ac td.c-nome{min-width:200px}
+table.ac td.c-sit .linha-acoes{flex-direction:column;align-items:flex-start;gap:6px}
+@container (max-width:900px){table.ac td.c-sit .linha-acoes{flex-direction:row;align-items:center}}
+@container (min-width:901px) and (max-width:1080px){
+  .lista-acessos:has(table.ac-disp) .ordenar{display:flex}
+  table.ac-disp,table.ac-disp tbody{display:block;border:0;background:none}
+  table.ac-disp thead{display:none}
+  table.ac-disp tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+  table.ac-disp td{border:0;padding:0}
+  table.ac-disp td.c-nome,table.ac-disp td.c-acoes{grid-column:1/-1}
+  table.ac-disp td.c-sit .linha-acoes{flex-direction:row;align-items:center}
+  table.ac-disp td[data-r]::before{content:attr(data-r);display:block;font:500 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+}
