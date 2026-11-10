@@ -993,7 +993,8 @@ const acapPn = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/
 const acapDono = () => { if (S.gestor && S.verComo && S.verComo !== 'todos') return { slug: S.verComo, nome: gCurto(S.verComo) }; const i = S.info || {}; return { slug: i.slug || '', nome: i.saudacao || i.corretor || '' }; };
 const acapEhMinha = (x) => { if (!x) return false; const d = acapDono(); if (x.chave && d.slug) return x.chave === d.slug || (!!x.nome && acapPn(x.nome) === acapPn(d.nome)); if (x.nome && d.nome) return acapPn(x.nome) === acapPn(d.nome); return !!S.uid && x.uid === S.uid; };
 const acapDaFoto = () => { const v = Object.values((S.G || {}).acapg || {}).filter((x) => x && x.travas); return v.length ? v.reduce((a, x) => ({ ...a, ...x, travas: { ...(a.travas || {}), ...x.travas } }), {}) : null; };
-const acapDoSlug = (slug) => { const tv = ((S.acap || {}).travas) || {}, nm = acapPn(gCurto(slug)); return Object.values(tv).filter((x) => x && x.uid && (x.chave === slug || (x.nome && acapPn(x.nome) === nm))).length; };
+const acapNi = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+const acapDoSlug = (slug) => { const tv = ((S.acap || {}).travas) || {}, nm = acapPn(gCurto(slug)), rep = gPaineis().filter((p) => acapPn(gCurto(p.slug)) === nm).length > 1, ni = acapNi(gNome(slug)); return Object.values(tv).filter((x) => x && x.uid && (x.chave ? x.chave === slug : (!!x.nome && (rep ? acapNi(x.nome) === ni : acapPn(x.nome) === nm)))).length; }; /* trocas-f5j */
 const acapMinhas = () => !S.acap ? [] : Object.entries(S.acap.travas || {}).filter(([, x]) => x && x.uid && acapEhMinha(x)).map(([lead, x]) => ({ ...x, lead }));
 const acapVolta = () => { try { sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} };
 const linkAcap = (rot, cls) => `<a class="${cls || 'b'}" href="${esc(acapUrl())}" data-acapvai>${rot}</a>`;
@@ -1816,12 +1817,13 @@ function ligarGestor() {
 }
 const gFotoGeral = () => Object.values(S.G.paineis || {}).map((p) => p.foto_em).filter(Boolean).sort().pop() || '';
 const rotGestor = () => (S.info.corretor || 'Gestor') + ' · ' + (S.verComo === 'todos' ? 'todos os painéis' : 'vendo ' + gCurto(S.verComo));
+document.addEventListener('change', (ev) => { const s = ev.target && ev.target.matches && ev.target.matches('select[data-versel]') ? ev.target : null; if (!s || !S.gestor) return; S.verComo = s.value; try { sessionStorage.setItem('painel.ver', S.verComo); } catch (e) {} aplicarVer(); render(); }); /* trocas-f5j: seletor de uma linha no celular */
 function barraGestor() {
   const bt = (k, t) => `<button type="button" data-ver="${esc(k)}" aria-pressed="${S.verComo === k}">${esc(t)}</button>`;
   const f = gFotoGeral();
   const info = !S.gProntos.has('paineis') ? 'Carregando a foto dos painéis…' : f ? `Foto do dia: ${dt(f)} · só leitura` : 'Sem foto dos painéis ainda · só leitura';
   return `<div class="g-barra" role="group" aria-label="Ver como" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 12px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)">
-    <span class="peq mut" style="font-weight:600">Ver como</span><div class="chips">${bt('todos', 'Todos')}${gPaineis().map((p) => bt(p.slug, gCurto(p.slug))).join('')}</div>
+    <span class="peq mut" style="font-weight:600">Ver como</span><div class="chips">${bt('todos', 'Todos')}${gPaineis().map((p) => bt(p.slug, gCurto(p.slug))).join('')}</div><select class="g-sel" data-versel aria-label="Ver como">${[['todos', 'Todos']].concat(gPaineis().map((p) => [p.slug, gCurto(p.slug)])).map(([k, r]) => `<option value="${esc(k)}"${S.verComo === k ? ' selected' : ''}>Ver como: ${esc(r)}</option>`).join('')}</select>
     <span class="peq mut" style="margin-left:auto">${esc(info)}</span></div>`;
 }
 document.addEventListener('click', (ev) => {
