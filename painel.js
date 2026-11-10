@@ -1477,7 +1477,7 @@ function subOp() { const pai = SUBS_P[S.aba] ? S.aba : paiP(S.aba); if (!pai) re
 // Tarefas gerais e lembretes do corretor, fora dos leads e das demandas extras. Coleção `tarefas` no banco do painel.
 // Origem: corretor (aqui), vivian (pedido no WhatsApp) ou diretoria (atribuída no Gestor ou pela Vivian). As da Vivian e da
 // diretoria chegam pela rotina diária hub-vivere-coletores, que também leva as do painel à Vivian (Supabase) — decisão de 08/11/2026.
-// Doc tarefas/<id>: {tipo:'tarefa'|'lembrete', titulo, obs, data:'AAAA-MM-DD'|'', hora:'HH:MM'|'', prioridade:'alta'|'media'|'baixa',
+// Doc tarefas/<id>: {tipo:'tarefa'|'lembrete'|'recado', titulo, obs, data:'AAAA-MM-DD'|'', hora:'HH:MM'|'', prioridade:'alta'|'media'|'baixa',
 //   situacao:'a_fazer'|'feita', feita_em, excluida, origem:'corretor'|'vivian'|'diretoria', por, criado_em, atualizado_em, atualizado_por}
 // Gestor/diretoria: `g_tarefas` (foto do dia, Ver como) e `atribuicoes/<id>` {para:<slug>, ...campos, por, criado_em, entregue_em}.
 S.tarefas = {}; S.atrib = {}; S.tfFiltro = 'abertas';
@@ -1512,7 +1512,7 @@ const TF = (() => {
     return L.filter((t) => !feita(t));
   };
   const selo = () => lista().filter((t) => atrasada(t) || deHoje(t)).length;
-  const btOk = (t) => `<button type="button" class="tf-ok${feita(t) ? ' on' : ''}" data-tf-ok="${esc(t.id)}" aria-pressed="${feita(t)}" aria-label="${feita(t) ? 'Reabrir' : 'Marcar como feita'}: ${esc(t.titulo)}" title="${feita(t) ? 'Reabrir' : 'Marcar como feita'}">✓</button>`;
+  const btOk = (t) => `<button type="button" class="tf-ok${feita(t) ? ' on' : ''}" data-tf-ok="${esc(t.id)}" aria-pressed="${feita(t)}" aria-label="${feita(t) ? 'Reabrir' : t.tipo === 'recado' ? 'Marcar como lido' : 'Marcar como feita'}: ${esc(t.titulo)}" title="${feita(t) ? 'Reabrir' : 'Marcar como feita'}">✓</button>`;
   const soLer = () => S.gestor;
 
   function vista() {
@@ -1571,7 +1571,7 @@ const TF = (() => {
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Anotar' : t.tipo === 'lembrete' ? 'Lembrete' : t.tipo === 'recado' ? 'Recado' : 'Tarefa'}</p><h3>${novo ? 'Nova tarefa' : esc(t.titulo)}</h3>${novo ? '' : pillSit(t)}${info}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${soLer() ? `<div class="painel"><p style="margin:0">${esc(t.obs || 'Sem observação.')}</p><p class="mut peq" style="margin:8px 0 0">${esc(rotQuando(t))} · prioridade ${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}. Só leitura no painel do gestor.</p></div>` : `
     <form id="fTarefa" class="form" data-id="${esc(id || '')}">${campos(t)}
-      <div class="inteiro linha"><button class="b p" type="submit">${novo ? 'Anotar' : 'Salvar'}</button>${novo ? '' : `<button class="b" type="button" data-tf-ok="${esc(id)}">${feita(t) ? 'Reabrir' : '✓ Marcar como feita'}</button><button class="b" type="button" data-tf-exc="${esc(id)}">Excluir</button>`}<span class="erro" id="eTarefa"></span></div>
+      <div class="inteiro linha"><button class="b p" type="submit">${novo ? 'Anotar' : 'Salvar'}</button>${novo ? '' : `<button class="b" type="button" data-tf-ok="${esc(id)}">${feita(t) ? 'Reabrir' : t.tipo === 'recado' ? '✓ Marcar como lido' : '✓ Marcar como feita'}</button><button class="b" type="button" data-tf-exc="${esc(id)}">Excluir</button>`}<span class="erro" id="eTarefa"></span></div>
     </form>`}
   </div>`;
   }
