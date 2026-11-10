@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-10.3';
+  var VERSAO = 'ponte 2026-11-10.4';
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1 };
@@ -313,7 +313,10 @@
   }
 
   function escopos() { return [ctx.painel, 'u:' + ctx.uid, COMUM].concat(ctx.gestor ? [GEST] : []); }
-  function ressincronizar() { escopos().forEach(function (e) { sincronizar(e).catch(function () { }); }); }
+  // Releitura do índice de tudo o que a tela usa. Com o tempo real ligado ela roda a cada VARRE (4 min), só para tirar
+  // da tela o que uma rotina apagou; sem ele, a cada 2 min.
+  var VARRE = 230000; // um pouco menos de 4 min, para a 2ª batida do relógio de 2 min já contar
+  function ressincronizar() { ctx.varreu = Date.now(); escopos().forEach(function (e) { sincronizar(e).catch(function () { }); }); }
 
   // Primeira leitura: tenta de novo sozinha (3 s, 8 s, 20 s) antes de avisar que a conexão caiu.
   function primeiraLeitura(e, n) {
@@ -329,9 +332,10 @@
     document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - ctx.ultima > 45000) ressincronizar(); if (!document.hidden) renovarMaterial(); });
     setInterval(function () { if (!document.hidden) renovarMaterial(); }, 600000);
     window.addEventListener('online', ressincronizar);
+    ctx.varreu = Date.now();
     setInterval(function () {
       if (document.hidden) return;
-      if (!ctx.tempoReal) ressincronizar();
+      if (!ctx.tempoReal || Date.now() - ctx.varreu >= VARRE) ressincronizar();
       else if (ctx.gestor && !ctx.tempoRealG) sincronizar(GEST).catch(function () { });
     }, 120000);
   }
@@ -344,8 +348,8 @@
         if (e === GEST) return;
         canal.on('postgres_changes', { event: '*', schema: 'public', table: 'painel_docs', filter: 'painel=eq.' + e }, function (p) { aplicarMudanca(e, p); });
       });
-      // Apagamento: o banco não filtra esse aviso por painel e só manda a chave (painel, coleção, documento).
-      canal.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'painel_docs' }, aplicarApagamento);
+      // Apagamento: o banco não manda mais esse aviso (ele não passava pelas regras de acesso e entregava a chave do
+      // registro apagado a qualquer pessoa logada). O que foi apagado sai da tela pela releitura do índice (VARRE).
       canal.subscribe(function (status) {
         var ok = status === 'SUBSCRIBED';
         if (ok && ctx.caiu) { ctx.caiu = false; ressincronizar(); }
