@@ -1849,6 +1849,7 @@ function gResumo(slug) {
     };
   } finally { G_ALVOS.forEach((a) => { S[a] = salvo[a]; }); }
 }
+const usoApp = (p) => p.uso_dias == null ? '—' : p.uso_dias ? `<b>${p.uso_dias}</b> <span class="mut peq">de 7 dias · ${dt(p.uso_ultima)}</span>` : '<span class="mut peq">sem uso em 7 dias</span>'; /* trocas-f5l: uso do app (ponte) */
 function vGestor() {
   if (!S.gProntos.has('paineis')) return '<div class="vazio">Carregando a foto dos painéis…</div>';
   const P0 = gPaineis().filter((p) => S.verComo === 'todos' || p.slug === S.verComo).map((p) => ({ ...p, ...gResumo(p.slug) }));   // 08/11/2026: o Ver como também filtra a aba Gestor
@@ -1868,11 +1869,12 @@ function vGestor() {
     { k: 'ativos', l: 'Imóveis ativos', n: 1, h: (p) => de(p.ativos, p.imoveis) },
     { k: 'pend', l: 'Solicitações', n: 1, h: (p) => `${p.pend}${p.compl ? ` <span class="mut peq">· ${p.compl} a complementar</span>` : ''}` },
     { k: 'ult', l: 'Último registro', h: (p) => p.ult ? dt(p.ult) : '—' },
+    { k: 'uso_dias', l: 'Uso do app', n: 1, h: usoApp },
     { k: 'foto_em', l: 'Foto', h: (p) => p.foto_em ? dt(p.foto_em) : '—' },
     { k: '_ac', l: 'Ações', ord: false, h: acoes },
   ];
   const cartao = (p) => `<div class="linha" style="justify-content:space-between;gap:8px"><b>${esc(p.nome || p.slug)}</b><span class="mut peq">foto ${p.foto_em ? dt(p.foto_em) : '—'}</span></div>
-    <div class="peq" style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px"><span>Leads em aberto <b>${p.abertos}</b> de ${p.leads}</span><span>Atrasados <b${p.atrasados ? ' style="color:var(--bad)"' : ''}>${p.atrasados}</b></span><span>Para hoje <b>${p.hoje}</b></span><span>Fechados <b>${p.fechados}</b></span><span>Ofertas <b>${p.ofertas}</b></span><span>A captar <b>${p.acap}</b></span><span>Imóveis ativos <b>${p.ativos}</b> de ${p.imoveis}</span><span>Solicitações <b>${p.pend}</b>${p.compl ? ` · ${p.compl} a complementar` : ''}</span><span>Último registro ${p.ult ? dt(p.ult) : '—'}</span></div>
+    <div class="peq" style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px"><span>Leads em aberto <b>${p.abertos}</b> de ${p.leads}</span><span>Atrasados <b${p.atrasados ? ' style="color:var(--bad)"' : ''}>${p.atrasados}</b></span><span>Para hoje <b>${p.hoje}</b></span><span>Fechados <b>${p.fechados}</b></span><span>Ofertas <b>${p.ofertas}</b></span><span>A captar <b>${p.acap}</b></span><span>Imóveis ativos <b>${p.ativos}</b> de ${p.imoveis}</span><span>Solicitações <b>${p.pend}</b>${p.compl ? ` · ${p.compl} a complementar` : ''}</span><span>Último registro ${p.ult ? dt(p.ult) : '—'}</span><span>Uso do app ${usoApp(p)}</span></div>
     <div class="linha" style="margin-top:8px;gap:6px">${acoes(p)}</div>`;
   const f = gFotoGeral();
   return `<section class="sec"><div><h2 style="margin:0">${S.verComo === 'todos' ? 'Visão geral dos painéis' : 'Visão geral · ' + esc(gCurto(S.verComo))}</h2><p class="mut peq" style="margin:2px 0 0">Foto do dia de cada painel${f ? ' (a mais recente: ' + dt(f) + ')' : ''}, atualizada 1x por dia pela rotina. Só leitura: as mudanças se fazem no painel do corretor.</p></div>

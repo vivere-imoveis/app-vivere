@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-10.4';
+  var VERSAO = 'ponte 2026-11-10.5';
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1 };
@@ -215,7 +215,27 @@
   function agoraLocal() { var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16); }
   function comDono(dados, painel, doc) { return Object.assign({}, dados, { _dono: painel, _id: doc }); }
   function deTodos(q) { return q.neq('painel', COMUM).not('painel', 'like', 'u:%'); }
-  function listaPaineis(infos) {
+  // Uso do app (fatia 5 L): dias com acesso nos últimos 7 e o último acesso, por painel. Só o gestor lê a app_uso; erro ou outro papel = sem a coluna.
+  async function lerUso() {
+    if (!ctx.eu || ctx.eu.papel !== 'gestor') return null;
+    try {
+      var d0 = new Date(); d0.setDate(d0.getDate() - 6);
+      var desde = new Date(d0.getTime() - d0.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+      var ra = await sb.from('acessos').select('user_id,painel');
+      var ru = await sb.from('app_uso').select('user_id,dia,ultima').gte('dia', desde);
+      if (ra.error || ru.error) return null;
+      var dono = {}, uso = {};
+      (ra.data || []).forEach(function (a) { if (a.user_id && a.painel) dono[a.user_id] = a.painel; });
+      (ru.data || []).forEach(function (u) {
+        var p = dono[u.user_id]; if (!p) return;
+        var x = uso[p] || (uso[p] = { dias: {}, ultima: '' });
+        x.dias[u.dia] = 1;
+        if (u.ultima) { var t = new Date(u.ultima); var l = new Date(t.getTime() - t.getTimezoneOffset() * 6e4).toISOString().slice(0, 16); if (l > x.ultima) x.ultima = l; }
+      });
+      return uso;
+    } catch (e) { return null; }
+  }
+  function listaPaineis(infos, uso) {
     var nomes = {}, curtos = {}, vez = {}, saida = {}, quando = agoraLocal();
     infos.forEach(function (l) {
       if (!painelReal(l.painel)) return;
@@ -231,6 +251,7 @@
       var d = { nome: n.nome, curto: c, foto_em: quando };
       if (typeof n.info.ordem === 'number') d.ordem = n.info.ordem;
       if (n.info.genero) d.genero = n.info.genero;
+      if (uso) { var u = uso[p]; d.uso_dias = u ? Object.keys(u.dias).length : 0; if (u && u.ultima) d.uso_ultima = u.ultima; }
       if (p !== ctx.painel) d.url = 'painel.html?ver=' + encodeURIComponent(p); // a diretoria abre o painel do corretor pelo "ver"
       saida[p] = d;
     });
@@ -271,7 +292,7 @@
         if (!a || a.v < l.versao) { c[id] = { v: l.versao, d: comDono(l.dados, l.painel, l.doc_id) }; mudou[g] = 1; }
       });
     }));
-    var lp = listaPaineis(r0.data || []), cp = m.g_paineis || (m.g_paineis = {});
+    var lp = listaPaineis(r0.data || [], await lerUso()), cp = m.g_paineis || (m.g_paineis = {});
     var mudouLista = false;
     Object.keys(cp).forEach(function (p) { if (!lp[p]) { delete cp[p]; mudouLista = true; } });
     Object.keys(lp).forEach(function (p) {
