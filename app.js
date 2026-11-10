@@ -6,7 +6,7 @@
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj';
   var APP_URL = location.origin + location.pathname;
-  var VERSAO = 'app-vivere 2026-11-09.6';
+  var VERSAO = 'app-vivere 2026-11-10.1';
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -56,6 +56,12 @@
     if (estado.sessao && !estado.eu) {
       var q = await sb.from('acessos').select('email,nome,papel,painel,ativo').eq('user_id', estado.sessao.user.id).maybeSingle();
       estado.eu = q.data || null;
+      // painel oficial no app (depois do corte): só então quem não é gestor abre o próprio painel
+      estado.oficial = false;
+      if (estado.eu && estado.eu.ativo && estado.eu.painel && estado.eu.papel !== 'gestor') {
+        var o = await sb.rpc('meu_painel_oficial').then(function (x) { return x; }, function () { return { error: true }; });
+        estado.oficial = !!o && !o.error && o.data === true;
+      }
     }
     desenhar();
   }
@@ -144,9 +150,10 @@
     };
   }
 
-  /* Painel do corretor no app (fatia 4b): em teste. Só o gestor abre por enquanto; o painel de teste é o do Hugo. */
+  /* Painel do corretor no app: em teste até o corte de cada painel. Antes do corte só o gestor abre; depois, o dono também (meu_painel_oficial). */
   var PAINEL_TESTE = 'hugo';
   function cartaoPainel() {
+    if (estado.eu.papel !== 'gestor' && estado.oficial) return '<div class="cartao"><h3>Meu painel</h3><p>Seus leads, imóveis, ofertas e tarefas.</p><div class="linha-acoes"><a class="btn pri" href="painel.html">Abrir o meu painel</a></div></div>';
     if (estado.eu.papel !== 'gestor') return '<div class="cartao"><h3>Meu painel</h3><p>O seu painel do corretor vai abrir aqui, com o mesmo login.</p><span class="pill warn">Em construção</span></div>';
     return '<div class="cartao"><h3>Meu painel</h3><p>Painel do corretor no app, em teste. Os dados são uma cópia: o artefato continua oficial.</p><div class="linha-acoes">' +
       (estado.eu.painel ? '<a class="btn" href="painel.html">Abrir o meu</a>' : '') +
