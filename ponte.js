@@ -6,16 +6,23 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-09.4';
+  var VERSAO = 'ponte 2026-11-10.1';
   var TESTE_SO_GESTOR = true; // fatia 4b: o painel no app é cópia de teste; enquanto for, só o gestor abre
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1 };
+  // Aba Gestor (fatia 5, 10/11/2026): a diretoria, no próprio painel, lê os painéis de todos direto do banco, sem foto do dia.
+  // O painel.js pede as coleções g_*; a ponte monta cada uma a partir da coleção de origem de todos os painéis,
+  // com _dono (o painel) e _id (o id lá) em cada registro. É só leitura: nada é gravado em g_*.
+  var GEST = 'g:';
+  var GMAPA = { g_leads: 'leads', g_meus: 'meus_imoveis', g_sol: 'solicitacoes', g_eventos: 'eventos_agenciamento', g_decisoes: 'decisoes', g_captados: 'captados', g_tarefas: 'tarefas', g_acaptar: 'acaptar' };
+  var GFONTE = {};
+  Object.keys(GMAPA).forEach(function (g) { GFONTE[GMAPA[g]] = g; });
   var PAGINA = 1000;
   var CACHE_NOME = 'vivere-painel', CACHE_LOJA = 'comum';
 
   var sb = window.supabase.createClient(SB_URL, SB_CHAVE, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
-  var ctx = { uid: null, eu: null, painel: null, ver: false, tempoReal: false, caiu: false, ultima: 0 };
+  var ctx = { uid: null, eu: null, painel: null, ver: false, gestor: false, tempoReal: false, caiu: false, ultima: 0 };
   var mem = {};       // mem[escopo][colecao][doc] = { v: versão, d: dados, p: gravação minha em curso }
   var pronto = {};    // escopo lido inteiro pelo menos uma vez
   var chegou = {};    // 'escopo/colecao' já lida
@@ -57,6 +64,7 @@
     if (ver && diretoria && /^[a-z0-9][a-z0-9-]{0,39}$/.test(ver) && ver !== ctx.eu.painel) { ctx.painel = ver; ctx.ver = true; }
     else ctx.painel = ctx.eu.painel;
     if (!ctx.painel) return fatal('O seu painel ainda não foi criado. Fale com a diretoria.');
+    ctx.gestor = diretoria && !ctx.ver; // aba Gestor: só no próprio painel de quem é da diretoria
     faixaVer();
     sb.rpc('registrar_uso').then(function () { }, function () { });
     iniciarDados();
@@ -78,7 +86,17 @@
   }
 
   /* ---------- Onde fica cada coleção ---------- */
-  function escopoDe(colecao) { return COMUNS[colecao] ? COMUM : ctx.painel; }
+  function escopoDe(colecao) {
+    if (ctx.gestor && (GMAPA[colecao] || colecao === 'g_paineis')) return GEST;
+    return COMUNS[colecao] ? COMUM : ctx.painel;
+  }
+  function painelReal(p) { p = String(p || ''); return !!p && p !== COMUM && p.indexOf('u:') !== 0 && p !== GEST; }
+  // O registro que o painel enxerga. No painel de quem é da diretoria, config/painel sai com papel "gestor": é o que liga a aba.
+  function registro(escopo, colecao, doc) {
+    var reg = ((mem[escopo] || {})[colecao] || {})[doc];
+    if (ctx.gestor && escopo === ctx.painel && colecao === 'config' && doc === 'painel') return { v: reg ? reg.v : 0, d: Object.assign({}, reg ? reg.d : null, { papel: 'gestor' }) };
+    return reg;
+  }
   function alvoDoc(caminho) {
     var p = String(caminho).split('/');
     if (p.length === 4 && p[0] === 'data' && p[1] === 'users') return { escopo: 'u:' + ctx.uid, colecao: p[3], doc: p[3] };
@@ -140,7 +158,7 @@
   }
   function sincronizar(escopo) {
     if (emCurso[escopo]) return emCurso[escopo];
-    emCurso[escopo] = sincronizarAgora(escopo).then(function () { delete emCurso[escopo]; }, function (e) { delete emCurso[escopo]; throw e; });
+    emCurso[escopo] = (escopo === GEST ? sincronizarGestor() : sincronizarAgora(escopo)).then(function () { delete emCurso[escopo]; }, function (e) { delete emCurso[escopo]; throw e; });
     return emCurso[escopo];
   }
   async function sincronizarAgora(escopo) {
@@ -177,7 +195,99 @@
     if (primeira) ouvintes.forEach(function (o) { if (o.escopo === escopo && !o.disparado) disparar(o); });
     else Object.keys(mudou).forEach(function (col) { avisar(escopo, col); });
   }
-  function escopos() { return [ctx.painel, 'u:' + ctx.uid, COMUM]; }
+
+  /* ---------- Aba Gestor: os painéis de todos, lidos direto (índice primeiro, depois só o que mudou) ---------- */
+  var gPerdeu = false;
+  function agoraLocal() { var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16); }
+  function comDono(dados, painel, doc) { return Object.assign({}, dados, { _dono: painel, _id: doc }); }
+  function deTodos(q) { return q.neq('painel', COMUM).not('painel', 'like', 'u:%'); }
+  function listaPaineis(infos) {
+    var nomes = {}, curtos = {}, vez = {}, saida = {}, quando = agoraLocal();
+    infos.forEach(function (l) {
+      if (!painelReal(l.painel)) return;
+      var i = l.dados || {}, nome = String(i.corretor || i.saudacao || l.painel).trim() || l.painel;
+      nomes[l.painel] = { nome: nome, info: i };
+      var c = String(i.curto || nome.split(' ')[0]).trim();
+      curtos[l.painel] = c; vez[c] = (vez[c] || 0) + 1;
+    });
+    Object.keys(nomes).forEach(function (p) {
+      var n = nomes[p], c = curtos[p], partes = n.nome.split(' ');
+      // dois painéis com o mesmo primeiro nome: o rótulo curto leva também o segundo nome ("Fernanda Carvalho")
+      if (vez[c] > 1 && !n.info.curto) c = partes.slice(0, 2).join(' ');
+      var d = { nome: n.nome, curto: c, foto_em: quando };
+      if (typeof n.info.ordem === 'number') d.ordem = n.info.ordem;
+      if (n.info.genero) d.genero = n.info.genero;
+      if (p !== ctx.painel) d.url = 'painel.html?ver=' + encodeURIComponent(p); // a diretoria abre o painel do corretor pelo "ver"
+      saida[p] = d;
+    });
+    return saida;
+  }
+  async function sincronizarGestor() {
+    var primeira = !pronto[GEST], fontes = Object.keys(GFONTE), m = mem[GEST] || (mem[GEST] = {}), mudou = {};
+    var r0 = await deTodos(sb.from('painel_docs').select('painel,dados').eq('colecao', 'controle').eq('doc_id', 'info'));
+    if (r0.error) throw r0.error;
+    var indice = await paginas(function () { return deTodos(sb.from('painel_docs').select('painel,colecao,doc_id,versao').in('colecao', fontes)).order('painel').order('colecao').order('doc_id'); });
+    var vivos = {}, falta = {}, total = {};
+    indice.forEach(function (x) {
+      var g = GFONTE[x.colecao]; if (!g || !painelReal(x.painel)) return;
+      var id = x.painel + '__' + x.doc_id;
+      (vivos[g] || (vivos[g] = {}))[id] = 1; total[g] = (total[g] || 0) + 1;
+      var a = m[g] && m[g][id];
+      if (!a || a.v !== x.versao) (falta[g] || (falta[g] = [])).push(x.doc_id);
+    });
+    Object.keys(GMAPA).forEach(function (g) {
+      var c = m[g] || (m[g] = {});
+      Object.keys(c).forEach(function (id) { if (!(vivos[g] && vivos[g][id])) { delete c[id]; mudou[g] = 1; } });
+    });
+    await Promise.all(Object.keys(falta).map(async function (g) {
+      var col = GMAPA[g], ids = falta[g].filter(function (v, i, a) { return a.indexOf(v) === i; }), linhas;
+      var base = function () { return deTodos(sb.from('painel_docs').select('painel,doc_id,dados,versao').eq('colecao', col)); };
+      if (falta[g].length > 60 || falta[g].length * 2 > total[g]) linhas = await paginas(function () { return base().order('painel').order('doc_id'); });
+      else linhas = await paginas(function () { return base().in('doc_id', ids).order('painel').order('doc_id'); });
+      var c = m[g];
+      linhas.forEach(function (l) {
+        if (!painelReal(l.painel)) return;
+        var id = l.painel + '__' + l.doc_id, a = c[id];
+        if (!a || a.v < l.versao) { c[id] = { v: l.versao, d: comDono(l.dados, l.painel, l.doc_id) }; mudou[g] = 1; }
+      });
+    }));
+    var lp = listaPaineis(r0.data || []), cp = m.g_paineis || (m.g_paineis = {});
+    Object.keys(cp).forEach(function (p) { if (!lp[p]) delete cp[p]; });
+    Object.keys(lp).forEach(function (p) { cp[p] = { v: (cp[p] ? cp[p].v : 0) + 1, d: lp[p] }; });
+    mudou.g_paineis = 1;
+    pronto[GEST] = true;
+    Object.keys(GMAPA).concat(['g_paineis']).forEach(function (g) { chegou[GEST + '/' + g] = true; });
+    (primeira ? Object.keys(GMAPA).concat(['g_paineis']) : Object.keys(mudou)).forEach(function (g) { avisar(GEST, g); });
+    if (gPerdeu) { gPerdeu = false; setTimeout(function () { sincronizar(GEST).catch(function () { }); }, 0); } // mudança que chegou durante a 1ª leitura
+  }
+  // Mudança que chega na hora (tempo real) ou gravação feita nesta tela: entra na visão do gestor sem esperar a releitura.
+  function espelharGestor(painel, colecao, doc, versao, dados) {
+    var g = GFONTE[colecao];
+    if (!ctx.gestor || !g || !painelReal(painel)) return;
+    if (!pronto[GEST]) { gPerdeu = true; return; }
+    var c = gaveta(GEST, g), id = painel + '__' + doc, a = c[id];
+    if (a && a.v >= versao) return;
+    c[id] = { v: versao, d: comDono(dados, painel, doc) };
+    var p = (mem[GEST].g_paineis || {})[painel];
+    if (p) { p.d = Object.assign({}, p.d, { foto_em: agoraLocal() }); p.v++; avisar(GEST, 'g_paineis'); }
+    avisar(GEST, g);
+  }
+  function mudancaGestor(p) {
+    var n = p && p.new;
+    if (!n || !n.colecao || !n.doc_id || typeof n.versao !== 'number' || !painelReal(n.painel)) return;
+    if (!n.dados || typeof n.dados !== 'object') { sincronizar(GEST).catch(function () { }); return; }
+    espelharGestor(n.painel, n.colecao, n.doc_id, n.versao, n.dados);
+  }
+  function apagamentoGestor(o) {
+    var g = GFONTE[o.colecao];
+    if (!ctx.gestor || !g || !painelReal(o.painel)) return;
+    var c = (mem[GEST] || {})[g], id = o.painel + '__' + o.doc_id;
+    if (!c || !c[id]) return;
+    delete c[id];
+    avisar(GEST, g);
+  }
+
+  function escopos() { return [ctx.painel, 'u:' + ctx.uid, COMUM].concat(ctx.gestor ? [GEST] : []); }
   function ressincronizar() { escopos().forEach(function (e) { sincronizar(e).catch(function () { }); }); }
 
   // Primeira leitura: tenta de novo sozinha (3 s, 8 s, 20 s) antes de avisar que a conexão caiu.
@@ -202,8 +312,14 @@
     try {
       var canal = sb.channel('painel-' + ctx.painel);
       escopos().forEach(function (e) {
+        if (e === GEST) return;
         canal.on('postgres_changes', { event: '*', schema: 'public', table: 'painel_docs', filter: 'painel=eq.' + e }, function (p) { aplicarMudanca(e, p); });
       });
+      if (ctx.gestor) { // aba Gestor: o que muda nas coleções de origem de qualquer painel
+        var filtroG = 'colecao=in.(' + Object.keys(GFONTE).join(',') + ')';
+        canal.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'painel_docs', filter: filtroG }, mudancaGestor);
+        canal.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'painel_docs', filter: filtroG }, mudancaGestor);
+      }
       // Apagamento: o banco não filtra esse aviso por painel e só manda a chave (painel, coleção, documento).
       canal.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'painel_docs' }, aplicarApagamento);
       canal.subscribe(function (status) {
@@ -219,6 +335,7 @@
   function aplicarApagamento(p) {
     var o = p && p.old;
     if (!o || !o.painel || !o.colecao || !o.doc_id) { relerLogo(); return; } // sem a chave: a releitura pelo índice tira o que saiu
+    apagamentoGestor(o);
     if (escopos().indexOf(o.painel) < 0) return; // apagamento em painel que não é o desta tela
     var c = (mem[o.painel] || {})[o.colecao], a = c && c[o.doc_id];
     if (!a || a.p) return;
@@ -303,7 +420,7 @@
     o.disparado = true;
     try {
       var c = (mem[o.escopo] || {})[o.colecao] || {};
-      if (o.doc != null) o.cb(fotoDoc(o.doc, c[o.doc]));
+      if (o.doc != null) o.cb(fotoDoc(o.doc, registro(o.escopo, o.colecao, o.doc)));
       else {
         var docs = Object.keys(c).sort().map(function (id) { return fotoDoc(id, c[id]); });
         o.cb({ docs: docs, size: docs.length, empty: !docs.length, forEach: function (f) { docs.forEach(f); } });
@@ -320,6 +437,7 @@
 
   /* ---------- Gravação: aparece na tela na hora e volta atrás se o banco recusar ---------- */
   async function gravarDoc(escopo, colecao, doc, dados, mesclar) {
+    if (escopo === GEST) throw erro('A visão do gestor é só leitura. Abra o painel do corretor para alterar.', 'invalid_argument');
     if (!dados || typeof dados !== 'object' || Array.isArray(dados)) throw erro('Dados inválidos.');
     var limpo = JSON.parse(JSON.stringify(dados));
     var c = gaveta(escopo, colecao), antes = c[doc];
@@ -335,13 +453,14 @@
       throw erroDoBanco(r.error);
     }
     if (c[doc]) { c[doc].v = typeof r.data === 'number' ? r.data : c[doc].v + 1; delete c[doc].p; }
+    if (c[doc]) espelharGestor(escopo, colecao, String(doc), c[doc].v, c[doc].d);
   }
 
   function refDoc(alvo) {
     return {
       id: alvo.doc,
       onSnapshot: function (cb, err) { return assinar(alvo.escopo, alvo.colecao, alvo.doc, cb, err); },
-      get: async function () { await sincronizar(alvo.escopo).catch(function () { }); return fotoDoc(alvo.doc, ((mem[alvo.escopo] || {})[alvo.colecao] || {})[alvo.doc]); },
+      get: async function () { await sincronizar(alvo.escopo).catch(function () { }); return fotoDoc(alvo.doc, registro(alvo.escopo, alvo.colecao, alvo.doc)); },
       set: function (dados) { return gravarDoc(alvo.escopo, alvo.colecao, alvo.doc, dados, false); },
       update: function (dados) { return gravarDoc(alvo.escopo, alvo.colecao, alvo.doc, dados, true); }
     };
@@ -366,5 +485,5 @@
   window.claude = {
     use: async function (nome) { await entrou; return Object.prototype.hasOwnProperty.call(partes, nome) ? partes[nome] : null; }
   };
-  window.VIVERE_PONTE = { versao: VERSAO, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { painel: ctx.painel, ver: ctx.ver, tempoReal: ctx.tempoReal, pronto: Object.keys(pronto) }; } };
+  window.VIVERE_PONTE = { versao: VERSAO, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, pronto: Object.keys(pronto) }; } };
 })();
