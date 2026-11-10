@@ -221,8 +221,10 @@
     try {
       var d0 = new Date(); d0.setDate(d0.getDate() - 6);
       var desde = new Date(d0.getTime() - d0.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
-      var ra = await sb.from('acessos').select('user_id,painel');
-      var ru = await sb.from('app_uso').select('user_id,dia,ultima').gte('dia', desde);
+      var limite = new Promise(function (ok) { setTimeout(function () { ok(null); }, 5000); }); // demora: segue sem a coluna
+      var rs = await Promise.race([Promise.all([sb.from('acessos').select('user_id,painel').eq('ativo', true), sb.from('app_uso').select('user_id,dia,ultima').gte('dia', desde)]), limite]);
+      if (!rs) return null;
+      var ra = rs[0], ru = rs[1];
       if (ra.error || ru.error) return null;
       var dono = {}, uso = {};
       (ra.data || []).forEach(function (a) { if (a.user_id && a.painel) dono[a.user_id] = a.painel; });
