@@ -1485,7 +1485,7 @@ const TF = (() => {
   const PRI = [['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa']];
   const PRI_I = { alta: 0, media: 1, baixa: 2 };
   const ORIG = { corretor: 'Você', vivian: 'Vivian', diretoria: 'Diretoria' };
-  const FILTROS = [['abertas', 'A fazer'], ['hoje', 'Hoje'], ['atrasadas', 'Atrasadas'], ['semana', 'Próximos 7 dias'], ['sem_data', 'Sem data'], ['feitas', 'Feitas'], ['todas', 'Todas']];
+  const FILTROS = [['abertas', 'A fazer'], ['recados', 'Recados'], ['hoje', 'Hoje'], ['atrasadas', 'Atrasadas'], ['semana', 'Próximos 7 dias'], ['sem_data', 'Sem data'], ['feitas', 'Feitas'], ['todas', 'Todas']];
   const hm = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   const emDias = (n) => { const d = new Date(Date.now() + n * 864e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const novoId = () => 't-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -1496,16 +1496,17 @@ const TF = (() => {
   const quando = (t) => (t.data ? t.data + 'T' + (t.hora || '99:99') : null);
   const rotQuando = (t) => { if (!t.data) return 'Sem data'; const h = hojeISO(); const dia = t.data === h ? 'Hoje' : t.data === emDias(1) ? 'Amanhã' : t.data === emDias(-1) ? 'Ontem' : dt(t.data); return dia + (t.hora ? ' · ' + t.hora : ''); };
   const pillPri = (t) => `<span class="pill ${t.prioridade === 'alta' ? 'alta' : t.prioridade === 'media' ? 'media' : ''}">${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}</span>`;
-  const pillTipo = (t) => (t.tipo === 'lembrete' ? '<span class="pill tf-lemb">🔔 Lembrete</span>' : '');
-  const pillSit = (t) => (feita(t) ? '<span class="pill ok">Feita</span>' : atrasada(t) ? '<span class="pill alta">Atrasada</span>' : deHoje(t) ? '<span class="pill media">Hoje</span>' : '');
+  const pillTipo = (t) => (t.tipo === 'lembrete' ? '<span class="pill tf-lemb">🔔 Lembrete</span>' : t.tipo === 'recado' ? '<span class="pill tf-rec">📌 Recado</span>' : ''); /* trocas-f5m: recados */
+  const pillSit = (t) => (feita(t) ? `<span class="pill ok">${t.tipo === 'recado' ? 'Lido' : 'Feita'}</span>` : atrasada(t) ? '<span class="pill alta">Atrasada</span>' : deHoje(t) ? '<span class="pill media">Hoje</span>' : '');
   const rotOrig = (t) => { if (S.gestor && (t.origem || 'corretor') === 'corretor') return esc(t._dono ? gCurto(t._dono) : 'Corretor'); const o = ORIG[t.origem] || ORIG.corretor; return t.origem === 'diretoria' && t.por ? `${o} · ${esc(t.por)}` : esc(o); };
-  const ba = (t) => ({ txt: [t.titulo, t.obs, ORIG[t.origem], t.por, t.tipo === 'lembrete' ? 'lembrete' : 'tarefa'].filter(Boolean).join(' · ') });
+  const ba = (t) => ({ txt: [t.titulo, t.obs, ORIG[t.origem], t.por, t.tipo === 'lembrete' ? 'lembrete' : t.tipo === 'recado' ? 'recado' : 'tarefa'].filter(Boolean).join(' · ') });
   const filtra = (L, f) => {
     const h = hojeISO(), sem = emDias(7);
     if (f === 'hoje') return L.filter((t) => deHoje(t));
     if (f === 'atrasadas') return L.filter(atrasada);
     if (f === 'semana') return L.filter((t) => !feita(t) && t.data && t.data >= h && t.data <= sem);
     if (f === 'sem_data') return L.filter((t) => !feita(t) && !t.data);
+    if (f === 'recados') return L.filter((t) => t.tipo === 'recado' && !feita(t));
     if (f === 'feitas') return L.filter(feita);
     if (f === 'todas') return L;
     return L.filter((t) => !feita(t));
@@ -1556,7 +1557,7 @@ const TF = (() => {
 
   // ---------- Gavetas ----------
   const campos = (t) => `
-      <label class="c">Tipo<select id="tfTipo"><option value="tarefa"${t.tipo !== 'lembrete' ? ' selected' : ''}>Tarefa</option><option value="lembrete"${t.tipo === 'lembrete' ? ' selected' : ''}>Lembrete</option></select></label>
+      <label class="c">Tipo<select id="tfTipo"><option value="tarefa"${t.tipo !== 'lembrete' ? ' selected' : ''}>Tarefa</option><option value="lembrete"${t.tipo === 'lembrete' ? ' selected' : ''}>Lembrete</option><option value="recado"${t.tipo === 'recado' ? ' selected' : ''}>Recado</option></select></label>
       <label class="c">Prioridade<select id="tfPri">${PRI.map(([k, l]) => `<option value="${k}"${(t.prioridade || 'media') === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="c inteiro">O que fazer<input id="tfTit" required maxlength="160" value="${esc(t.titulo || '')}" placeholder="Ex.: levar as chaves do AP336 ao chaveiro"></label>
       <label class="c">Data (opcional)<input id="tfData" type="date" value="${esc(t.data || '')}"></label>
@@ -1567,7 +1568,7 @@ const TF = (() => {
     if (!t) return '';
     const info = novo ? '' : `<p class="mut peq" style="margin:4px 0 0">${rotOrig(t)} · criada em ${dt(t.criado_em)}${feita(t) && t.feita_em ? ' · feita em ' + dt(t.feita_em) : ''}</p>`;
     return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Tarefa">
-    <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Anotar' : t.tipo === 'lembrete' ? 'Lembrete' : 'Tarefa'}</p><h3>${novo ? 'Nova tarefa' : esc(t.titulo)}</h3>${novo ? '' : pillSit(t)}${info}</div><button class="b" type="button" data-fechar>Fechar</button></div>
+    <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Anotar' : t.tipo === 'lembrete' ? 'Lembrete' : t.tipo === 'recado' ? 'Recado' : 'Tarefa'}</p><h3>${novo ? 'Nova tarefa' : esc(t.titulo)}</h3>${novo ? '' : pillSit(t)}${info}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${soLer() ? `<div class="painel"><p style="margin:0">${esc(t.obs || 'Sem observação.')}</p><p class="mut peq" style="margin:8px 0 0">${esc(rotQuando(t))} · prioridade ${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}. Só leitura no painel do gestor.</p></div>` : `
     <form id="fTarefa" class="form" data-id="${esc(id || '')}">${campos(t)}
       <div class="inteiro linha"><button class="b p" type="submit">${novo ? 'Anotar' : 'Salvar'}</button>${novo ? '' : `<button class="b" type="button" data-tf-ok="${esc(id)}">${feita(t) ? 'Reabrir' : '✓ Marcar como feita'}</button><button class="b" type="button" data-tf-exc="${esc(id)}">Excluir</button>`}<span class="erro" id="eTarefa"></span></div>
@@ -1594,7 +1595,7 @@ const TF = (() => {
   // ---------- Escritas ----------
   const ler = () => {
     const v = (i) => (document.getElementById(i) || {}).value || '';
-    return { tipo: v('tfTipo') === 'lembrete' ? 'lembrete' : 'tarefa', prioridade: PRI_I[v('tfPri')] != null ? v('tfPri') : 'media', titulo: v('tfTit').trim().slice(0, 160), obs: v('tfObs').trim().slice(0, 800), data: /^\d{4}-\d{2}-\d{2}$/.test(v('tfData')) ? v('tfData') : '', hora: /^\d{2}:\d{2}$/.test(v('tfHora')) ? v('tfHora') : '' };
+    return { tipo: v('tfTipo') === 'lembrete' ? 'lembrete' : v('tfTipo') === 'recado' ? 'recado' : 'tarefa', prioridade: PRI_I[v('tfPri')] != null ? v('tfPri') : 'media', titulo: v('tfTit').trim().slice(0, 160), obs: v('tfObs').trim().slice(0, 800), data: /^\d{4}-\d{2}-\d{2}$/.test(v('tfData')) ? v('tfData') : '', hora: /^\d{2}:\d{2}$/.test(v('tfHora')) ? v('tfHora') : '' };
   };
   async function salvar(form) {
     const id = form.dataset.id, x = ler();
