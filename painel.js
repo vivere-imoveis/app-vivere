@@ -3243,7 +3243,7 @@ const MAT_TIPOS = [['tabela_precos', 'Tabela de vendas', '💲'], ['plantas', 'P
 const pillEmp = (s) => `<span class="pill emp-${esc(s)}">${esc(SIT[s] || s)}</span>`;
 const entOrd = (s) => { const m = String(s || '').match(/(\d{2})\/(\d{4})/); if (m) return +m[2] * 100 + +m[1]; const y = String(s || '').match(/\b(20\d{2})\b/); return y ? +y[1] * 100 + 12 : null; };
 const faixa = (a, b) => a == null ? '—' : a === b ? curtoBRL(a) : `${curtoBRL(a)} a ${curtoBRL(b)}`;
-const urlMat = (m) => m.url || '/_blob/' + m.a;
+const urlMat = (m) => /^https?:\/\//.test(m.url || '') ? m.url : ((window.VIVERE_PONTE && window.VIVERE_PONTE.arquivo(m.a)) || 'data:,'); /* trocas-f5: material no Storage do app, por link assinado */
 const semTabela = (e) => (e.sit === 'lancamento' || e.sit === 'obras') && !e._tab;
 let EMC = { d: null, v: null, r: null };
 function empCtx() {

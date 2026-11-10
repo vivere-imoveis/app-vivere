@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-09.1';
+  var VERSAO = 'ponte 2026-11-09.3';
   var TESTE_SO_GESTOR = true; // fatia 4b: o painel no app é cópia de teste; enquanto for, só o gestor abre
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
@@ -173,6 +173,7 @@
       if (primeira) avisar(escopo, col); else mudou[col] = 1;
     }));
     pronto[escopo] = true; ctx.ultima = Date.now();
+    if (escopo === COMUM) assinarMaterial();
     if (primeira) ouvintes.forEach(function (o) { if (o.escopo === escopo && !o.disparado) disparar(o); });
     else Object.keys(mudou).forEach(function (col) { avisar(escopo, col); });
   }
@@ -190,7 +191,8 @@
   function iniciarDados() {
     escopos().forEach(function (e) { primeiraLeitura(e, 0); });
     ligarTempoReal();
-    document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - ctx.ultima > 45000) ressincronizar(); });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - ctx.ultima > 45000) ressincronizar(); if (!document.hidden) renovarMaterial(); });
+    setInterval(function () { if (!document.hidden) renovarMaterial(); }, 600000);
     window.addEventListener('online', ressincronizar);
     setInterval(function () { if (!ctx.tempoReal && !document.hidden) ressincronizar(); }, 120000);
   }
@@ -202,6 +204,8 @@
       escopos().forEach(function (e) {
         canal.on('postgres_changes', { event: '*', schema: 'public', table: 'painel_docs', filter: 'painel=eq.' + e }, function (p) { aplicarMudanca(e, p); });
       });
+      // Apagamento: o banco não filtra esse aviso por painel e só manda a chave (painel, coleção, documento).
+      canal.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'painel_docs' }, aplicarApagamento);
       canal.subscribe(function (status) {
         var ok = status === 'SUBSCRIBED';
         if (ok && ctx.caiu) { ctx.caiu = false; ressincronizar(); }
@@ -210,7 +214,20 @@
       });
     } catch (e) { ctx.tempoReal = false; }
   }
+  var relerEm = null;
+  function relerLogo() { if (relerEm) return; relerEm = setTimeout(function () { relerEm = null; ressincronizar(); }, 2000); }
+  function aplicarApagamento(p) {
+    var o = p && p.old;
+    if (!o || !o.painel || !o.colecao || !o.doc_id) { relerLogo(); return; } // sem a chave: a releitura pelo índice tira o que saiu
+    if (escopos().indexOf(o.painel) < 0) return; // apagamento em painel que não é o desta tela
+    var c = (mem[o.painel] || {})[o.colecao], a = c && c[o.doc_id];
+    if (!a || a.p) return;
+    delete c[o.doc_id];
+    if (o.painel === COMUM) gravarCache(o.colecao, null, [o.doc_id]);
+    avisar(o.painel, o.colecao);
+  }
   function aplicarMudanca(escopo, p) {
+    if (p && p.eventType === 'DELETE') { aplicarApagamento(p); return; }
     var n = p && p.new;
     if (!n || !n.colecao || !n.doc_id || typeof n.versao !== 'number') return;
     var c = gaveta(escopo, n.colecao), a = c[n.doc_id];
@@ -219,7 +236,54 @@
     c[n.doc_id] = { v: n.versao, d: n.dados };
     if (escopo === COMUM) gravarCache(n.colecao, [n]);
     avisar(escopo, n.colecao);
+    if (escopo === COMUM && n.colecao === 'empreendimentos') assinarMaterial();
   }
+
+  /* ---------- Material dos empreendimentos (tabela, plantas, book, imagens): os arquivos ficam no Storage, em bucket
+     privado, e abrem por link assinado, criado só para quem está logado e com acesso ativo. O link vale 6 horas e é
+     renovado sozinho depois de 5. ---------- */
+  var MAT_BALDE = 'material', MAT_PASTA = 'emp/', MAT_VALE = 6 * 3600, MAT_RENOVA = 5 * 3600 * 1000;
+  var mat = { url: {}, falhou: {}, em: 0, pedindo: null, tent: 0 };
+  function idsMaterial() {
+    var ids = {}, docs = (mem[COMUM] || {}).empreendimentos || {};
+    Object.keys(docs).forEach(function (k) {
+      var itens = docs[k] && docs[k].d && docs[k].d.itens;
+      if (!Array.isArray(itens)) return;
+      itens.forEach(function (e) {
+        (e && Array.isArray(e.material) ? e.material : []).forEach(function (m) { if (m && /^[0-9a-f]{32}$/.test(String(m.a || ''))) ids[m.a] = 1; });
+      });
+    });
+    return Object.keys(ids);
+  }
+  function assinarMaterial() {
+    if (mat.pedindo) return mat.pedindo;
+    var velho = !!mat.em && Date.now() - mat.em > MAT_RENOVA;
+    var ids = idsMaterial().filter(function (a) { return velho || (!mat.url[a] && !mat.falhou[a]); });
+    if (!ids.length) return Promise.resolve();
+    mat.pedindo = (async function () {
+      var novo = {}, falhou = {}, i, r;
+      for (i = 0; i < ids.length; i += 200) {
+        r = await sb.storage.from(MAT_BALDE).createSignedUrls(ids.slice(i, i + 200).map(function (a) { return MAT_PASTA + a; }), MAT_VALE);
+        if (r.error) throw r.error;
+        (r.data || []).forEach(function (x) {
+          var a = x && x.path ? String(x.path).slice(MAT_PASTA.length) : '';
+          if (!a) return;
+          if (x.signedUrl && !x.error) novo[a] = x.signedUrl; else falhou[a] = 1;
+        });
+      }
+      if (velho) { mat.url = {}; mat.falhou = {}; }
+      Object.keys(novo).forEach(function (a) { mat.url[a] = novo[a]; });
+      Object.keys(falhou).forEach(function (a) { mat.falhou[a] = 1; });
+      if (velho || !mat.em) mat.em = Date.now();
+      if (Object.keys(novo).length) avisar(COMUM, 'empreendimentos');
+    })().then(function () { mat.pedindo = null; mat.tent = 0; }, function () {
+      mat.pedindo = null; // falhou antes de haver link nenhum: tenta de novo em 1 minuto, até 3 vezes
+      if (!mat.em && mat.tent < 3) { mat.tent++; setTimeout(assinarMaterial, 60000); }
+    });
+    return mat.pedindo;
+  }
+  function renovarMaterial() { if (mat.em && Date.now() - mat.em > MAT_RENOVA) assinarMaterial(); }
+  function arquivoMaterial(a) { return mat.url[String(a || '')] || ''; }
 
   /* ---------- Avisos ao painel (o "onSnapshot" do banco dos artefatos) ---------- */
   function fotoDoc(id, reg) { return { id: id, exists: !!reg, data: function () { return reg ? clonar(reg.d) : undefined; } }; }
@@ -290,5 +354,5 @@
   window.claude = {
     use: async function (nome) { await entrou; return Object.prototype.hasOwnProperty.call(partes, nome) ? partes[nome] : null; }
   };
-  window.VIVERE_PONTE = { versao: VERSAO, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { painel: ctx.painel, ver: ctx.ver, tempoReal: ctx.tempoReal, pronto: Object.keys(pronto) }; } };
+  window.VIVERE_PONTE = { versao: VERSAO, arquivo: arquivoMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { painel: ctx.painel, ver: ctx.ver, tempoReal: ctx.tempoReal, pronto: Object.keys(pronto) }; } };
 })();
