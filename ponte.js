@@ -171,6 +171,7 @@
   async function sincronizarAgora(escopo) {
     var primeira = !pronto[escopo];
     if (primeira && escopo === COMUM) await lerCache();
+    var inicio = Date.now(); // o que chegar pelo tempo real ou for gravado nesta tela depois daqui não está neste índice
     var indice = await paginas(function () { return sb.from('painel_docs').select('colecao,doc_id,versao').eq('painel', escopo).order('colecao').order('doc_id'); });
     var m = mem[escopo] || (mem[escopo] = {}), vivos = {}, falta = {}, mudou = {};
     indice.forEach(function (x) {
@@ -180,7 +181,7 @@
     });
     if (primeira) Object.keys(vivos).forEach(function (col) { if (!falta[col]) { chegou[escopo + '/' + col] = true; avisar(escopo, col); } });
     Object.keys(m).forEach(function (col) {
-      var saiu = Object.keys(m[col]).filter(function (id) { return !(vivos[col] && vivos[col][id]) && !m[col][id].p; });
+      var saiu = Object.keys(m[col]).filter(function (id) { return !(vivos[col] && vivos[col][id]) && !m[col][id].p && !(m[col][id].t >= inicio); });
       if (!saiu.length) return;
       saiu.forEach(function (id) { delete m[col][id]; });
       mudou[col] = 1;
@@ -315,7 +316,7 @@
   function escopos() { return [ctx.painel, 'u:' + ctx.uid, COMUM].concat(ctx.gestor ? [GEST] : []); }
   // Releitura do índice de tudo o que a tela usa. Com o tempo real ligado ela roda a cada VARRE (4 min), só para tirar
   // da tela o que uma rotina apagou; sem ele, a cada 2 min.
-  var VARRE = 230000; // um pouco menos de 4 min, para a 2ª batida do relógio de 2 min já contar
+  var VARRE = 240000;
   function ressincronizar() { ctx.varreu = Date.now(); escopos().forEach(function (e) { sincronizar(e).catch(function () { }); }); }
 
   // Primeira leitura: tenta de novo sozinha (3 s, 8 s, 20 s) antes de avisar que a conexão caiu.
@@ -335,9 +336,11 @@
     ctx.varreu = Date.now();
     setInterval(function () {
       if (document.hidden) return;
-      if (!ctx.tempoReal || Date.now() - ctx.varreu >= VARRE) ressincronizar();
+      if (!ctx.tempoReal) ressincronizar();
       else if (ctx.gestor && !ctx.tempoRealG) sincronizar(GEST).catch(function () { });
     }, 120000);
+    // Com o tempo real ligado: conferido a cada 30 s, para a espera não passar de ~4 min e meio.
+    setInterval(function () { if (!document.hidden && ctx.tempoReal && Date.now() - ctx.varreu >= VARRE) ressincronizar(); }, 30000);
   }
 
   /* ---------- Tempo real: as mudanças chegam na hora; se a ligação cair, a releitura acima cobre ---------- */
@@ -373,6 +376,7 @@
   }
   var relerEm = null;
   function relerLogo() { if (relerEm) return; relerEm = setTimeout(function () { relerEm = null; ressincronizar(); }, 2000); }
+  // Sem uso desde a ponte 2026-11-10.4 (a publicação não manda mais DELETE); fica para o caso de o aviso voltar.
   function aplicarApagamento(p) {
     var o = p && p.old;
     if (!o || !o.painel || !o.colecao || !o.doc_id) { relerLogo(); return; } // sem a chave: a releitura pelo índice tira o que saiu
@@ -391,7 +395,7 @@
     var c = gaveta(escopo, n.colecao), a = c[n.doc_id];
     if (a && (a.p || a.v >= n.versao)) return;
     if (!n.dados || typeof n.dados !== 'object') { sincronizar(escopo).catch(function () { }); return; }
-    c[n.doc_id] = { v: n.versao, d: n.dados };
+    c[n.doc_id] = { v: n.versao, d: n.dados, t: Date.now() };
     if (escopo === COMUM) gravarCache(n.colecao, [n]);
     avisar(escopo, n.colecao);
     if (escopo === COMUM && n.colecao === 'empreendimentos') assinarMaterial();
@@ -493,7 +497,7 @@
       avisar(escopo, colecao);
       throw erroDoBanco(r.error);
     }
-    if (c[doc]) { c[doc].v = typeof r.data === 'number' ? r.data : c[doc].v + 1; delete c[doc].p; }
+    if (c[doc]) { c[doc].v = typeof r.data === 'number' ? r.data : c[doc].v + 1; delete c[doc].p; c[doc].t = Date.now(); }
     if (c[doc]) espelharGestor(escopo, colecao, String(doc), c[doc].v, c[doc].d);
   }
 
