@@ -2,9 +2,18 @@
    Carregado depois do painel.css do modelo, que continua igual. Três formatos: lista no computador (tela cheia),
    cartão médio no tablet e cartão do celular; cabeçalho e menu compactos no celular. */
 
-/* A CAPTAR: a entrada é a aba (com o nº de imóveis livres); o botão do cabeçalho saiu */
+/* A CAPTAR fora do menu de abas (fatia 5 O, 10/11/2026, pedido do Cleiton): ele abre outra página do app, então fica num
+   botão próprio no cabeçalho, separado das abas — ao lado do tema no computador e numa linha só dele no celular.
+   O painel.js (modelo) segue igual: a aba só fica escondida aqui; o botão #btnAcapApp vem do painel-app.js. */
+.abas button[data-aba="acaptar"]{display:none!important}
 #btnAcap,.topo-mini .tm-acap{display:none!important}
-.abas .n.n-acap{background:var(--ok-bg);color:var(--ok-selo)}
+#btnAcapApp{display:inline-flex;align-items:center;gap:6px;text-decoration:none;border:1.5px solid var(--brass);background:var(--soft);color:var(--ink)}
+#btnAcapApp:hover,#btnAcapApp:focus-visible{background:var(--panel)}
+#btnAcapApp .ba-t{font-weight:600;letter-spacing:.06em}
+#btnAcapApp .ba-n{font-size:12px;color:var(--muted);white-space:nowrap;padding-left:6px;border-left:1px solid var(--line)}
+#btnAcapApp .ba-n b{color:var(--ok-selo);font-weight:700}
+#btnAcapApp::after{content:"↗";font-size:12px;opacity:.7}
+@media (max-width:700px){.marca{flex-wrap:wrap!important;row-gap:8px}#btnAcapApp{order:5;flex:1 1 100%;justify-content:center;padding:8px 12px}}
 
 /* computador em tela cheia: a lista usa a largura da tela, sem margens largas vazias */
 @media (min-width:1280px){.wrap{max-width:min(1560px,94vw)}}

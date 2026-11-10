@@ -6,7 +6,7 @@
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj';
   var APP_URL = location.origin + location.pathname;
-  var VERSAO = 'app-vivere 2026-11-10.1';
+  var VERSAO = 'app-vivere 2026-11-10.2';
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -150,14 +150,13 @@
     };
   }
 
-  /* Painel do corretor no app: em teste até o corte de cada painel. Antes do corte só o gestor abre; depois, o dono também (meu_painel_oficial). */
-  var PAINEL_TESTE = 'hugo';
+  /* Painel do corretor no app: o gestor abre sempre (o dele e, pelo Ver como, o de cada um); quem não é gestor abre o próprio
+     depois que o painel dele for marcado como oficial (meu_painel_oficial, no corte de cada painel). */
   function cartaoPainel() {
     if (estado.eu.papel !== 'gestor' && estado.oficial) return '<div class="cartao"><h3>Meu painel</h3><p>Seus leads, imóveis, ofertas e tarefas.</p><div class="linha-acoes"><a class="btn pri" href="painel.html">Abrir o meu painel</a></div></div>';
     if (estado.eu.papel !== 'gestor') return '<div class="cartao"><h3>Meu painel</h3><p>O seu painel do corretor vai abrir aqui, com o mesmo login.</p><span class="pill warn">Em construção</span></div>';
-    return '<div class="cartao"><h3>Meu painel</h3><p>Painel do corretor no app, em teste. Os dados são uma cópia: o artefato continua oficial.</p><div class="linha-acoes">' +
-      (estado.eu.painel ? '<a class="btn" href="painel.html">Abrir o meu</a>' : '') +
-      '<a class="btn pri" href="painel.html?ver=' + encodeURIComponent(PAINEL_TESTE) + '">Ver o painel de teste (' + esc(PAINEL_TESTE) + ')</a></div><span class="pill warn">Em teste</span></div>';
+    return '<div class="cartao"><h3>Meu painel</h3><p>O seu painel e, pelo Ver como, o de cada corretor.</p><div class="linha-acoes">' +
+      '<a class="btn pri" href="painel.html">Abrir o painel</a></div></div>';
   }
 
   function telaInicio(main) {
