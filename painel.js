@@ -3244,6 +3244,7 @@ const pillEmp = (s) => `<span class="pill emp-${esc(s)}">${esc(SIT[s] || s)}</sp
 const entOrd = (s) => { const m = String(s || '').match(/(\d{2})\/(\d{4})/); if (m) return +m[2] * 100 + +m[1]; const y = String(s || '').match(/\b(20\d{2})\b/); return y ? +y[1] * 100 + 12 : null; };
 const faixa = (a, b) => a == null ? '—' : a === b ? curtoBRL(a) : `${curtoBRL(a)} a ${curtoBRL(b)}`;
 const urlMat = (m) => /^https?:\/\//.test(m.url || '') ? m.url : ((window.VIVERE_PONTE && window.VIVERE_PONTE.arquivo(m.a)) || 'data:,'); /* trocas-f5: material no Storage do app, por link assinado */
+const urlMin = (m) => (!/^https?:\/\//.test(m.url || '') && window.VIVERE_PONTE && window.VIVERE_PONTE.miniatura && window.VIVERE_PONTE.miniatura(m.a)) || urlMat(m); /* trocas-f5: miniatura na grade, arquivo cheio no clique */
 const semTabela = (e) => (e.sit === 'lancamento' || e.sit === 'obras') && !e._tab;
 let EMC = { d: null, v: null, r: null };
 function empCtx() {
@@ -3371,7 +3372,7 @@ function htmlMaterial(e) {
       const gi = its.filter((m) => (m.grupo || '') === g), imgs = gi.filter((m) => /^image\//.test(m.ct || '')), vids = gi.filter((m) => /^video\//.test(m.ct || '')), docs = gi.filter((m) => !imgs.includes(m) && !vids.includes(m));
       return `${g ? `<p class="mut peq" style="margin:6px 0 4px">${esc(g)}</p>` : ''}
         ${docs.length ? `<div class="linha">${docs.map((m) => `<a class="b" href="${esc(urlMat(m))}" target="_blank" rel="noopener">📄 ${esc(m.titulo)}</a>`).join('')}</div>` : ''}
-        ${imgs.length ? `<div class="fotos mat-fotos">${imgs.map((m, k) => `<a href="${esc(urlMat(m))}" target="_blank" rel="noopener" title="${esc(m.titulo)}"><figure><img src="${esc(urlMat(m))}" alt="${esc(l + ' ' + (k + 1) + ' de ' + e.nome)}" loading="lazy"></figure></a>`).join('')}</div>` : ''}
+        ${imgs.length ? `<div class="fotos mat-fotos">${imgs.map((m, k) => `<a href="${esc(urlMat(m))}" target="_blank" rel="noopener" title="${esc(m.titulo)}"><figure><img src="${esc(urlMin(m))}" alt="${esc(l + ' ' + (k + 1) + ' de ' + e.nome)}" loading="lazy"></figure></a>`).join('')}</div>` : ''}
         ${vids.map((m) => `<video class="mat-video" controls preload="none" src="${esc(urlMat(m))}" title="${esc(m.titulo)}"></video>`).join('')}`;
     }).join('')}</div>`;
   }).join('') + '<p class="status">Toque para abrir em tela cheia. Para enviar ao cliente, baixe pelo próprio arquivo aberto.</p>';

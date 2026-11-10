@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-09.3';
+  var VERSAO = 'ponte 2026-11-09.4';
   var TESTE_SO_GESTOR = true; // fatia 4b: o painel no app é cópia de teste; enquanto for, só o gestor abre
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
@@ -241,16 +241,19 @@
 
   /* ---------- Material dos empreendimentos (tabela, plantas, book, imagens): os arquivos ficam no Storage, em bucket
      privado, e abrem por link assinado, criado só para quem está logado e com acesso ativo. O link vale 6 horas e é
-     renovado sozinho depois de 5. ---------- */
-  var MAT_BALDE = 'material', MAT_PASTA = 'emp/', MAT_VALE = 6 * 3600, MAT_RENOVA = 5 * 3600 * 1000;
-  var mat = { url: {}, falhou: {}, em: 0, pedindo: null, tent: 0 };
-  function idsMaterial() {
+     renovado sozinho depois de 5. As imagens têm miniatura (pasta min/, mesmo id): a grade mostra a miniatura e o
+     clique abre o arquivo cheio; imagem sem miniatura aparece pelo arquivo cheio. ---------- */
+  var MAT_BALDE = 'material', MAT_PASTA = 'emp/', MIN_PASTA = 'min/', MAT_VALE = 6 * 3600, MAT_RENOVA = 5 * 3600 * 1000;
+  var mat = { url: {}, falhou: {}, min: {}, semMin: {}, em: 0, pedindo: null, tent: 0 };
+  function idsMaterial(soImagens) {
     var ids = {}, docs = (mem[COMUM] || {}).empreendimentos || {};
     Object.keys(docs).forEach(function (k) {
       var itens = docs[k] && docs[k].d && docs[k].d.itens;
       if (!Array.isArray(itens)) return;
       itens.forEach(function (e) {
-        (e && Array.isArray(e.material) ? e.material : []).forEach(function (m) { if (m && /^[0-9a-f]{32}$/.test(String(m.a || ''))) ids[m.a] = 1; });
+        (e && Array.isArray(e.material) ? e.material : []).forEach(function (m) {
+          if (m && /^[0-9a-f]{32}$/.test(String(m.a || '')) && (!soImagens || /^image\//.test(String(m.ct || '')))) ids[m.a] = 1;
+        });
       });
     });
     return Object.keys(ids);
@@ -258,24 +261,32 @@
   function assinarMaterial() {
     if (mat.pedindo) return mat.pedindo;
     var velho = !!mat.em && Date.now() - mat.em > MAT_RENOVA;
-    var ids = idsMaterial().filter(function (a) { return velho || (!mat.url[a] && !mat.falhou[a]); });
-    if (!ids.length) return Promise.resolve();
+    var caminhos = idsMaterial().filter(function (a) { return velho || (!mat.url[a] && !mat.falhou[a]); }).map(function (a) { return MAT_PASTA + a; })
+      .concat(idsMaterial(true).filter(function (a) { return velho || (!mat.min[a] && !mat.semMin[a]); }).map(function (a) { return MIN_PASTA + a; }));
+    if (!caminhos.length) return Promise.resolve();
     mat.pedindo = (async function () {
-      var novo = {}, falhou = {}, i, r;
-      for (i = 0; i < ids.length; i += 200) {
-        r = await sb.storage.from(MAT_BALDE).createSignedUrls(ids.slice(i, i + 200).map(function (a) { return MAT_PASTA + a; }), MAT_VALE);
+      var novo = {}, falhou = {}, min = {}, semMin = {}, i, r;
+      for (i = 0; i < caminhos.length; i += 200) {
+        var bloco = caminhos.slice(i, i + 200);
+        r = await sb.storage.from(MAT_BALDE).createSignedUrls(bloco, MAT_VALE);
         if (r.error) throw r.error;
-        (r.data || []).forEach(function (x) {
-          var a = x && x.path ? String(x.path).slice(MAT_PASTA.length) : '';
+        (r.data || []).forEach(function (x, k) {
+          // sem o caminho na resposta (pode acontecer no item com erro), vale o que foi pedido naquela posição
+          var p = x && x.path ? String(x.path) : (x && bloco[k]) || '', ehMin = p.indexOf(MIN_PASTA) === 0;
+          if (!ehMin && p.indexOf(MAT_PASTA) !== 0) return;
+          var a = p.slice(ehMin ? MIN_PASTA.length : MAT_PASTA.length), ok = !!x.path && !!x.signedUrl && !x.error;
           if (!a) return;
-          if (x.signedUrl && !x.error) novo[a] = x.signedUrl; else falhou[a] = 1;
+          if (ehMin) { if (ok) min[a] = x.signedUrl; else semMin[a] = 1; }
+          else if (ok) novo[a] = x.signedUrl; else falhou[a] = 1;
         });
       }
-      if (velho) { mat.url = {}; mat.falhou = {}; }
+      if (velho) { mat.url = {}; mat.falhou = {}; mat.min = {}; mat.semMin = {}; }
       Object.keys(novo).forEach(function (a) { mat.url[a] = novo[a]; });
       Object.keys(falhou).forEach(function (a) { mat.falhou[a] = 1; });
+      Object.keys(min).forEach(function (a) { mat.min[a] = min[a]; });
+      Object.keys(semMin).forEach(function (a) { mat.semMin[a] = 1; });
       if (velho || !mat.em) mat.em = Date.now();
-      if (Object.keys(novo).length) avisar(COMUM, 'empreendimentos');
+      if (Object.keys(novo).length || Object.keys(min).length) avisar(COMUM, 'empreendimentos');
     })().then(function () { mat.pedindo = null; mat.tent = 0; }, function () {
       mat.pedindo = null; // falhou antes de haver link nenhum: tenta de novo em 1 minuto, até 3 vezes
       if (!mat.em && mat.tent < 3) { mat.tent++; setTimeout(assinarMaterial, 60000); }
@@ -284,6 +295,7 @@
   }
   function renovarMaterial() { if (mat.em && Date.now() - mat.em > MAT_RENOVA) assinarMaterial(); }
   function arquivoMaterial(a) { return mat.url[String(a || '')] || ''; }
+  function miniaturaMaterial(a) { return mat.min[String(a || '')] || ''; }
 
   /* ---------- Avisos ao painel (o "onSnapshot" do banco dos artefatos) ---------- */
   function fotoDoc(id, reg) { return { id: id, exists: !!reg, data: function () { return reg ? clonar(reg.d) : undefined; } }; }
@@ -354,5 +366,5 @@
   window.claude = {
     use: async function (nome) { await entrou; return Object.prototype.hasOwnProperty.call(partes, nome) ? partes[nome] : null; }
   };
-  window.VIVERE_PONTE = { versao: VERSAO, arquivo: arquivoMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { painel: ctx.painel, ver: ctx.ver, tempoReal: ctx.tempoReal, pronto: Object.keys(pronto) }; } };
+  window.VIVERE_PONTE = { versao: VERSAO, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { painel: ctx.painel, ver: ctx.ver, tempoReal: ctx.tempoReal, pronto: Object.keys(pronto) }; } };
 })();
