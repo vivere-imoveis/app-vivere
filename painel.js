@@ -1481,6 +1481,8 @@ function subOp() { const pai = SUBS_P[S.aba] ? S.aba : paiP(S.aba); if (!pai) re
 //   situacao:'a_fazer'|'feita', feita_em, excluida, origem:'corretor'|'vivian'|'diretoria', por, criado_em, atualizado_em, atualizado_por}
 // Gestor/diretoria: `g_tarefas` (foto do dia, Ver como) e `atribuicoes/<id>` {para:<slug>, ...campos, por, criado_em, entregue_em}.
 S.tarefas = {}; S.atrib = {}; S.tfFiltro = 'abertas';
+const autorTxt = (d, hora) => { const c = String((d && d._criado_por) || '').trim(), a = String((d && d._alterado_por) || '').trim(); if (!c && !a) return ''; const h = hora && a && d._alterado_em ? ' em ' + dt(d._alterado_em) : ''; return c && a ? (c === a ? `Criado e alterado por ${c}${h}` : `Criado por ${c} · alterado por ${a}${h}`) : c ? `Criado por ${c}` : `Alterado por ${a}${h}`; }; /* trocas-autor: quem criou e quem alterou (painel dividido) */
+const autorLin = (d, cls, hora) => { const t = autorTxt(d, hora); return t ? `<div class="${cls || 'mut peq'} autor-etq">${esc(t)}</div>` : ''; };
 const TF = (() => {
   const PRI = [['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa']];
   const PRI_I = { alta: 0, media: 1, baixa: 2 };
@@ -1522,7 +1524,7 @@ const TF = (() => {
     const L = fb.lista; qInfo(fb, 'tarefas');
     const cols = [
       { k: '_ok', l: 'Feita', ord: false, h: btOk },
-      { k: 'titulo', l: 'Tarefa', h: (t) => `<b class="tf-tit${feita(t) ? ' tf-feita' : ''}">${esc(t.titulo)}</b> ${pillTipo(t)}${hitBA(t)}${t.obs ? `<div class="mut peq tf-obs">${esc(t.obs)}</div>` : ''}` },
+      { k: 'titulo', l: 'Tarefa', h: (t) => `<b class="tf-tit${feita(t) ? ' tf-feita' : ''}">${esc(t.titulo)}</b> ${pillTipo(t)}${hitBA(t)}${t.obs ? `<div class="mut peq tf-obs">${esc(t.obs)}</div>` : ''}${autorLin(t)}` },
       { k: '_quando', l: 'Quando', v: quando, h: (t) => `${esc(rotQuando(t))} ${pillSit(t)}` },
       { k: 'prioridade', l: 'Prioridade', v: (t) => PRI_I[t.prioridade] ?? 1, h: pillPri },
       { k: 'origem', l: 'Origem', h: (t) => `<span class="peq">${rotOrig(t)}</span>` },
@@ -1530,7 +1532,7 @@ const TF = (() => {
     ];
     if (S.gestor && S.verComo === 'todos') cols.splice(1, 0, { k: '_dono', l: 'Corretor', v: (t) => gCurto(t._dono || ''), h: (t) => `<span class="peq">${esc(gCurto(t._dono || ''))}</span>` });
     const cartao = (t) => `<div class="cm-l1">${btOk(t)}<span class="cm-nome tf-tit${feita(t) ? ' tf-feita' : ''}">${esc(t.titulo)}</span>${pillTipo(t)}${hitBA(t)}<span class="cm-v">${pillPri(t)}</span></div>
-      <div class="cm-lin"><b>${esc(rotQuando(t))}</b> ${pillSit(t)} · ${rotOrig(t)}${S.gestor && S.verComo === 'todos' && t._dono && (t.origem || 'corretor') !== 'corretor' ? ' · para ' + esc(gCurto(t._dono)) : ''}</div>${t.obs ? `<div class="cm-lin mut">${esc(t.obs)}</div>` : ''}`;
+      <div class="cm-lin"><b>${esc(rotQuando(t))}</b> ${pillSit(t)} · ${rotOrig(t)}${S.gestor && S.verComo === 'todos' && t._dono && (t.origem || 'corretor') !== 'corretor' ? ' · para ' + esc(gCurto(t._dono)) : ''}</div>${t.obs ? `<div class="cm-lin mut">${esc(t.obs)}</div>` : ''}${autorLin(t, 'cm-lin mut peq')}`;
     const quem = S.gestor ? (S.verComo === 'todos' ? 'de todos os painéis' : 'de ' + esc(gCurto(S.verComo))) : '';
     const nota = S.gestor
       ? `Tarefas ${quem}, na foto do dia (só leitura). Para passar uma tarefa a um corretor, use “+ Atribuir tarefa”: ela chega ao painel dele na próxima rodada diária.`
@@ -1566,7 +1568,7 @@ const TF = (() => {
   function gaveta(id) {
     const novo = !id, t = novo ? { tipo: 'tarefa', prioridade: 'media', data: S.tfData || '' } : (S.tarefas || {})[id];
     if (!t) return '';
-    const info = novo ? '' : `<p class="mut peq" style="margin:4px 0 0">${rotOrig(t)} · criada em ${dt(t.criado_em)}${feita(t) && t.feita_em ? ' · feita em ' + dt(t.feita_em) : ''}</p>`;
+    const info = novo ? '' : `<p class="mut peq" style="margin:4px 0 0">${rotOrig(t)} · criada em ${dt(t.criado_em)}${feita(t) && t.feita_em ? ' · feita em ' + dt(t.feita_em) : ''}</p>${autorLin(t, 'mut peq', 1)}`;
     return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Tarefa">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Anotar' : t.tipo === 'lembrete' ? 'Lembrete' : t.tipo === 'recado' ? 'Recado' : 'Tarefa'}</p><h3>${novo ? 'Nova tarefa' : esc(t.titulo)}</h3>${novo ? '' : pillSit(t)}${info}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${soLer() ? `<div class="painel"><p style="margin:0">${esc(t.obs || 'Sem observação.')}</p><p class="mut peq" style="margin:8px 0 0">${esc(rotQuando(t))} · prioridade ${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}. Só leitura no painel do gestor.</p></div>` : `
@@ -1942,7 +1944,7 @@ function vLeads() {
   const cont = (f) => Object.values(S.leads).filter(f).length;
   const chips = [['abertos', `Em aberto (${cont((l) => ABERTAS.has(l.etapa || 'Novo'))})`], ['todos', `Todos (${cont(() => true)})`], ...ETAPAS.map((e) => [e, `${e} (${cont((l) => (l.etapa || 'Novo') === e)})`])].filter(([k, t]) => !/\(0\)$/.test(t) || k === 'abertos' || k === 'todos');
   const cols = [
-    { k: 'nome', l: 'Nome', h: (r) => `<b>${esc(r.nome)}</b>${dupDe(r.id) ? ' ' + dupDe(r.id) : ''}${r._av.some((a) => a.p === 'alta') ? ' <span class="pill alta">atrasado</span>' : ''}${pillLado(r) ? ' ' + pillLado(r) : ''}${hitBA(r)}` },
+    { k: 'nome', l: 'Nome', h: (r) => `<b>${esc(r.nome)}</b>${dupDe(r.id) ? ' ' + dupDe(r.id) : ''}${r._av.some((a) => a.p === 'alta') ? ' <span class="pill alta">atrasado</span>' : ''}${pillLado(r) ? ' ' + pillLado(r) : ''}${hitBA(r)}${autorLin(r)}` },
     { k: 'telefone', l: 'Telefone', v: (r) => digitos(r.telefone), h: (r) => esc(fone(r.telefone)) },
     { k: 'interesse', l: 'Interesse', v: (r) => INT_POR[r._int].i, h: (r) => pillInt(r) },
     { k: 'etapa', l: 'Etapa', v: (r) => ETAPAS.indexOf(r.etapa || 'Novo'), h: (r) => `<span class="pill ${r.etapa === 'Fechado' ? 'ok' : r.etapa === 'Perdido' ? 'perdido' : ''}">${esc(r.etapa || 'Novo')}</span>` },
@@ -1958,7 +1960,7 @@ function vLeads() {
     ${tabela('leads', cols, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: 'Nenhum lead neste filtro.', cartao: (r) => `
       <div class="cm-l1"><span class="cm-nome">${esc(r.nome)}</span>${dupDe(r.id)}${pillLado(r)}${pillInt(r)}${r._av.some((a) => a.p === 'alta') ? '<span class="pill alta">atrasado</span>' : ''}${hitBA(r)}<span class="cm-v"><span class="pill ${r.etapa === 'Fechado' ? 'ok' : r.etapa === 'Perdido' ? 'perdido' : ''}">${esc(r.etapa || 'Novo')}</span></span></div>
       <div class="cm-lin"><b>${esc(fone(r.telefone))}</b> · ${esc(r.campanha || 'sem origem')}</div>
-      <div class="cm-lin">${r.prox_acao || r.data_prox ? `Próxima: <b>${esc(r.prox_acao || 'ação')}</b> ${dt(r.data_prox)}` : '<span class="falta">Sem próxima ação</span>'} · último ${r._ult ? dt(r._ult).slice(0, 10) : '—'} · entrada ${r.entrada ? dt(r.entrada).slice(0, 10) : '—'}</div>` })}`, ...visoesLeads(L0) })}
+      <div class="cm-lin">${r.prox_acao || r.data_prox ? `Próxima: <b>${esc(r.prox_acao || 'ação')}</b> ${dt(r.data_prox)}` : '<span class="falta">Sem próxima ação</span>'} · último ${r._ult ? dt(r._ult).slice(0, 10) : '—'} · entrada ${r.entrada ? dt(r.entrada).slice(0, 10) : '—'}</div>${autorLin(r, 'cm-lin mut peq')}` })}`, ...visoesLeads(L0) })}
   </section>`;
 }
 // ---------- Visões dos leads (30/10/2026): Kanban, Pipeline, Funil e Agenda ----------
@@ -1966,7 +1968,7 @@ function itemVisao(r) {
   const alta = r._av.some((a) => a.p === 'alta');
   return { id: r.id, nome: r.nome, etapa: r.etapa || 'Novo', prox: r.prox_acao, data_prox: r.data_prox, alerta: alta, abre: `data-abre="lead:${esc(r.id)}"`,
     pills: pillInt(r) + (alta ? '<span class="pill alta">atrasado</span>' : ''), sub: esc([r.campanha, r.imovel_interesse].filter(Boolean).join(' · ')),
-    dias: r._ult ? dias(r._ult, hojeISO()) : (r.entrada ? dias(r.entrada, hojeISO()) : null), marca: r.etapa_por === 'diretoria' ? 'movido pela diretoria' : '' };
+    dias: r._ult ? dias(r._ult, hojeISO()) : (r.entrada ? dias(r.entrada, hojeISO()) : null), marca: [r.etapa_por === 'diretoria' ? 'movido pela diretoria' : '', autorTxt(r)].filter(Boolean).join(' · ') };
 }
 function visoesLeads(L0) {
   const I = L0.map(itemVisao);
@@ -2004,7 +2006,7 @@ function gavetaLead(id) {
   const op = novo ? null : opsDoLead(leadN(id, l));
   const refs = S.vitrine.map((v) => v.ref).filter(Boolean);
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead">
-    <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
+    <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>${autorLin(l, 'mut peq', 1)}`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(digitos(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoCorAnun(id, l)}`}
     <form id="fLead" class="form" data-id="${esc(id || '')}">
       ${novo ? `<label class="c inteiro">Nome<input id="lNome" required></label><label class="c">Telefone<input id="lTel" inputmode="tel" required></label><label class="c">Origem<select id="lOrig">${['Indicação', 'Plantão', 'Portal', 'Instagram', 'Site', 'Outro'].map((o) => `<option>${o}</option>`).join('')}</select></label>` : ''}
@@ -2499,7 +2501,7 @@ function gavetaMeu(id) {
         <div class="inteiro linha"><button class="b p" type="submit">Salvar</button><button class="b" type="button" data-conversa="imv:${esc(id)}">✦ Registrar por conversa</button><span class="erro" id="eMeu"></span></div>
         <p class="inteiro peq mut" style="margin:0">Só conversa: vai para o histórico e conta para o prazo de ${PZ().agenc_limite_dias} dias. Mudou dado: também vira solicitação para a diretoria aprovar; nada muda no site antes disso.</p>
       </form></div>
-    <div class="painel"><h2>Histórico do agenciamento</h2><div class="hist" style="margin-top:10px">${ev.length ? ev.map((e) => `<div class="i"><div class="q">${dt(e.em)} · ${esc(e.tipo)}${e.origem === 'ia' ? ' · organizado com IA' : ''}</div>${esc(e.texto)}</div>`).join('') : '<p class="mut">Nenhum registro ainda.</p>'}</div></div>`;
+    <div class="painel"><h2>Histórico do agenciamento</h2><div class="hist" style="margin-top:10px">${ev.length ? ev.map((e) => `<div class="i"><div class="q">${dt(e.em)} · ${esc(e.tipo)}${e.origem === 'ia' ? ' · organizado com IA' : ''}${autorTxt(e) ? ' · ' + esc(autorTxt(e)) : ''}</div>${esc(e.texto)}</div>`).join('') : '<p class="mut">Nenhum registro ainda.</p>'}</div></div>`;
   return h.slice(0, k) + card + h.slice(k);
 }
 // salvar do card único: histórico sempre; solicitação só quando algum dado mudou (decisão do Cleiton, 05/11/2026)
@@ -2531,7 +2533,7 @@ function vSolic() {
     { k: '_em', l: 'Data', h: (r) => dt(r._em) },
     { k: 'tipo', l: 'Tipo', v: (r) => TIPO[r.tipo || 'alteracao'], h: (r) => esc(TIPO[r.tipo || 'alteracao']) },
     { k: 'ref', l: 'Imóvel', h: (r) => `<span class="ref">${esc(r.ref || '—')}</span>` },
-    { k: 'resumo', l: 'Conteúdo', ord: false, h: (r) => `<span class="peq">${esc(resumo(r))}</span>` },
+    { k: 'resumo', l: 'Conteúdo', ord: false, h: (r) => `<span class="peq">${esc(resumo(r))}</span>${autorLin(r)}` },
     { k: '_st', l: 'Situação', h: (r) => pillSit(r._st) },
   ];
   const pend = L.filter((r) => r._st === 'pendente').length;
@@ -2539,7 +2541,7 @@ function vSolic() {
     ${S.ehDono ? `<div class="faixa-dono">Você está como diretoria: ${pend} pedido${pend === 1 ? '' : 's'} aguardando. Toque num pedido para aprovar ou recusar.</div>` : ''}
     ${tabela('sol', cols, L, { padrao: { c: '_em', d: -1 }, abre: (r) => 'sol:' + r.id, vazio: 'Nenhuma solicitação. Use "Cadastrar imóvel", "Solicitar alteração" ou "Adicionar fotos" em Meus imóveis.', cartao: (r) => `
       <div class="cm-l1"><span class="cm-nome">${esc(TIPO[r.tipo || 'alteracao'])} · <span class="ref">${esc(r.ref || '—')}</span></span><span class="cm-v">${pillSit(r._st)}</span></div>
-      <div class="cm-lin">${esc(resumo(r))} · ${dt(r._em)}</div>` })}
+      <div class="cm-lin">${esc(resumo(r))} · ${dt(r._em)}</div>${autorLin(r, 'cm-lin mut peq')}` })}
     <p class="status">Nada vai ao site sem a aprovação da diretoria.</p></section>`;
 }
 
@@ -2833,7 +2835,7 @@ function gavetaSol(id) {
   const editar = !S.ehDono && editavel ? `<button class="b p" type="button" data-continuar="${esc(id)}">${st === 'complemento' ? 'Complementar o pedido' : 'Continuar o cadastro'}</button>` : !S.ehDono && st === 'complemento' ? '<span class="peq mut">Envie uma nova alteração com o que a diretoria pediu.</span>' : '';
   const cancelar = !S.ehDono && st === 'pendente' ? `<button class="b" type="button" data-cancelar="${esc(id)}">Cancelar pedido</button>` : '';
   return `<div class="gaveta larga" role="dialog" aria-modal="true" aria-label="Solicitação">
-    <div class="cab"><div><p class="mut peq" style="margin:0">${esc({ novo_imovel: 'Cadastro de imóvel', fotos: 'Fotos novas', alteracao: 'Alteração de imóvel', captacao: 'Pedido de captação', corretor_anunciante: 'Aviso de corretor anunciante' }[tipo] || tipo)} · enviada em ${dt(s.enviado_em || s.criado_em)}</p><h3>${esc(s.ref || 'Imóvel')}</h3><p style="margin:6px 0 0">${pillSit(st)}</p></div><button class="b" type="button" data-fechar>Fechar</button></div>
+    <div class="cab"><div><p class="mut peq" style="margin:0">${esc({ novo_imovel: 'Cadastro de imóvel', fotos: 'Fotos novas', alteracao: 'Alteração de imóvel', captacao: 'Pedido de captação', corretor_anunciante: 'Aviso de corretor anunciante' }[tipo] || tipo)} · enviada em ${dt(s.enviado_em || s.criado_em)}</p><h3>${esc(s.ref || 'Imóvel')}</h3><p style="margin:6px 0 0">${pillSit(st)}</p>${autorLin(s, 'mut peq', 1)}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${dc.resposta ? `<div class="painel peq ${st === 'complemento' ? 'faixa-dono' : ''}"><b>${st === 'complemento' ? 'A diretoria pediu complemento:' : 'Resposta da diretoria:'}</b> ${esc(dc.resposta)}</div>` : ''}
     ${corpo}${aprova}<div class="linha">${editar}${cancelar}</div></div>`;
 }
@@ -2930,7 +2932,7 @@ function gavetaAgenc(id) {
       <label class="c inteiro">Resumo<textarea id="agTexto" required placeholder="Digite ou toque no microfone do teclado para ditar. Ex.: falei com o proprietário, mantém o valor e libera visitas aos sábados"></textarea></label>
       <div class="inteiro linha"><button class="b p" type="submit">Registrar</button><button class="b" type="button" data-conversa="imv:${esc(id)}">✦ Registrar por conversa</button></div>
     </form>
-    <div class="painel"><h2>Histórico do agenciamento</h2><div class="hist" style="margin-top:10px">${ev.length ? ev.map((e) => `<div class="i"><div class="q">${dt(e.em)} · ${esc(e.tipo)}${e.origem === 'ia' ? ' · organizado com IA' : ''}</div>${esc(e.texto)}</div>`).join('') : '<p class="mut">Nenhum registro ainda.</p>'}</div></div></div>`;
+    <div class="painel"><h2>Histórico do agenciamento</h2><div class="hist" style="margin-top:10px">${ev.length ? ev.map((e) => `<div class="i"><div class="q">${dt(e.em)} · ${esc(e.tipo)}${e.origem === 'ia' ? ' · organizado com IA' : ''}${autorTxt(e) ? ' · ' + esc(autorTxt(e)) : ''}</div>${esc(e.texto)}</div>`).join('') : '<p class="mut">Nenhum registro ainda.</p>'}</div></div></div>`;
 }
 async function registrarAgenc(form) {
   const id = form.dataset.id, texto = val('agTexto'); if (!texto) return;

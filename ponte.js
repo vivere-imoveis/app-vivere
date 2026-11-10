@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-10.5';
+  var VERSAO = 'ponte 2026-11-10.6';
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1 };
@@ -416,7 +416,8 @@
     var n = p && p.new;
     if (!n || !n.colecao || !n.doc_id || typeof n.versao !== 'number') return;
     var c = gaveta(escopo, n.colecao), a = c[n.doc_id];
-    if (a && (a.p || a.v >= n.versao)) return;
+    if (a && a.p) { a.eco = n; return; } // gravação em curso: guarda o eco; gravarDoc usa se a versão bater (etiqueta de autoria, 10/11/2026)
+    if (a && a.v > n.versao) return; // versão igual também entra: traz o que o banco acrescentou na gravação (etiqueta de autoria)
     if (!n.dados || typeof n.dados !== 'object') { sincronizar(escopo).catch(function () { }); return; }
     c[n.doc_id] = { v: n.versao, d: n.dados, t: Date.now() };
     if (escopo === COMUM) gravarCache(n.colecao, [n]);
@@ -521,6 +522,7 @@
       throw erroDoBanco(r.error);
     }
     if (c[doc]) { c[doc].v = typeof r.data === 'number' ? r.data : c[doc].v + 1; delete c[doc].p; c[doc].t = Date.now(); }
+    if (c[doc] && c[doc].eco) { var eco = c[doc].eco; delete c[doc].eco; if (eco.versao === c[doc].v && eco.dados && typeof eco.dados === 'object') { c[doc].d = eco.dados; avisar(escopo, colecao); } }
     if (c[doc]) espelharGestor(escopo, colecao, String(doc), c[doc].v, c[doc].d);
   }
 
