@@ -85,7 +85,7 @@ table.ac tr.desligado td{opacity:.6}
 @media (max-width:560px){.marca .nome{font-size:19px}.selo{width:44px;height:44px}.btn-tema{padding:6px 10px;font-size:12px}}
 #novo button{grid-column:1/-1}
 /* A CAPTAR (fatia 3, 09/11/2026) */
-.resumo-ac{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.resumo-ac{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
 .resumo-ac div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .resumo-ac b{display:block;font:500 24px/1.1 var(--display)}
 .resumo-ac span{font-size:12px;color:var(--muted)}
@@ -114,7 +114,7 @@ dl.campos dd{margin:2px 0 0;font-size:14px;overflow-wrap:anywhere}
 dl.campos a{color:var(--brass)}
 .copiar{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:1px 8px;font:12px var(--body);cursor:pointer}
 .cap textarea{width:100%;min-height:60px;margin:6px 0 10px;font:14px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;resize:vertical}
-@media (max-width:700px){.resumo-ac{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.resumo-ac{grid-template-columns:repeat(2,minmax(0,1fr))}.resumo-ac .tot{grid-column:1 / -1}}
 table.ac td.c-acoes .btn{white-space:nowrap}
 table.ac td.c-nome{min-width:200px}
 table.ac td.c-sit .linha-acoes{flex-direction:column;align-items:flex-start;gap:6px}

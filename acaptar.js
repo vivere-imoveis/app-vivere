@@ -26,6 +26,12 @@
   var dataBR = function (s) { if (!s) return '—'; var t = String(s); if (/^\d{4}-\d{2}-\d{2}$/.test(t)) t += 'T12:00:00'; var d = new Date(t); return isNaN(d) ? C.esc(t) : d.toLocaleDateString('pt-BR'); };
   var fmtCep = function (c) { c = String(c || '').replace(/\D/g, ''); return c.length === 8 ? c.slice(0, 5) + '-' + c.slice(5) : c; };
   var fmtTel = function (t) { t = String(t).replace(/\D/g, ''); return t.length === 11 ? '(' + t.slice(0, 2) + ') ' + t.slice(2, 7) + '-' + t.slice(7) : t.length === 10 ? '(' + t.slice(0, 2) + ') ' + t.slice(2, 6) + '-' + t.slice(6) : t; };
+  // 11/11/2026: sites onde o anúncio foi achado (coluna plataformas, sem link); a linha só aparece com 2 ou mais
+  var PLAT = { olx: 'OLX', chavesnamao: 'Chaves na Mão', facebook: 'Facebook', vivareal: 'Viva Real', zap: 'ZAP', captei: 'Captei', imovelweb: 'Imovelweb' };
+  var sitesDe = function (v) {
+    var p = Array.isArray(v.plataformas) ? v.plataformas.filter(Boolean) : [];
+    return p.length >= 2 ? '<span class="s sites">Em ' + p.length + ' sites: ' + esc(p.map(function (x) { return PLAT[x] || x; }).join(' · ')) + '</span>' : '';
+  };
   var origemDe = function (v) { return ORIGEM[v.origem] || ORIGEM[v.fonte] || 'site do anúncio'; };
   var norm = function (s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim(); };
   function endereco(v) { var p = [v.empreendimento, v.rua].filter(Boolean); if (v.cep) p.push('CEP ' + fmtCep(v.cep)); return p.join(' · '); }
@@ -39,7 +45,7 @@
     A.carregando = true;
     var sb = C.sb, minha = ++geracao, uid = C.sessaoUid;
     var r = await Promise.all([
-      sb.from('ac_imoveis').select('id,cod,lista,negocio,tipo,bairro,praca,preco,quartos,area,rua,cep,empreendimento,estrelas,fora_da_ilha,coletado_em,anunciado_em,origem,fonte,distribuido_para,foto_id').eq('ativo', true).limit(2000),
+      sb.from('ac_imoveis').select('id,cod,lista,negocio,tipo,bairro,praca,preco,quartos,area,rua,cep,empreendimento,estrelas,fora_da_ilha,coletado_em,anunciado_em,origem,fonte,distribuido_para,foto_id,plataformas').eq('ativo', true).limit(2000),
       sb.from('ac_travas').select('id,imovel_id,user_id,nome,email,travado_em,ultimo_contato_em,contatos,solto_em').is('solto_em', null).limit(2000),
       sb.from('ac_pedidos_captei').select('imovel_id,user_id,nome,pedido_em,status,decidido_em,decidido_por').limit(2000)
     ]);
@@ -139,7 +145,7 @@
         '<td data-r="Valor" class="num" data-sens>' + brl(v.preco) + '</td>' +
         '<td data-r="Quartos · área" class="num">' + (v.quartos == null ? '—' : v.quartos + (v.quartos === 1 ? ' quarto' : ' quartos')) + '<span class="s">' + (v.area ? v.area + ' m²' : 'área —') + '</span></td>' +
         '<td data-r="Prioridade"><span class="est" title="' + esc(PRACA[v.praca] || '') + '">' + estrelas(v.estrelas) + '</span></td>' +
-        '<td data-r="Anunciado">' + dataBR(an) + '<span class="s">' + esc(origemDe(v)) + '</span></td>' +
+        '<td data-r="Anunciado">' + dataBR(an) + '<span class="s">' + esc(origemDe(v)) + '</span>' + sitesDe(v) + '</td>' +
         '<td class="c-acoes c-sit"><div class="linha-acoes"><span class="pill ' + (s.k === 'livre' ? 'ok' : s.k === 'meu' ? 'warn' : '') + '">' + esc(s.t) + '</span>' + ac + '</div>' + conf + '</td></tr>';
     }).join('');
     return h + '<p class="s" style="margin:0 0 10px">' + arr.length + ' de ' + base.length + ' imóveis</p>' + barraOrd('disp', colsBarra) +
@@ -246,12 +252,13 @@
     var subs = [['disp', 'Disponíveis'], ['minhas', 'Minhas captações'], ['captei', 'Captei · 1 Capcoin']];
     if (diretoria()) subs.push(['dir', 'Diretoria']);
     if (!subs.some(function (s) { return s[0] === A.sub; })) A.sub = 'disp';
+    var total = A.im.filter(function (v) { return v.lista === 'base'; }).length;
     var livres = A.im.filter(function (v) { return v.lista === 'base' && situacao(v).k === 'livre'; }).length;
     var minhas = A.tr.filter(function (t) { return t.user_id === C.sessaoUid; }).length;
     var vencendo = A.tr.filter(function (t) { return t.user_id === C.sessaoUid && (EXPIRA * DIA - (Date.now() - ultimo(t))) <= 2 * DIA; }).length;
     var corpo = A.sub === 'minhas' ? telaMinhas() : A.sub === 'captei' ? telaCaptei() : A.sub === 'dir' ? telaDir() : telaDisp();
     raiz.innerHTML =
-      '<div class="resumo-ac"><div><b>' + livres + '</b><span>Livres</span></div><div><b>' + minhas + '</b><span>Minhas</span></div>' + (diretoria() ? '<div><b>' + A.tr.length + '</b><span>Em captação (equipe)</span></div>' : '<div><b>' + vencendo + '</b><span>Vencem em até 2 dias</span></div>') + '<div><b>' + A.im.filter(function (v) { return v.lista === 'captei'; }).length + '</b><span>No Captei</span></div></div>' +
+      '<div class="resumo-ac"><div class="tot"><b>' + total + '</b><span>Total disponível</span></div><div><b>' + livres + '</b><span>Livres</span></div><div><b>' + minhas + '</b><span>Minhas</span></div>' + (diretoria() ? '<div><b>' + A.tr.length + '</b><span>Em captação (equipe)</span></div>' : '<div><b>' + vencendo + '</b><span>Vencem em até 2 dias</span></div>') + '<div><b>' + A.im.filter(function (v) { return v.lista === 'captei'; }).length + '</b><span>No Captei</span></div></div>' +
       '<div class="cod-ac"><label for="acCod">Código do imóvel</label><input id="acCod" placeholder="AC-XXXXXX" value="' + esc(A.cod) + '" autocomplete="off">' + (A.cod ? '<button class="btn" data-acao="limpar_cod">Limpar</button>' : '') + '</div>' +
       '<nav class="subabas" role="tablist">' + subs.map(function (s) { return '<button type="button" role="tab" data-sub="' + s[0] + '" aria-selected="' + (A.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</nav>' +
       '<div class="lista-acessos">' + corpo + '</div>' +
