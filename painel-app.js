@@ -6,6 +6,8 @@
 (function () {
   'use strict';
   var URL_ACAP = 'index.html?aba=acaptar';
+  var vivo = null; // 11/11/2026: nº de livres lido na hora do Supabase pela ponte; sem ele, vale o número da aba escondida
+  function lerVivo() { var P = window.VIVERE_PONTE; if (!P || !P.acaptarLivres) return; P.acaptarLivres().then(function (n) { vivo = n; pinta(); }).catch(function () { }); }
   function volta() { try { sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) { } }
   function pinta() {
     var tema = document.getElementById('btnTema');
@@ -18,7 +20,7 @@
       tema.parentNode.insertBefore(b, tema);
     }
     var sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
-    var n = sel ? String(sel.textContent || '').trim() : '';
+    var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
     var h = '<span class="ba-ic" aria-hidden="true">🎯</span><span class="ba-t">A CAPTAR</span>' + (n ? '<span class="ba-n"><b>' + n + '</b> livre' + (n === '1' ? '' : 's') + '</span>' : '');
     if (b.innerHTML !== h) b.innerHTML = h;
     var rot = 'Abrir o A CAPTAR' + (n ? ': ' + n + ' imóve' + (n === '1' ? 'l livre' : 'is livres') + ' para captar' : '') + '. Abre outra página do app.';
@@ -29,6 +31,7 @@
     if (!abas) return;
     pinta();
     new MutationObserver(pinta).observe(abas, { childList: true, subtree: true, characterData: true });
+    lerVivo(); setInterval(function () { if (!document.hidden) lerVivo(); }, 240000);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
 })();

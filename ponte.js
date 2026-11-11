@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-10.6';
+  var VERSAO = 'ponte 2026-11-11.1';
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1 };
@@ -555,5 +555,18 @@
   window.claude = {
     use: async function (nome) { await entrou; return Object.prototype.hasOwnProperty.call(partes, nome) ? partes[nome] : null; }
   };
-  window.VIVERE_PONTE = { versao: VERSAO, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
+  // 11/11/2026: nº de imóveis livres do A CAPTAR lido na hora do Supabase (o mesmo cálculo da tela A CAPTAR do app),
+  // em vez da foto do dia (acaptar/estado), que ficava parada quando a rotina não rodava (botão mostrava 132 com 343 na base).
+  function acaptarLivres() {
+    return Promise.all([
+      sb.from('ac_imoveis').select('id,distribuido_para').eq('ativo', true).eq('lista', 'base').limit(5000),
+      sb.from('ac_travas').select('imovel_id,travado_em,ultimo_contato_em').is('solto_em', null).limit(5000)
+    ]).then(function (r) {
+      if (r[0].error || r[1].error) throw (r[0].error || r[1].error);
+      var agora = Date.now(), ocup = {};
+      (r[1].data || []).forEach(function (t) { var u = new Date(t.ultimo_contato_em || t.travado_em).getTime(); if (agora - u < 7 * 864e5) ocup[t.imovel_id] = 1; });
+      return (r[0].data || []).filter(function (v) { return !v.distribuido_para && !ocup[v.id]; }).length;
+    });
+  }
+  window.VIVERE_PONTE = { versao: VERSAO, acaptarLivres: acaptarLivres, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
 })();
