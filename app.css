@@ -95,6 +95,25 @@ table.ac tr.desligado td{opacity:.6}
 .subabas button{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:6px 12px;font:500 13px var(--body);cursor:pointer}
 .subabas button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .filtros-ac{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-bottom:10px}
+/* busca inteligente e vários bairros (11/11/2026) */
+.filtros-ac{grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)}
+.btn-bairros{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips-ac{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.chip-ac{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:4px 10px;font:500 12.5px var(--body);cursor:pointer}
+.chip-ac.limpar{color:var(--muted);border-style:dashed}
+.pn-bairros{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:12px;margin:0 0 12px;display:grid;gap:12px}
+.pn-bairros>input{width:100%}
+.grp-b-t{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.grp-b-t b{font:500 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.ops-b{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:2px 12px}
+.ops-b label{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:13.5px;cursor:pointer;min-width:0}
+.ops-b label input[type=checkbox]{width:16px;height:16px;flex:0 0 16px;margin:0;padding:0;min-height:0}
+.ops-b label span{flex:1 1 auto;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ops-b small{color:var(--muted);margin-left:auto}
+.entendi{margin:0 0 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ajuda-busca{margin:0 0 10px;font-size:13px;color:var(--muted)}
+.ajuda-busca summary{cursor:pointer}
+@media (max-width:700px){.filtros-ac{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.filtros-ac #acBusca{grid-column:1 / -1}.ops-b{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .cod{display:inline-block;margin-top:4px;font:500 11px var(--display);letter-spacing:.08em;color:var(--brass);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
 .est{color:var(--brass);letter-spacing:1px;white-space:nowrap}
 table.ac td.num{white-space:nowrap}
