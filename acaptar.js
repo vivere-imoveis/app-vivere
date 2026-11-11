@@ -353,7 +353,7 @@
       '<div class="cod-ac"><label for="acCod">Código do imóvel</label><input id="acCod" placeholder="AC-XXXXXX" value="' + esc(A.cod) + '" autocomplete="off">' + (A.cod ? '<button class="btn" data-acao="limpar_cod">Limpar</button>' : '') + '</div>' +
       '<nav class="subabas" role="tablist">' + subs.map(function (s) { return '<button type="button" role="tab" data-sub="' + s[0] + '" aria-selected="' + (A.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</nav>' +
       '<div class="lista-acessos">' + corpo + '</div>' +
-      '<p class="s" style="margin-top:20px">Base de ' + (A.atualizado || '—') + ' · a lista diária ainda é atualizada no A CAPTAR do claude.ai; aqui, por ora, é a cópia de 09/11/2026.</p>';
+      '<p class="s" style="margin-top:20px">Base com anúncios coletados até ' + (A.atualizado || '—') + '.</p>';
     ligar();
   }
 
