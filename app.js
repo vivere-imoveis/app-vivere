@@ -6,7 +6,7 @@
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj';
   var APP_URL = location.origin + location.pathname;
-  var VERSAO = 'app-vivere 2026-11-11.2';
+  var VERSAO = 'app-vivere 2026-11-11.3';
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -73,7 +73,7 @@
     var main = $('#conteudo'), abas = $('#abas');
     if (erroLink && !estado.sessao) {
       abas.hidden = true; titulo('Link expirado');
-      main.innerHTML = '<div class="form cartao"><h2>Link expirado ou já usado</h2><div class="msg aviso">' + esc(decodeURIComponent(erroLink[1].replace(/\+/g, ' '))) + '</div><p>Clique abaixo para receber um link novo no seu e-mail. Abra o e-mail mais recente em até 1 hora.</p><button class="btn pri" id="novoLink">Esqueci minha senha</button><button class="link" type="button" id="voltar">Ir para o login</button></div>';
+      main.innerHTML = '<div class="form cartao"><h2>Link expirado ou já usado</h2><div class="msg aviso">' + esc(decodeURIComponent(erroLink[1].replace(/\+/g, ' '))) + '</div><p>Clique abaixo para receber um link novo no seu e-mail. Use só o e-mail mais recente; os anteriores deixam de valer.</p><button class="btn pri" id="novoLink">Esqueci minha senha</button><button class="link" type="button" id="voltar">Ir para o login</button></div>';
       $('#voltar').onclick = function () { erroLink = null; history.replaceState(null, '', APP_URL); desenhar(); };
       $('#novoLink').onclick = function () { erroLink = null; history.replaceState(null, '', APP_URL); telaEntrar(main, true); };
       return;
