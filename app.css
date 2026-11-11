@@ -131,3 +131,9 @@ table.ac td.c-sit .linha-acoes{flex-direction:column;align-items:flex-start;gap:
 }
 
 a.btn{text-decoration:none;display:inline-flex;align-items:center}
+/* A CAPTAR · foto do anúncio (11/11/2026) */
+.ac-im{display:flex;gap:12px;align-items:flex-start;min-width:0}.ac-im-t{min-width:0}.ac-im-t>b{display:block}
+.ac-foto{flex:none;display:block;width:88px;aspect-ratio:4/3;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--soft)}
+.ac-foto.sem{display:grid;place-items:center;font-size:24px;color:var(--muted)}
+.ac-foto.g{width:100%;max-width:360px;margin:0 0 10px}
+@media (max-width:700px){.ac-foto{width:96px}.ac-foto.g{max-width:none}}

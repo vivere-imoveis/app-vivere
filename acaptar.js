@@ -39,7 +39,7 @@
     A.carregando = true;
     var sb = C.sb, minha = ++geracao, uid = C.sessaoUid;
     var r = await Promise.all([
-      sb.from('ac_imoveis').select('id,cod,lista,negocio,tipo,bairro,praca,preco,quartos,area,rua,cep,empreendimento,estrelas,fora_da_ilha,coletado_em,anunciado_em,origem,fonte,distribuido_para').eq('ativo', true).limit(2000),
+      sb.from('ac_imoveis').select('id,cod,lista,negocio,tipo,bairro,praca,preco,quartos,area,rua,cep,empreendimento,estrelas,fora_da_ilha,coletado_em,anunciado_em,origem,fonte,distribuido_para,foto_id').eq('ativo', true).limit(2000),
       sb.from('ac_travas').select('id,imovel_id,user_id,nome,email,travado_em,ultimo_contato_em,contatos,solto_em').is('solto_em', null).limit(2000),
       sb.from('ac_pedidos_captei').select('imovel_id,user_id,nome,pedido_em,status,decidido_em,decidido_por').limit(2000)
     ]);
@@ -95,10 +95,18 @@
     });
   }
 
+  // foto (11/11/2026): 1 foto por anúncio, guardada pela função acaptar-app no depósito público acaptar-fotos do Supabase
+  function fotoUrl(v) { if (!v || !v.foto_id || !/^[0-9a-f]{16}\.(jpg|png|webp)$/.test(v.foto_id)) return ''; try { return C.sb.storage.from('acaptar-fotos').getPublicUrl(v.foto_id).data.publicUrl || ''; } catch (e) { return ''; } }
+  function fotoAc(v, cls) {
+    var u = fotoUrl(v), c = 'ac-foto' + (cls ? ' ' + cls : '');
+    return u ? '<img class="' + c + '" src="' + esc(u) + '" alt="Foto do anúncio" loading="lazy">' : '<span class="' + c + ' sem" aria-hidden="true" title="Sem foto no anúncio">⌂</span>';
+  }
+  // foto que não carregou vira o ícone (sem atributo inline: a política do app barra script inline)
+  document.addEventListener('error', function (ev) { var t = ev.target; if (t && t.tagName === 'IMG' && t.classList.contains('ac-foto')) { var sp = document.createElement('span'); sp.className = t.className + ' sem'; sp.setAttribute('aria-hidden', 'true'); sp.textContent = '⌂'; t.replaceWith(sp); } }, true);
   function celImovel(v) {
     var en = endereco(v);
-    return '<td class="c-nome"><b>' + esc(v.bairro || '—') + (v.fora_da_ilha ? ' <span class="s" style="display:inline">(fora da ilha)</span>' : '') + '</b>' +
-      (en ? '<span class="s" data-sens>' + esc(en) + '</span>' : '') + (v.cod ? '<span class="cod">' + esc(v.cod) + '</span>' : '') + '</td>';
+    return '<td class="c-nome"><div class="ac-im">' + fotoAc(v) + '<div class="ac-im-t"><b>' + esc(v.bairro || '—') + (v.fora_da_ilha ? ' <span class="s" style="display:inline">(fora da ilha)</span>' : '') + '</b>' +
+      (en ? '<span class="s" data-sens>' + esc(en) + '</span>' : '') + (v.cod ? '<span class="cod">' + esc(v.cod) + '</span>' : '') + '</div></div></td>';
   }
 
   function filtros(base) {
@@ -161,7 +169,7 @@
           '</dl>';
       } else dados = '<div class="msg aviso">O contato deste imóvel não chegou. Avise a diretoria.</div>';
       var conf = A.soltar === t.imovel_id;
-      return '<article class="cartao cap"><div class="cap-topo"><h3>' + esc((TIPO[v.tipo] || 'Imóvel') + ' · ' + (v.bairro || '—')) + '</h3><span class="pill warn">Expira em ' + rest + (rest === 1 ? ' dia' : ' dias') + '</span></div>' +
+      return '<article class="cartao cap">' + fotoAc(v, 'g') + '<div class="cap-topo"><h3>' + esc((TIPO[v.tipo] || 'Imóvel') + ' · ' + (v.bairro || '—')) + '</h3><span class="pill warn">Expira em ' + rest + (rest === 1 ? ' dia' : ' dias') + '</span></div>' +
         '<p class="s"><span data-sens>' + esc((NEG[v.negocio] || '') + ' · ' + brl(v.preco)) + '</span>' + (v.area ? ' · ' + v.area + ' m²' : '') + (v.cod ? ' · <span class="cod">' + esc(v.cod) + '</span>' : '') + '</p>' +
         (en ? '<p class="s" data-sens>' + esc(en) + '</p>' : '') + dados +
         (hist ? '<ul class="registro">' + hist + '</ul>' : '') +
