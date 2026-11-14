@@ -548,6 +548,8 @@ const dt = (s) => { if (!s) return '—'; const m = String(s).match(/^(\d{4})-(\
 const dias = (a, b) => Math.round((new Date(b.slice(0, 10) + 'T12:00') - new Date(a.slice(0, 10) + 'T12:00')) / 864e5);
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 const digitos = (s) => String(s || '').replace(/\D/g, '');
+window.escUrl = (u) => { const s = String(u == null ? '' : u).trim(), t = s.replace(/[\u0000-\u0020\u007f]/g, ''), m = /^([a-z][a-z0-9+.\-]*):/i.exec(t); return (m && !/^(https?|mailto|tel)$/i.test(m[1]) ? '#' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }; /* higiene-lucas */ /* revisão do Lucas, painel #16 */
+const zapNum = (s) => { let d = digitos(s); if (d.startsWith('55') && d.length >= 12) d = d.slice(2); return d.replace(/^0+/, ''); }; /* painel #5: o 55 entra uma vez só */
 // Valor pontuado (Nicolas, 26/10/2026): 1.250.000 enquanto digita; grava só o número. Aceita centavos depois da vírgula.
 const numVlr = (s) => { if (s == null || s === '') return null; if (typeof s === 'number') return isFinite(s) ? s : null;
   const t = String(s).trim(); if (!/\d/.test(t)) return null; const [i, d] = t.split(','); const n = Number((i || '').replace(/\D/g, '') + (d != null ? '.' + d.replace(/\D/g, '').slice(0, 2) : '')); return isFinite(n) ? n : null; };
@@ -814,7 +816,7 @@ function capaSrc(id) {
 function capaHtml(id, x, cls) {
   const src = capaSrc(id), inativo = x && x.ativo === false;
   const lk = x && x.link && !inativo && x.origem !== 'emp' && x.origem !== 'fora' ? x.link : '';
-  const tag = lk ? `a href="${esc(lk)}" target="_blank" rel="noopener" title="Abrir o anúncio no site"` : 'div';
+  const tag = lk ? `a href="${escUrl(lk)}" target="_blank" rel="noopener" title="Abrir o anúncio no site"` : 'div';
   return `<${tag} class="capa${cls ? ' ' + cls : ''}">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : `<span class="sem">${S.prontos.has('fotosDocs') || inativo ? 'sem foto' : '…'}</span>`}${inativo ? '<span class="inat" title="Imóvel inativo: não está no site nem disponível ao público">Inativo · fora do site</span>' : ''}</${lk ? 'a' : 'div'}>`;
 }
 
@@ -1000,8 +1002,8 @@ const acapNi = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/
 const acapDoSlug = (slug) => { const tv = ((S.acap || {}).travas) || {}, nm = acapPn(gCurto(slug)), rep = gPaineis().filter((p) => acapPn(gCurto(p.slug)) === nm).length > 1, ni = acapNi(gNome(slug)); return Object.values(tv).filter((x) => x && x.uid && (x.chave ? x.chave === slug : (!!x.nome && (rep ? acapNi(x.nome) === ni : acapPn(x.nome) === nm)))).length; }; /* trocas-f5j */
 const acapMinhas = () => !S.acap ? [] : Object.entries(S.acap.travas || {}).filter(([, x]) => x && x.uid && acapEhMinha(x)).map(([lead, x]) => ({ ...x, lead }));
 const acapVolta = () => { try { sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} };
-const linkAcap = (rot, cls) => `<a class="${cls || 'b'}" href="${esc(acapUrl())}" data-acapvai>${rot}</a>`;
-const linkAcapCod = (lead, rot, cls) => { const c = acapCod(lead); return `<a class="${cls || 'b'}" href="${esc(c ? 'index.html?cod=' + c : acapUrl())}" data-acapvai>${rot}</a>`; };
+const linkAcap = (rot, cls) => `<a class="${cls || 'b'}" href="${escUrl(acapUrl())}" data-acapvai>${rot}</a>`;
+const linkAcapCod = (lead, rot, cls) => { const c = acapCod(lead); return `<a class="${cls || 'b'}" href="${escUrl(c ? 'index.html?cod=' + c : acapUrl())}" data-acapvai>${rot}</a>`; };
 document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('[data-acapvai]')) acapVolta(); }, true);
 const fotoCapt = (it) => it.foto_id ? `<img class="acap-foto" src="${esc('/_blob/' + it.foto_id)}" alt="Foto do imóvel" loading="lazy">` : '';
 function blocoAcapMinhas() {
@@ -1862,7 +1864,7 @@ function vGestor() {
   const fb = BA.filtra(P0, qDe(), (p) => ({ txt: [p.nome, p.curto, p.slug].filter(Boolean).join(' · ') }));
   const P = fb.lista; qInfo(fb, 'painéis');
   const soma = (k) => P.reduce((s, p) => s + (p[k] || 0), 0);
-  const acoes = (p) => `<button class="b" type="button" data-ver="${esc(p.slug)}" data-ir-aba="inicio">Ver como</button>${p.url ? ` <a class="b" href="${esc(p.url)}" target="_blank" rel="noopener">Abrir o painel</a>` : ''}`;
+  const acoes = (p) => `<button class="b" type="button" data-ver="${esc(p.slug)}" data-ir-aba="inicio">Ver como</button>${p.url ? ` <a class="b" href="${escUrl(p.url)}" target="_blank" rel="noopener">Abrir o painel</a>` : ''}`;
   const de = (a, b) => `${a} <span class="mut peq">de ${b}</span>`;
   const cols = [
     { k: 'nome', l: 'Corretor', h: (p) => `<b>${esc(p.nome || p.slug)}</b>${hitBA(p)}` },
@@ -2010,7 +2012,7 @@ function gavetaLead(id) {
   const refs = S.vitrine.map((v) => v.ref).filter(Boolean);
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>${autorLin(l, 'mut peq', 1)}`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
-    ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(digitos(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoCorAnun(id, l)}`}
+    ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoCorAnun(id, l)}`}
     <form id="fLead" class="form" data-id="${esc(id || '')}">
       ${novo ? `<label class="c inteiro">Nome<input id="lNome" required></label><label class="c">Telefone<input id="lTel" inputmode="tel" required></label><label class="c">Origem<select id="lOrig">${['Indicação', 'Plantão', 'Portal', 'Instagram', 'Site', 'Outro'].map((o) => `<option>${o}</option>`).join('')}</select></label>` : ''}
       <label class="c">Interesse<select id="lInt">${optInt(novo ? 'a_definir' : interesseDe(l))}</select></label>
@@ -2044,14 +2046,14 @@ function gavetaLead(id) {
 
 // ---------- Oportunidades: aba ----------
 function htmlOferta(leadId, x) {
-  const it = x.it, l = S.leads[leadId] || {}, tel = digitos(l.telefone), msg = OP.mensagem(l, it, (String(S.info.saudacao || '').trim() || S.info.corretor || '').split(' ')[0]);
+  const it = x.it, l = S.leads[leadId] || {}, tel = zapNum(l.telefone), msg = OP.mensagem(l, it, (String(S.info.saudacao || '').trim() || S.info.corretor || '').split(' ')[0]);
   const fat = it.origem === 'emp' ? `<span>${esc(it.tipologias || 'tipologias a confirmar')}</span>${it.entrega ? `<span>entrega ${esc(it.entrega)}</span>` : ''}` : fatosCurtos(it);
   const det = it.origem === 'site' ? `<button class="b" type="button" data-abre="vit:${esc(it.id)}">Detalhes</button>` : S.meus[it.id] ? `<button class="b" type="button" data-pmver="${esc(it.id)}">Detalhes</button>` : '';
   return `<div class="op-of cap${x.ia ? ' ia' : ''}"><span class="selo-cap">🟢 PAUTA · pode ofertar</span><div class="com-capa">${capaHtml(it.id, it)}<div class="txt"><div class="l1"><span class="ref">${esc(it.ref || '')}</span><span class="peq mut">${esc(it.origem === 'emp' ? 'Empreendimento' : it.tipo || '')} · ${esc(it.bairro || '')}</span><span class="v">${it.valor ? curtoBRL(it.valor) : it.origem === 'emp' ? 'sob consulta' : '—'}</span></div>
     <div class="cm-fat">${fat}</div>
     ${x.ia ? `<div class="mot">✦ ${esc(x.ia)}</div>` : ''}${x.motivos && x.motivos.length ? `<div class="chips2">${x.motivos.map((m) => `<span>${esc(m)}</span>`).join('')}</div>` : ''}
     ${x.alerta ? `<div class="falta">${esc(x.alerta)}</div>` : ''}</div></div>
-    <div class="acoes">${tel ? `<a class="b p" href="https://wa.me/55${esc(tel)}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" data-opof="${esc(leadId)}|${esc(it.id)}">Ofertar no WhatsApp</a>` : ''}<button class="b${tel ? '' : ' p'}" type="button" data-opcopia="${esc(leadId)}|${esc(it.id)}">${tel ? 'Copiar mensagem' : 'Copiar e marcar ofertado'}</button><button class="b" type="button" data-opdesc="${esc(leadId)}|${esc(it.id)}">Descartar</button>${det}${it.link && it.origem !== 'fora' ? `<a class="b" href="${esc(it.link)}" target="_blank" rel="noopener">${it.origem === 'emp' ? 'Site' : 'Anúncio'}</a>` : ''}${it.lat != null ? `<button class="b" type="button" data-vermapa="${esc(it.id)}">🗺</button>` : ''}</div></div>`;
+    <div class="acoes">${tel ? `<a class="b p" href="https://wa.me/55${esc(tel)}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" data-opof="${esc(leadId)}|${esc(it.id)}">Ofertar no WhatsApp</a>` : ''}<button class="b${tel ? '' : ' p'}" type="button" data-opcopia="${esc(leadId)}|${esc(it.id)}">${tel ? 'Copiar mensagem' : 'Copiar e marcar ofertado'}</button><button class="b" type="button" data-opdesc="${esc(leadId)}|${esc(it.id)}">Descartar</button>${det}${it.link && it.origem !== 'fora' ? `<a class="b" href="${escUrl(it.link)}" target="_blank" rel="noopener">${it.origem === 'emp' ? 'Site' : 'Anúncio'}</a>` : ''}${it.lat != null ? `<button class="b" type="button" data-vermapa="${esc(it.id)}">🗺</button>` : ''}</div></div>`;
 }
 const OPL_CSS = `.opl-wrap{container-type:inline-size;min-width:0;display:grid;gap:8px}
 .opl-res{display:grid;gap:4px;font-size:13px;padding:10px 12px;background:var(--soft);border-radius:8px}
@@ -2248,7 +2250,7 @@ if (!document.getElementById('css-m2')) { const st = document.createElement('sty
 // ---------- Meus imóveis ----------
 const curtoBRL = (v) => v == null || v === '' ? '' : v >= 1e6 ? 'R$ ' + num(v / 1e6, 2) + ' mi' : v >= 1e3 ? 'R$ ' + num(v / 1e3, 0) + ' mil' : brl(v);
 function fatosCurtos(x) {
-  const f = [x.dorm ? `<span><b>${x.dorm}</b> dorm.${x.suites ? ` (${x.suites} suíte${x.suites > 1 ? 's' : ''})` : ''}</span>` : '', x.banh ? `<span><b>${x.banh}</b> banh.</span>` : '', x.vagas ? `<span><b>${x.vagas}</b> vaga${x.vagas > 1 ? 's' : ''}</span>` : '', x.area ? `<span><b>${num(x.area, 0)}</b> m²</span>` : '', x.area_total ? `<span>total ${num(x.area_total, 0)} m²</span>` : '', m2De(x) != null ? `<span><b>${m2Rot(x)}</b></span>` : ''].filter(Boolean);
+  const f = [x.dorm ? `<span><b>${esc(x.dorm)}</b> dorm.${x.suites ? ` (${esc(x.suites)} suíte${x.suites > 1 ? 's' : ''})` : ''}</span>` : '', x.banh ? `<span><b>${esc(x.banh)}</b> banh.</span>` : '', x.vagas ? `<span><b>${esc(x.vagas)}</b> vaga${x.vagas > 1 ? 's' : ''}</span>` : '', x.area ? `<span><b>${num(x.area, 0)}</b> m²</span>` : '', x.area_total ? `<span>total ${num(x.area_total, 0)} m²</span>` : '', m2De(x) != null ? `<span><b>${m2Rot(x)}</b></span>` : ''].filter(Boolean);
   return f.join('');
 }
 function valoresCurtos(x) {
@@ -2292,7 +2294,7 @@ function vImoveis() {
       <div class="cm-fat">${fatosCurtos(m)}</div></div></div>
       <div class="prop"><div class="cm-lin" style="white-space:normal"><span class="t">Proprietário</span> <b>${esc(pr.nome || '—')}</b> · ${pr.celular ? `<b>${esc(pr.celular)}</b> <button class="copiar" type="button" data-copiar="${esc(digitos(pr.celular))}">copiar</button> ${zapProp(m, pr)}` : 'celular não cadastrado'} · CPF ${pr.cpf ? `<b>${esc(pr.cpf)}</b>` : 'não cadastrado'}</div>${faltaProp(pr).length ? `<div class="linha prop-falta"><span class="pill media">Faltam dados: ${esc(faltaProp(pr).join(' · '))}</span><button class="b" type="button" data-alterar="${esc(m.id)}">Informar dados</button></div>` : ''}</div>
       ${m.comodos || m.cond_itens || m.descricao ? `<details><summary>Itens e descrição</summary>${m.comodos || m.cond_itens ? `<p class="peq">${esc([...(m.comodos || []), ...(m.cond_itens || [])].join(' · '))}</p>` : ''}${m.descricao ? `<p class="desc">${esc(m.descricao)}</p>` : ''}</details>` : ''}
-      <div class="linha acoes-imv"><button class="b p" type="button" data-alterar="${esc(m.id)}"><span class="so-pc">Solicitar alteração</span><span class="so-cel">Alterar</span></button><button class="b" type="button" data-fotosimv="${esc(m.id)}"><span class="so-pc">Adicionar fotos</span><span class="so-cel">+ Fotos</span></button><button class="b" type="button" data-agenc="${esc(m.id)}"><span class="so-pc">Atualizar agenciamento</span><span class="so-cel">Atualizar agenc.</span></button>${btnsMapa(m.id, m)}${m.link ? `<a class="b" href="${esc(m.link)}" target="_blank" rel="noopener">Ver no site</a>` : ''}<span class="mut peq data-imv">Cadastrado ${dt(m.cad).slice(0, 10)} · atualizado ${dt(m.atu).slice(0, 10)}</span></div>
+      <div class="linha acoes-imv"><button class="b p" type="button" data-alterar="${esc(m.id)}"><span class="so-pc">Solicitar alteração</span><span class="so-cel">Alterar</span></button><button class="b" type="button" data-fotosimv="${esc(m.id)}"><span class="so-pc">Adicionar fotos</span><span class="so-cel">+ Fotos</span></button><button class="b" type="button" data-agenc="${esc(m.id)}"><span class="so-pc">Atualizar agenciamento</span><span class="so-cel">Atualizar agenc.</span></button>${btnsMapa(m.id, m)}${m.link ? `<a class="b" href="${escUrl(m.link)}" target="_blank" rel="noopener">Ver no site</a>` : ''}<span class="mut peq data-imv">Cadastrado ${dt(m.cad).slice(0, 10)} · atualizado ${dt(m.atu).slice(0, 10)}</span></div>
     </article>`;
   }
   return h + '</section>';
@@ -2391,7 +2393,7 @@ function vPesquisa() {
     { k: 'area', l: 'Área', n: true, h: (r) => r.area ? num(r.area, 1) + ' m²' : '—' },
     { k: 'cor', l: 'Agenciador', h: (r) => esc(r.cor || '—') },
     { k: 'cad', l: 'Cadastrado / Atualizado', ords: [['cad', 'Cadastrado'], ['atu', 'Atualizado']], h: (r) => `<span style="white-space:nowrap"><span class="mut peq">Cad.</span> ${dt(r.cad)}</span><br><span style="white-space:nowrap"><span class="mut peq">Atu.</span> ${dt(r.atu)}</span>` },
-    { k: 'link', l: 'Links', ord: false, h: (r) => [r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">site</a>` : '', r.lat != null ? `<button class="copiar" type="button" data-vermapa="${esc(r.id)}">🗺 mapa</button>` : '', gmapsDe(r) ? `<a href="${esc(gmapsDe(r))}" target="_blank" rel="noopener">📍 Google</a>` : ''].filter(Boolean).join(' · ') || '—' },
+    { k: 'link', l: 'Links', ord: false, h: (r) => [r.link ? `<a href="${escUrl(r.link)}" target="_blank" rel="noopener">site</a>` : '', r.lat != null ? `<button class="copiar" type="button" data-vermapa="${esc(r.id)}">🗺 mapa</button>` : '', gmapsDe(r) ? `<a href="${escUrl(gmapsDe(r))}" target="_blank" rel="noopener">📍 Google</a>` : ''].filter(Boolean).join(' · ') || '—' },
   ];
   return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>Pesquisar imóveis</h2><span class="mut peq">${L.length} de ${S.vitrine.length} anúncios ativos</span><button class="b pv-filt-bt${nFiltrosVit() ? ' p' : ''}" type="button" data-pvfiltro aria-expanded="${!!S.pvFiltro}">Filtros${nFiltrosVit() ? ` (${nFiltrosVit()})` : ''} ${S.pvFiltro ? '▲' : '▼'}</button></div>
     <div class="pv-filtros${S.pvFiltro ? ' aberto' : ''}">${formFiltrosVit()}</div>
@@ -2400,7 +2402,7 @@ function vPesquisa() {
       <div class="cm-l1"><span class="ref">${esc(r.ref)}</span>${hitBA(r)}<span class="cm-lin">${esc(r.tipo || '')} · ${esc(r.fin || '')}</span><b class="cm-v">${curtoBRL(r.valor) || '—'}</b></div>
       <div class="cm-lin">${esc(r.bairro || '—')}${r.end ? ' · <span data-sens>' + esc(r.end) + '</span>' : ''}</div>
       <div class="cm-fat">${fatosCurtos(r)}${r.cond ? `<span>cond. ${curtoBRL(r.cond)}</span>` : ''}</div>
-      <div class="cm-acoes"><span class="mut">${esc(r.cor || 'sem agenciador')} · cad. ${dt(r.cad)} · atu. ${dt(r.atu)}</span>${r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">site</a>` : ''}${r.lat != null ? `<button class="copiar" type="button" data-vermapa="${esc(r.id)}">🗺 mapa</button>` : ''}${gmapsDe(r) ? `<a href="${esc(gmapsDe(r))}" target="_blank" rel="noopener">📍 Google</a>` : ''}</div></div></div>` })}
+      <div class="cm-acoes"><span class="mut">${esc(r.cor || 'sem agenciador')} · cad. ${dt(r.cad)} · atu. ${dt(r.atu)}</span>${r.link ? `<a href="${escUrl(r.link)}" target="_blank" rel="noopener">site</a>` : ''}${r.lat != null ? `<button class="copiar" type="button" data-vermapa="${esc(r.id)}">🗺 mapa</button>` : ''}${gmapsDe(r) ? `<a href="${escUrl(gmapsDe(r))}" target="_blank" rel="noopener">📍 Google</a>` : ''}</div></div></div>` })}
     <p class="status">Proprietário e contato aparecem só nos imóveis que você agenciou (aba Meus imóveis).</p></section>`;
 }
 /* FICHA-IMOVEL-GALERIA: fotos, titulo e descricao do anuncio do site (31/10/2026, pedido do Cleiton).
@@ -2448,9 +2450,9 @@ function galeriaHTML(v) {
     ${n ? (() => { // ajustes-3 fatia B (02/11/2026): o artefato não carrega imagem de site de fora; as fotos abrem no site, e as miniaturas gravadas no banco (g.m, data:) aparecem quando existirem
       const site = v.link || galUrl(F[0]);
       if (gf && gf.p.length) { const tot = gf.carregando ? Math.max(gf.n || 0, gf.p.length) : gf.p.length, mini = gf.p.slice(0, 3);
-        return `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:6px">${mini.map((x, i) => `<button type="button" class="b" data-gal="${esc(v.id)}|${i}" aria-label="Ver a foto ${i + 1} de ${tot}" style="padding:0;overflow:hidden;aspect-ratio:4/3;border-radius:6px;min-width:0"><img src="${esc(x)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></button>`).join('')}</div><div class="linha"><button type="button" class="b p" data-gal="${esc(v.id)}|0">📷 Ver as ${tot} fotos</button><a class="b" href="${esc(site)}" target="_blank" rel="noopener">Ver no site ↗</a>${gf.carregando ? '<span class="mut peq">carregando o restante…</span>' : ''}</div>`; }
-      if (gf && gf.carregando) return `<div class="mut peq" style="margin-bottom:6px">Carregando as fotos…</div><div class="linha"><a class="b p" href="${esc(site)}" target="_blank" rel="noopener">📷 Ver as ${n} fotos no site</a></div>`;
-      return `<div class="linha"><a class="b p" href="${esc(site)}" target="_blank" rel="noopener">📷 Ver as ${n} fotos no site</a></div>`; })() : '<p class="mut peq">Sem fotos lidas no site.</p>'}
+        return `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:6px">${mini.map((x, i) => `<button type="button" class="b" data-gal="${esc(v.id)}|${i}" aria-label="Ver a foto ${i + 1} de ${tot}" style="padding:0;overflow:hidden;aspect-ratio:4/3;border-radius:6px;min-width:0"><img src="${esc(x)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></button>`).join('')}</div><div class="linha"><button type="button" class="b p" data-gal="${esc(v.id)}|0">📷 Ver as ${tot} fotos</button><a class="b" href="${escUrl(site)}" target="_blank" rel="noopener">Ver no site ↗</a>${gf.carregando ? '<span class="mut peq">carregando o restante…</span>' : ''}</div>`; }
+      if (gf && gf.carregando) return `<div class="mut peq" style="margin-bottom:6px">Carregando as fotos…</div><div class="linha"><a class="b p" href="${escUrl(site)}" target="_blank" rel="noopener">📷 Ver as ${n} fotos no site</a></div>`;
+      return `<div class="linha"><a class="b p" href="${escUrl(site)}" target="_blank" rel="noopener">📷 Ver as ${n} fotos no site</a></div>`; })() : '<p class="mut peq">Sem fotos lidas no site.</p>'}
     ${g.d ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600">Descrição do anúncio</summary><div class="peq" style="white-space:pre-line;margin-top:6px">${esc(g.d)}</div></details>` : ''}</div>`;
 }
 function galFecha() { const el = document.getElementById('gal-vis'); if (el) el.remove(); GAL.id = ''; GAL.dados = null; document.removeEventListener('keydown', galTecla); }
@@ -2466,7 +2468,7 @@ function galDesenha() {
     el.addEventListener('click', (e) => { const p = e.target.closest('[data-galp]'); if (p) { galPasso(Number(p.dataset.galp)); return; } if (e.target.closest('[data-galx]') || e.target === el) galFecha(); }); }
   const u = galUrl(GAL.fotos[GAL.i] || GAL.fotos[0]), src = GAL.dados && GAL.dados[GAL.i] ? GAL.dados[GAL.i] : u;
   el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;flex-wrap:wrap"><b style="flex:1;min-width:0">${esc(GAL.ref)} · foto ${GAL.i + 1} de ${GAL.dados ? GAL.dados.length : GAL.fotos.length}</b>
-      <a href="${esc(u)}" target="_blank" rel="noopener" style="color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:6px;padding:6px 10px;text-decoration:none;white-space:nowrap">Abrir no maior tamanho ↗</a>
+      <a href="${escUrl(u)}" target="_blank" rel="noopener" style="color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:6px;padding:6px 10px;text-decoration:none;white-space:nowrap">Abrir no maior tamanho ↗</a>
       <button type="button" data-galx="1" aria-label="Fechar" style="background:none;border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:6px;padding:6px 12px;font-size:16px">✕</button></div>
     <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:0;padding:0 6px 10px">
       <button type="button" data-galp="-1" aria-label="Anterior" style="background:rgba(255,255,255,.12);border:0;color:#fff;font-size:26px;width:40px;height:64px;border-radius:6px;flex:none">‹</button>
@@ -2485,7 +2487,7 @@ function gavetaVitrine(id, v0) {
     ${galeriaHTML(v)}
     ${(() => { const e = S.prontos.has('empDocs') ? empCtx().empDoAnuncio.get(v.id) : null; return e ? `<div class="prop"><div class="t">Empreendimento</div><div class="linha"><button class="b" type="button" data-abre="emp:${esc(e.id)}">${esc(e.nome)}</button>${pillEmp(e.sit)}<span class="mut peq">${esc(e.construtora || '')}</span></div></div>` : ''; })()}
     ${v.comodos || v.cond_itens || v.posicao ? `<div class="peq">${v.comodos ? `<p><span class="mut">Cômodos:</span> ${esc(v.comodos.join(' · '))}</p>` : ''}${v.cond_itens ? `<p><span class="mut">Condomínio:</span> ${esc(v.cond_itens.join(' · '))}</p>` : ''}${v.posicao ? `<p><span class="mut">Posição solar:</span> ${esc(v.posicao.join(', '))}</p>` : ''}</div>` : ''}
-    <div class="linha">${v.link ? `<a class="b p" href="${esc(v.link)}" target="_blank" rel="noopener">Ver anúncio no site</a>` : ''}${btnsMapa(v.id, v)}<span class="mut peq">Atualizado em ${dt(v.atu)}</span></div></div>`;
+    <div class="linha">${v.link ? `<a class="b p" href="${escUrl(v.link)}" target="_blank" rel="noopener">Ver anúncio no site</a>` : ''}${btnsMapa(v.id, v)}<span class="mut peq">Atualizado em ${dt(v.atu)}</span></div></div>`;
 }
 
 // ficha de Meus imóveis (ajustes-3, 02/11/2026): a mesma ficha da pesquisa, com os botões do agenciamento
@@ -2678,7 +2680,7 @@ function campoHTML(c, d) {
   return `<label class="${cls}">${l}${ob}<input id="${id}" data-campo="${c.k}"${/^(logradouro|numero|complemento|comissao)$/.test(c.k) ? ' data-sens' : ''} type="${c.t === 'number' ? 'number' : c.t || 'text'}" ${c.t === 'number' ? 'step="any" inputmode="decimal"' : c.inp ? `inputmode="${c.inp}"` : ''} value="${esc(v ?? '')}" placeholder="${esc(c.ph || '')}"></label>`;
 }
 const htmlFotos = (fotos, rem) => fotos.length ? `<div class="fotos">${fotos.map((f, i) => `<figure><img src="${esc('/_blob/' + f.id)}" alt="Foto ${i + 1}" loading="lazy">${i === 0 ? '<span class="pill ok capa">Capa</span>' : ''}${rem ? `<button type="button" data-remfoto="${i}" aria-label="Remover foto ${i + 1}">×</button>${i ? `<button type="button" class="fcapa" data-capa="${i}" aria-label="Usar como capa">★</button>` : ''}` : ''}</figure>`).join('')}</div>` : '<p class="mut peq">Nenhuma foto ainda.</p>';
-const htmlDocs = (docs, rem) => docs.length ? `<div class="hist">${docs.map((x, i) => `<div class="i"><div class="q">${esc(x.tipo)}</div><a href="${esc('/_blob/' + x.id)}" target="_blank" rel="noopener">${esc(x.nome || 'arquivo')}</a>${rem ? ` <button class="copiar" type="button" data-remdoc="${i}">Remover</button>` : ''}</div>`).join('')}</div>` : '<p class="mut peq">Nenhum documento ainda.</p>';
+const htmlDocs = (docs, rem) => docs.length ? `<div class="hist">${docs.map((x, i) => `<div class="i"><div class="q">${esc(x.tipo)}</div><a href="${escUrl('/_blob/' + x.id)}" target="_blank" rel="noopener">${esc(x.nome || 'arquivo')}</a>${rem ? ` <button class="copiar" type="button" data-remdoc="${i}">Remover</button>` : ''}</div>`).join('')}</div>` : '<p class="mut peq">Nenhum documento ainda.</p>';
 
 function progressoHTML(n) {
   const f = faltantes(n), tot = totalObrig(n), pct = Math.max(0, Math.round((1 - f.length / tot) * 100));
@@ -2850,7 +2852,7 @@ function decNoPainel(s) {
   const url = /^https:\/\/claude\.ai\//.test(String(p.url || '')) ? p.url : '';
   return `<div class="painel"><h2>Decisão da diretoria</h2>
     <p class="peq mut" style="margin:6px 0 0">O Painel do gestor é só leitura e mostra a foto do dia. Aprovar ou recusar se faz no painel de ${esc(quem)}, e vale na hora.</p>
-    <div class="linha" style="margin-top:10px">${url ? `<a class="b p" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Decidir no painel de ${esc(quem)}</a>` : `<span class="falta">O endereço do painel de ${esc(quem)} não está na foto do dia: abra esse painel pela barra lateral.</span>`}</div></div>`;
+    <div class="linha" style="margin-top:10px">${url ? `<a class="b p" href="${escUrl(url)}" target="_blank" rel="noopener noreferrer">Decidir no painel de ${esc(quem)}</a>` : `<span class="falta">O endereço do painel de ${esc(quem)} não está na foto do dia: abra esse painel pela barra lateral.</span>`}</div></div>`;
 }
 function decCapt(id, s) {
   const c = (S.capt || {})[s.capt_id] || null;
@@ -3125,7 +3127,7 @@ function gavetaVoz() {
 // Só aparecem os anúncios ativos da vitrine (sem proprietário) e os imóveis do próprio corretor (com destaque).
 const MAPA_CDN = ['vendor/leaflet-1.9.4.js', 'vendor/leaflet.markercluster-1.5.3.js'];
 const gmapsDe = (x) => x && (x.gmaps || (x.consulta ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(x.consulta) : ''));
-const btnsMapa = (id, x) => `<button class="b" type="button" data-vermapa="${esc(id)}" ${x && x.lat != null ? '' : 'disabled title="Sem ponto no mapa ainda"'}>🗺 Mapa</button>${gmapsDe(x) ? `<a class="b" href="${esc(gmapsDe(x))}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}`;
+const btnsMapa = (id, x) => `<button class="b" type="button" data-vermapa="${esc(id)}" ${x && x.lat != null ? '' : 'disabled title="Sem ponto no mapa ainda"'}>🗺 Mapa</button>${gmapsDe(x) ? `<a class="b" href="${escUrl(gmapsDe(x))}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}`;
 const PREC = { numero: 'no número', metrica: 'no número', link: 'marcado no Google Maps', empreendimento: 'no empreendimento', rua: 'na rua (sem número)', bairro: 'aproximado, no bairro', cidade: 'aproximado, na cidade' };
 let MP = null, MPC = null, MPK = {}, MP_ESTADO = 'novo', MP_SIG = '';
 const MP_ROOT = document.createElement('div'); MP_ROOT.id = 'mp-raiz';
@@ -3192,7 +3194,7 @@ function popupMapa(x) {
   const end = x._meu ? (x.end || [x.logradouro, x.numero, x.complemento].filter(Boolean).join(', ')) : (x.end || '');
   let emp = ''; try { const C = S.prontos.has('empDocs') ? empCtx() : null; const e = C ? (C.empDoAnuncio.get(x.id) || (x.emp ? C.porId.get(x.emp) : null)) : null; emp = (e && e.nome) || (x._meu && x.condominio_nome) || ''; } catch (e) { emp = ''; }
   return `<div class="pm-pop">${capaHtml(x.id, x, 'pop')}<b class="ref">${esc(x.ref)}</b> · ${esc(x.tipo || '')} · ${esc(x.fin || '')}<br><b>${brl(x.valor)}</b>${m2De(x) != null ? ' · ' + esc(m2Rot(x)) : ''}${fatos ? '<br>' + esc(fatos) : ''}${end ? '<br><span class="peq" data-sens>' + esc(end) + '</span>' : ''}${emp ? '<br><span class="peq">Empreendimento: <b>' + esc(emp) + '</b></span>' : ''}<br><span class="mut">${esc(x.bairro || '')}${x._meu ? ' · agenciado por você' : x.cor ? ' · ' + esc(x.cor) : ''}</span><br><span class="mut peq">Ponto ${esc(PREC[x.prec] || 'aproximado')}</span>
-    <div class="linha" style="margin-top:8px;gap:6px"><button class="b" type="button" data-pmver="${esc(x.id)}">Detalhes</button>${gmapsDe(x) ? `<a class="b" href="${esc(gmapsDe(x))}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}</div></div>`;
+    <div class="linha" style="margin-top:8px;gap:6px"><button class="b" type="button" data-pmver="${esc(x.id)}">Detalhes</button>${gmapsDe(x) ? `<a class="b" href="${escUrl(gmapsDe(x))}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}</div></div>`;
 }
 function pontosMapa() {
   if (!MP) return; const L = window.L, its = itensMapa();
@@ -3310,7 +3312,7 @@ function vEmpLista(C) {
     { k: '_vmin', l: 'Valores', n: true, h: (r) => r._n ? `<span class="peq">${faixa(r._vmin, r._vmax)}</span>` : '<span class="mut">—</span>' },
     { k: '_m2', l: 'R$/m² venda', n: true, h: (r) => r._m2s ? `<b>${m2Fmt(r._m2s.media)}</b><div class="mut peq">média de ${r._m2s.n}${r._m2s.n > 1 ? ' · ' + m2Fx(r._m2s.min, r._m2s.max) : ''}</div>` : '<span class="mut">—</span>' },
     { k: '_mat', l: 'Material', n: true, h: (r) => r._mat ? `${matIcones(r)} <span class="mut peq">${r._mat}</span>` : (semTabela(r) ? '<span class="pill media">sem tabela</span>' : '<span class="mut">—</span>') },
-    { k: 'mapa', l: 'Mapa', ord: false, h: (r) => [r.lat != null ? `<button class="copiar" type="button" data-vermapa="E:${esc(r.id)}">🗺 mapa</button>` : '', r.gmaps ? `<a href="${esc(r.gmaps)}" target="_blank" rel="noopener">📍 Google</a>` : ''].filter(Boolean).join(' · ') || '—' },
+    { k: 'mapa', l: 'Mapa', ord: false, h: (r) => [r.lat != null ? `<button class="copiar" type="button" data-vermapa="E:${esc(r.id)}">🗺 mapa</button>` : '', r.gmaps ? `<a href="${escUrl(r.gmaps)}" target="_blank" rel="noopener">📍 Google</a>` : ''].filter(Boolean).join(' · ') || '—' },
   ];
   return `<div class="chips" role="group" aria-label="Situação"${busca ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-fesit="${k}" aria-pressed="${f.sit === k}">${esc(t)}</button>`).join('')}</div>
     ${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todas as situações.</p>' : ''}
@@ -3325,13 +3327,13 @@ function vEmpLista(C) {
       <div class="cm-lin">${esc(r.construtora || 'construtora não identificada')}</div>
       <div class="cm-fat"><span>${esc(r.bairro || 'bairro não informado')}${r.cidade && r.cidade !== 'Florianópolis' ? ' · ' + esc(r.cidade) : ''}</span><span>${r.entrega ? `Entrega <b>${esc(r.entrega)}</b>` : esc(r.estagio ? '' : 'entrega não informada')}${r.entrega && r.estagio ? ' · ' : ''}${r.estagio ? `<span class="mut">${esc(r.estagio)}</span>` : ''}</span></div>
       <div class="cm-fat">${r._n ? `<span><b>${r._n}</b> disponíve${r._n > 1 ? 'is' : 'l'} na Vivere</span><span>${faixa(r._vmin, r._vmax)}</span>` : '<span class="mut">sem imóvel disponível na Vivere</span>'}${r._m2s ? `<span>R$/m² <b>${m2Fmt(r._m2s.media)}</b> (média de ${r._m2s.n})</span>` : ''}</div>
-      <div class="cm-acoes"><span>${r._mat ? `Material ${matIcones(r)} <span class="mut">(${r._mat})</span>` : semTabela(r) ? '<span class="pill media">sem tabela</span>' : '<span class="mut">sem material</span>'}</span>${r.lat != null ? `<button class="copiar" type="button" data-vermapa="E:${esc(r.id)}">🗺 mapa</button>` : ''}${r.gmaps ? `<a href="${esc(r.gmaps)}" target="_blank" rel="noopener">📍 Google</a>` : ''}</div>` })}`;
+      <div class="cm-acoes"><span>${r._mat ? `Material ${matIcones(r)} <span class="mut">(${r._mat})</span>` : semTabela(r) ? '<span class="pill media">sem tabela</span>' : '<span class="mut">sem material</span>'}</span>${r.lat != null ? `<button class="copiar" type="button" data-vermapa="E:${esc(r.id)}">🗺 mapa</button>` : ''}${r.gmaps ? `<a href="${escUrl(r.gmaps)}" target="_blank" rel="noopener">📍 Google</a>` : ''}</div>` })}`;
 }
 function vEmpCons(C) {
   let L = C.cons.slice();
   const fL = BA.filtra(L, qDe(), baCons); L = fL.lista; qInfo(fL, 'construtoras');
   const contSit = (c) => SIT_ORD.map((s) => [s, c._emps.filter((e) => e.sit === s).length]).filter(([, n]) => n).map(([s, n]) => `${n} ${(n === 1 ? SIT[s] : SIT_PL[s]).toLowerCase()}`).join(' · ');
-  const links = (c) => [c.site ? `<a href="${esc(c.site)}" target="_blank" rel="noopener">site</a>` : '', c.portal ? `<a href="${esc(c.portal)}" target="_blank" rel="noopener">portal do corretor</a>` : '', c.instagram ? `<a href="${esc(c.instagram)}" target="_blank" rel="noopener">Instagram</a>` : ''].filter(Boolean).join(' · ') || '—';
+  const links = (c) => [c.site ? `<a href="${escUrl(c.site)}" target="_blank" rel="noopener">site</a>` : '', c.portal ? `<a href="${escUrl(c.portal)}" target="_blank" rel="noopener">portal do corretor</a>` : '', c.instagram ? `<a href="${escUrl(c.instagram)}" target="_blank" rel="noopener">Instagram</a>` : ''].filter(Boolean).join(' · ') || '—';
   const cols = [
     { k: 'nome', l: 'Construtora', h: (r) => `<b>${esc(r.nome)}</b>${hitBA(r)}${r.razao_social ? `<div class="mut peq">${esc(r.razao_social)}</div>` : ''}` },
     { k: 'cnpj', l: 'CNPJ', h: (r) => esc(r.cnpj || '—') },
@@ -3363,7 +3365,7 @@ function vEmpRev(C) {
     { k: 'vagas', l: 'Vagas', n: true, h: (r) => num(r.vagas) },
     { k: 'area', l: 'Área', n: true, h: (r) => r.area ? num(r.area, 1) + ' m²' : '—' },
     { k: 'cor', l: 'Agenciador', h: (r) => esc(r.cor || '—') },
-    { k: 'link', l: 'Links', ord: false, h: (r) => [r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">site</a>` : '', r.lat != null ? `<button class="copiar" type="button" data-vermapa="${esc(r.id)}">🗺 mapa</button>` : ''].filter(Boolean).join(' · ') || '—' },
+    { k: 'link', l: 'Links', ord: false, h: (r) => [r.link ? `<a href="${escUrl(r.link)}" target="_blank" rel="noopener">site</a>` : '', r.lat != null ? `<button class="copiar" type="button" data-vermapa="${esc(r.id)}">🗺 mapa</button>` : ''].filter(Boolean).join(' · ') || '—' },
   ];
   return `<p class="mut peq" style="margin:0">Unidades de revenda de terceiros anunciadas pela Vivere dentro de cada empreendimento (${total} anúncios ativos). Busque pelo nome do empreendimento para ver só as dele.</p>
     <div class="painel form"><label class="c">Empreendimento<select id="feRevEmp"><option value="">Todos</option>${empsCom.map((e) => `<option value="${esc(e.id)}" ${f.revEmp === e.id ? 'selected' : ''}>${esc(e.nome)} (${e._n})</option>`).join('')}</select></label></div>
@@ -3371,7 +3373,7 @@ function vEmpRev(C) {
       <div class="cm-l1"><span class="ref">${esc(r.ref)}</span>${hitBA(r)}<span class="cm-lin">${esc(r.tipo || '')}</span><b class="cm-v">${curtoBRL(r.valor) || '—'}</b></div>
       <div class="cm-l1"><span class="cm-lin"><b>${esc(r._emp)}</b> · ${esc(r.bairro || '—')}</span><span class="cm-v">${pillEmp(r._sit)}</span></div>
       <div class="cm-fat">${fatosCurtos(r)}${r.cond ? `<span>cond. ${curtoBRL(r.cond)}</span>` : ''}</div>
-      <div class="cm-acoes"><span class="mut">${esc(r.cor || 'sem agenciador')}</span>${r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">site</a>` : ''}${r.lat != null ? `<button class="copiar" type="button" data-vermapa="${esc(r.id)}">🗺 mapa</button>` : ''}</div>` })}`;
+      <div class="cm-acoes"><span class="mut">${esc(r.cor || 'sem agenciador')}</span>${r.link ? `<a href="${escUrl(r.link)}" target="_blank" rel="noopener">site</a>` : ''}${r.lat != null ? `<button class="copiar" type="button" data-vermapa="${esc(r.id)}">🗺 mapa</button>` : ''}</div>` })}`;
 }
 function htmlMaterial(e) {
   const mat = e.material || [];
@@ -3381,8 +3383,8 @@ function htmlMaterial(e) {
     return `<div class="mat-bloco"><h4>${i} ${esc(l)} <span class="mut peq">(${its.length})</span></h4>${grupos.map((g) => {
       const gi = its.filter((m) => (m.grupo || '') === g), imgs = gi.filter((m) => /^image\//.test(m.ct || '')), vids = gi.filter((m) => /^video\//.test(m.ct || '')), docs = gi.filter((m) => !imgs.includes(m) && !vids.includes(m));
       return `${g ? `<p class="mut peq" style="margin:6px 0 4px">${esc(g)}</p>` : ''}
-        ${docs.length ? `<div class="linha">${docs.map((m) => `<a class="b" href="${esc(urlMat(m))}" target="_blank" rel="noopener">📄 ${esc(m.titulo)}</a>`).join('')}</div>` : ''}
-        ${imgs.length ? `<div class="fotos mat-fotos">${imgs.map((m, k) => `<a href="${esc(urlMat(m))}" target="_blank" rel="noopener" title="${esc(m.titulo)}"><figure><img src="${esc(urlMin(m))}" alt="${esc(l + ' ' + (k + 1) + ' de ' + e.nome)}" loading="lazy"></figure></a>`).join('')}</div>` : ''}
+        ${docs.length ? `<div class="linha">${docs.map((m) => `<a class="b" href="${escUrl(urlMat(m))}" target="_blank" rel="noopener">📄 ${esc(m.titulo)}</a>`).join('')}</div>` : ''}
+        ${imgs.length ? `<div class="fotos mat-fotos">${imgs.map((m, k) => `<a href="${escUrl(urlMat(m))}" target="_blank" rel="noopener" title="${esc(m.titulo)}"><figure><img src="${esc(urlMin(m))}" alt="${esc(l + ' ' + (k + 1) + ' de ' + e.nome)}" loading="lazy"></figure></a>`).join('')}</div>` : ''}
         ${vids.map((m) => `<video class="mat-video" controls preload="none" src="${esc(urlMat(m))}" title="${esc(m.titulo)}"></video>`).join('')}`;
     }).join('')}</div>`;
   }).join('') + '<p class="status">Toque para abrir em tela cheia. Para enviar ao cliente, baixe pelo próprio arquivo aberto.</p>';
@@ -3395,12 +3397,12 @@ function gavetaEmp(id) {
   if (aba === 'mat') corpo = htmlMaterial(e);
   else if (aba === 'rev') corpo = e._n ? `<div class="op-ofs">${[...e._rev].sort((a, b) => (a.valor || 0) - (b.valor || 0)).map((r) => `<div class="op-of"><div class="l1"><span class="ref">${esc(r.ref)}</span><span class="peq mut">${esc(r.tipo || '')}</span><span class="v">${curtoBRL(r.valor) || '—'}</span></div>
       <div class="peq">${fatosCurtos(r)}</div><div class="peq mut">Agenciado por ${esc(r.cor || '—')} · atualizado ${dt(r.atu)}</div>
-      <div class="linha acoes"><button class="b" type="button" data-abre="vit:${esc(r.id)}">Detalhes</button>${r.link ? `<a class="b" href="${esc(r.link)}" target="_blank" rel="noopener">Site</a>` : ''}${r.lat != null ? `<button class="b" type="button" data-vermapa="${esc(r.id)}">🗺 Mapa</button>` : ''}</div></div>`).join('')}</div>
+      <div class="linha acoes"><button class="b" type="button" data-abre="vit:${esc(r.id)}">Detalhes</button>${r.link ? `<a class="b" href="${escUrl(r.link)}" target="_blank" rel="noopener">Site</a>` : ''}${r.lat != null ? `<button class="b" type="button" data-vermapa="${esc(r.id)}">🗺 Mapa</button>` : ''}</div></div>`).join('')}</div>
       <p class="status">Unidades de revenda de terceiros anunciadas pela Vivere neste empreendimento. Proprietário e contato aparecem só nos imóveis que você agenciou.</p>` : '<div class="painel vazio">Nenhuma unidade de revenda anunciada pela Vivere neste empreendimento agora.</div>';
   else corpo = `${e.tipologias ? `<p><span class="mut">Tipologias:</span> ${esc(e.tipologias)}</p>` : ''}
       ${e.descricao ? `<p class="peq" style="white-space:pre-line">${esc(e.descricao)}</p>` : ''}
       ${e.outros && e.outros.length ? `<p class="peq"><span class="mut">Também chamado de:</span> ${esc(e.outros.join(' · '))}</p>` : ''}
-      ${e.links && e.links.length ? `<div class="linha">${e.links.map((u) => `<a class="b" href="${esc(u)}" target="_blank" rel="noopener">Site oficial ↗</a>`).join('')}</div>` : ''}
+      ${e.links && e.links.length ? `<div class="linha">${e.links.map((u) => `<a class="b" href="${escUrl(u)}" target="_blank" rel="noopener">Site oficial ↗</a>`).join('')}</div>` : ''}
       ${semTabela(e) ? '<div class="aviso" style="grid-template-columns:auto 1fr"><span class="pill media">Atenção</span><div>Sem tabela de vendas no painel. Confirme valores e disponibilidade com a diretoria antes de ofertar.</div></div>' : ''}`;
   return `<div class="gaveta larga" role="dialog" aria-modal="true" aria-label="Empreendimento">
     <div class="cab"><div><p class="mut peq" style="margin:0">${pillEmp(e.sit)} ${e.construtora ? `· ${e.construtora_id && C.porC.get(e.construtora_id) ? `<button class="copiar" type="button" data-abre="cons:${esc(e.construtora_id)}">${esc(e.construtora)}</button>` : esc(e.construtora)}` : '· construtora não identificada'}</p><h3>${esc(e.nome)}</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
@@ -3421,7 +3423,7 @@ function gavetaCons(id) {
     <div class="cab"><div><p class="mut peq" style="margin:0">Construtora / incorporadora</p><h3>${esc(c.nome)}</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
     <div class="prop">${c.razao_social ? `<div><span class="mut">Razão social:</span> ${esc(c.razao_social)}</div>` : ''}${c.cnpj ? `<div><span class="mut">CNPJ:</span> ${esc(c.cnpj)}</div>` : ''}${c.sede ? `<div><span class="mut">Sede:</span> ${esc(c.sede)}</div>` : ''}</div>
     ${c.resumo ? `<p class="peq">${esc(c.resumo)}</p>` : ''}
-    <div class="linha">${c.site ? `<a class="b" href="${esc(c.site)}" target="_blank" rel="noopener">Site ↗</a>` : ''}${c.portal ? `<a class="b p" href="${esc(c.portal)}" target="_blank" rel="noopener">Portal do corretor ↗</a>` : ''}${c.instagram ? `<a class="b" href="${esc(c.instagram)}" target="_blank" rel="noopener">Instagram ↗</a>` : ''}</div>
+    <div class="linha">${c.site ? `<a class="b" href="${escUrl(c.site)}" target="_blank" rel="noopener">Site ↗</a>` : ''}${c.portal ? `<a class="b p" href="${escUrl(c.portal)}" target="_blank" rel="noopener">Portal do corretor ↗</a>` : ''}${c.instagram ? `<a class="b" href="${escUrl(c.instagram)}" target="_blank" rel="noopener">Instagram ↗</a>` : ''}</div>
     <h2>Empreendimentos (${lista.length})</h2>
     <div class="hist">${lista.length ? lista.map((e) => `<div class="i"><div class="q">${pillEmp(e.sit)} ${esc(e.entrega ? 'entrega ' + e.entrega : '')}</div><button class="copiar" type="button" data-abre="emp:${esc(e.id)}" style="padding:0"><b>${esc(e.nome)}</b></button> <span class="mut peq">${esc(e.bairro || '')}${e._n ? ` · ${e._n} disponíve${e._n > 1 ? 'is' : 'l'}` : ''}${e._mat ? ' · com material' : ''}</span></div>`).join('') : '<p class="mut">Nenhum empreendimento ligado.</p>'}</div>
     <p class="status">Só dados da empresa. Contato de dono ou responsável não fica no painel; se precisar, fale com a diretoria.</p></div>`;
@@ -3436,7 +3438,7 @@ function empsMapa() {
 }
 function popupEmp(e) {
   return `<div class="pm-pop"><b>${esc(e.nome)}</b><br>${pillEmp(e.sit)}${e.entrega ? ` · entrega ${esc(e.entrega)}` : ''}<br><span class="mut">${esc(e.construtora || 'construtora não identificada')} · ${esc(e.bairro || '')}</span><br>${e._n ? `<b>${e._n}</b> disponíve${e._n > 1 ? 'is' : 'l'} na Vivere · ${faixa(e._vmin, e._vmax)}` : '<span class="mut">sem imóvel disponível na Vivere</span>'}<br><span class="mut peq">Ponto ${esc(PREC[e.prec] || 'aproximado')}</span>
-    <div class="linha" style="margin-top:8px;gap:6px"><button class="b" type="button" data-abre="emp:${esc(e.id)}">Abrir ficha</button>${e.gmaps ? `<a class="b" href="${esc(e.gmaps)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}</div></div>`;
+    <div class="linha" style="margin-top:8px;gap:6px"><button class="b" type="button" data-abre="emp:${esc(e.id)}">Abrir ficha</button>${e.gmaps ? `<a class="b" href="${escUrl(e.gmaps)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}</div></div>`;
 }
 
 
