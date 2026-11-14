@@ -1,4 +1,5 @@
-/* Ícones do app da Vivere (fatia 4b-2, 09/11/2026).
+/* Ícones da Vivere (fatia 4b-2, 09/11/2026; v2 em 13/11/2026: biblioteca única do HUB VIVERE, do app e do PAINEL DO GESTOR,
+   com ícones novos, cores dos pontos com reserva para páginas sem as variáveis do painel e VIVERE_ICONES.html(nome) para os menus).
    Troca os emojis que o painel escreve por ícones de traço no desenho da casa (mesma família do olho: traço fino, cantos
    redondos, cor do texto). Vale para tudo o que entra na página: o painel.js continua igual ao modelo.
    Bolinhas de situação (pauta, a captar) viram pontos nas cores do tema. Em dica, rótulo de leitor de tela e lista de opções,
@@ -31,12 +32,28 @@
     sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
     lua: '<path d="M20 14.3A8.3 8.3 0 0 1 9.7 4a7.2 7.2 0 1 0 10.3 10.3z"/>',
     baixo: '<path d="m6 9 6 6 6-6"/>',
-    tema: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="#000"/>'
+    tema: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="#000"/>',
+    chave: '<circle cx="8" cy="15.5" r="4"/><path d="m11 12.5 8.5-8.5"/><path d="m16.2 7.3 2.6 2.6"/><path d="m13.8 9.7 2 2"/>',
+    grafico: '<path d="M4 4v16h16"/><path d="M8.5 16v-4"/><path d="M12.5 16V8"/><path d="M16.5 16v-6"/>',
+    obra: '<rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 9.7h18M3 14.3h18"/><path d="M9 5v4.7M15 5v4.7M6 9.7v4.6M12 9.7v4.6M18 9.7v4.6M9 14.3V19M15 14.3V19"/>',
+    predio: '<path d="M5 21V4.5A1.5 1.5 0 0 1 6.5 3h7A1.5 1.5 0 0 1 15 4.5V21"/><path d="M15 9h3.5A1.5 1.5 0 0 1 20 10.5V21"/><path d="M3 21h18"/><path d="M8.5 7h3M8.5 11h3M8.5 15h3"/>',
+    pasta: '<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/>',
+    enviar: '<path d="M12 15V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M4.5 14v4.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V14"/>',
+    olho: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    alerta: '<path d="M12 3.5 21.5 20h-19z"/><path d="M12 10v4.5"/><path d="M12 17.3h.01"/>',
+    nuvem: '<path d="M7 18.5h10.5a4 4 0 0 0 .4-8 6 6 0 0 0-11.6 1.6A3.2 3.2 0 0 0 7 18.5z"/>',
+    arquivo: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10.5h14V9"/><path d="M10 13h4"/>',
+    balao: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 14.5z"/>',
+    cadeado: '<rect x="5" y="10.5" width="14" height="10" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+    escudo: '<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5V6z"/>',
+    lista: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>'
   };
   // emoji → ícone de traço
   var IC = { '🎯': 'alvo', '🏠': 'casa', '🎤': 'microfone', '📍': 'pino', '🗺': 'mapa', '✨': 'brilho', '⚡': 'raio', '🔎': 'lupa', '🔍': 'lupa', '📷': 'camera',
     '🏷': 'etiqueta', '👥': 'pessoas', '❔': 'ajuda', '❓': 'ajuda', '🔔': 'sino', '🧩': 'blocos', '💲': 'cifrao', '💰': 'cifrao', '📐': 'area', '📋': 'prancheta', '📘': 'livro',
-    '🖼': 'imagem', '🎬': 'video', '📄': 'documento', '☀': 'sol', '☾': 'lua', '🌙': 'lua', '⏷': 'baixo', '◐': 'tema' };
+    '🖼': 'imagem', '🎬': 'video', '📄': 'documento', '☀': 'sol', '☾': 'lua', '🌙': 'lua', '⏷': 'baixo', '◐': 'tema',
+    '🏡': 'casa', '🏢': 'predio', '🔑': 'chave', '📊': 'grafico', '📈': 'grafico', '🧱': 'obra', '📌': 'pino', '✦': 'brilho', '🎉': 'brilho',
+    '📁': 'pasta', '📂': 'pasta', '📤': 'enviar', '👁': 'olho', '⚠': 'alerta', '☁': 'nuvem', '🗄': 'arquivo', '💬': 'balao', '🔒': 'cadeado', '🔐': 'cadeado' };
   // emoji de cor → ponto na cor do tema
   var PT = { '🟢': 'ok', '🟠': 'capt', '🔵': 'azul', '🔴': 'ruim', '🟡': 'aviso', '🔶': 'capt los' };
   var chaves = Object.keys(IC).concat(Object.keys(PT));
@@ -46,7 +63,8 @@
   var css = '.ic{display:inline-block;width:1.1em;height:1.1em;vertical-align:-.19em;flex:none;margin-inline-end:.32em;background:currentColor;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}' +
     '.b .ic,.btn .ic,button .ic,.pill .ic{opacity:.9}h2 .ic,.cartao .r .ic{color:var(--brass)}.acap-ft.sem .ic,.capa .ic{width:26px;height:26px;color:var(--muted);opacity:.7}' +
     '.ic.fim,.pt.fim{margin-inline-end:0}.pt{display:inline-block;width:.62em;height:.62em;border-radius:50%;vertical-align:.06em;margin:0 .36em 0 .1em;flex:none;background:var(--muted)}' +
-    '.pt-ok{background:var(--ok-selo)}.pt-capt{background:var(--capt,#c2702a)}.pt-azul{background:var(--teal)}.pt-ruim{background:var(--bad)}.pt-aviso{background:var(--warn-selo)}.pt-los{border-radius:1px;transform:rotate(45deg) scale(.86)}' +
+    '.pt-ok{background:var(--ok-selo,var(--ok,#2c7350))}.pt-capt{background:var(--capt,#c2702a)}.pt-azul{background:var(--teal,#2f6f73)}.pt-ruim{background:var(--bad,#b0402e)}.pt-aviso{background:var(--warn-selo,var(--warn,#8a5f10))}' +
+    '#ml .ml-ic .ic{margin:0;width:17px;height:17px;vertical-align:0}.pt-los{border-radius:1px;transform:rotate(45deg) scale(.86)}' +
     ':root{--capt:#c2702a}:root[data-theme="dark"]{--capt:#e39a55}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--capt:#e39a55}}';
   Object.keys(T).forEach(function (k) {
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + T[k] + '</svg>';
@@ -92,5 +110,6 @@
   });
   function liga() { varre(document.body); obs.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATRS }); }
   if (document.body) liga(); else document.addEventListener('DOMContentLoaded', liga);
-  window.VIVERE_ICONES = { nomes: Object.keys(T), limpa: limpa };
+  function html(nome) { return '<i class="ic ic-' + (T[nome] ? nome : 'blocos') + ' fim" aria-hidden="true"></i>'; }
+  window.VIVERE_ICONES = { nomes: Object.keys(T), limpa: limpa, html: html };
 })();

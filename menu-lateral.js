@@ -2,8 +2,14 @@
    menu no topo (meia tela, tablet, celular) e menu lateral (tela cheia num monitor grande). Automático: lateral com a janela
    de 1440 px ou mais ocupando 90% da tela; o botão ☰ troca nos dois sentidos e a escolha fica guardada no aparelho
    (escolha igual ao automático volta ao automático). Abaixo de 900 px vale sempre o topo. A lateral só espelha o menu:
-   os botões levam data-aba e o painel.js navega como sempre. */
+   os botões levam data-aba e o painel.js navega como sempre.
+   13/11/2026 (2): ícones de traço da biblioteca icones.js no lugar das iniciais; vale também no index.html do app (Início,
+   A CAPTAR, Acessos), que pede o encaminhamento do clique ao botão original pelo atributo data-encaminha no <script>. */
 (function () {
+  const ENCAMINHA = !!(document.currentScript && document.currentScript.hasAttribute('data-encaminha'));
+  const ICONE = { inicio: 'casa', acaptar: 'alvo', tarefas: 'prancheta', leads: 'pessoas', pesquisa: 'lupa', imoveis: 'predio', empreendimentos: 'obra',
+    mapa: 'mapa', oportunidades: 'etiqueta', demandas: 'lista', solicitacoes: 'balao', painel: 'blocos', senha: 'cadeado', acessos: 'escudo' };
+  const icone = (aba, t) => window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(ICONE[aba] || 'blocos') : esc(t.slice(0, 2));
   const LS = 'painel.menuModo', LSM = 'painel.menuMin';
   const ler = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const grava = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
@@ -22,7 +28,8 @@
   const txt = (b) => { const c = b.cloneNode(true); c.querySelectorAll('.n,svg,.ic').forEach((x) => x.remove()); return c.textContent.replace(/\s*\(\d+\)\s*$/, '').trim(); };
   const selo = (b) => { const n = b.querySelector('.n'); const m = !n && /\((\d+)\)\s*$/.exec(b.textContent); return n ? `<span class="ml-n">${esc(n.textContent.trim())}</span>` : m ? `<span class="ml-n">${m[1]}</span>` : ''; };
   function monta() {
-    const on = modo() === 'lateral', mudou = document.body.classList.contains('ml-on') !== on;
+    const nav = document.getElementById('abas');
+    const on = modo() === 'lateral' && !(nav && nav.hidden), mudou = document.body.classList.contains('ml-on') !== on;
     document.body.classList.toggle('ml-on', on); document.body.classList.toggle('ml-min', on && ler(LSM) === '1'); titulo();
     if (mudou && window.MenusCheios) requestAnimationFrame(() => { try { MenusCheios.atualiza(); } catch (e) {} });
     if (!on) return;
@@ -35,11 +42,13 @@
     const subs = ss.slice(1);
     aside.innerHTML = `<div class="ml-topo"><span class="ml-tit">Menu</span><button type="button" class="ml-x" data-ml-min title="${min ? 'Abrir o menu' : 'Recolher o menu'}" aria-label="${min ? 'Abrir o menu' : 'Recolher o menu'}">${min ? '»' : '«'}</button></div>` +
       gs.map((b) => { const sel = b.getAttribute('aria-selected') === 'true', t = txt(b);
-        return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${esc(t.slice(0, 2))}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>` +
+        return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>` +
           (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}"><span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : ''); }).join('');
   }
   let pend = 0; const agenda = () => { if (!pend) pend = requestAnimationFrame(() => { pend = 0; try { monta(); } catch (e) {} }); };
   document.addEventListener('click', (e) => {
+    if (ENCAMINHA) { const a = e.target.closest && e.target.closest('#ml [data-aba]');
+      if (a) { const o = [...document.querySelectorAll('#abas button[data-aba], .sub-op button[data-aba]')].find((x) => x.dataset.aba === a.dataset.aba); if (o) { o.click(); scrollTo({ top: 0 }); } return; } }
     const t = e.target.closest && e.target.closest('#ml-troca,[data-ml-min]'); if (!t) return;
     if (t.id === 'ml-troca') { const novo = document.body.classList.contains('ml-on') ? 'topo' : 'lateral', auto = telaCheia() ? 'lateral' : 'topo'; grava(LS, novo === auto ? null : novo); }
     else grava(LSM, document.body.classList.contains('ml-min') ? null : '1');
