@@ -830,7 +830,8 @@ function tabela(chave, cols, linhas, opt = {}) {
     if (typeof x === 'number' && typeof y === 'number') return (x - y) * st.d;
     return String(x).localeCompare(String(y), 'pt-BR', { numeric: true }) * st.d;
   });
-  const pag = opt.pag || 0, ini = (opt.pagina || 0) * pag;
+  const pag = opt.pag === 0 ? 0 : (opt.pag || linhas.length > 50 ? pagTamApp() : 0);
+  const pTot = pag ? Math.max(1, Math.ceil(linhas.length / pag)) : 1, pagina = Math.min(Math.max(0, opt.pagina != null ? opt.pagina : ((S.pagGen || {})[chave] || 0)), pTot - 1), ini = pagina * pag;
   const vis = pag ? ord.slice(ini, ini + pag) : ord;
   const seta = (c) => c.k === st.c ? (st.d > 0 ? ' ▲' : ' ▼') : ' ↕';
   const ordenaveis = cols.filter((c) => c.ord !== false).flatMap((c) => (c.ords ? c.ords.map(([k, l]) => ({ k, l })) : [c]));
@@ -841,12 +842,14 @@ function tabela(chave, cols, linhas, opt = {}) {
   for (const r of vis) h += `<tr${opt.abre ? ` data-abre="${esc(opt.abre(r))}"` : ''}>${cols.map((c) => `<td data-l="${esc(c.l)}"${c.n ? ' class="num"' : ''}><span class="cel">${c.h ? c.h(r) : esc(r[c.k] ?? '—')}</span></td>`).join('')}</tr>`;
   h += '</tbody></table></div>';
   if (opt.cartao) h += `<div class="lista-m">${vis.length ? vis.map((r) => `<div class="cm"${opt.abre ? ` data-abre="${esc(opt.abre(r))}" role="button" tabindex="0"` : ''}>${opt.cartao(r)}</div>`).join('') : `<div class="vazio">${esc(opt.vazio || 'Nada para mostrar.')}</div>`}</div>`;
-  if (pag && ord.length > pag) {
-    const tot = Math.ceil(ord.length / pag), p = opt.pagina || 0;
-    h += `<div class="pag"><span class="mut peq">${ini + 1}–${Math.min(ini + pag, ord.length)} de ${ord.length}</span><button class="b" type="button" data-pag="${chave}|-1" ${p === 0 ? 'disabled' : ''} aria-label="Página anterior">‹</button><button class="b" type="button" data-pag="${chave}|1" ${p >= tot - 1 ? 'disabled' : ''} aria-label="Próxima página">›</button></div>`;
+  if (pag && ord.length > 50) {
+    const tot = Math.ceil(ord.length / pag), p = pagina;
+    h += `<div class="pag"><span class="mut peq">${ini + 1}–${Math.min(ini + pag, ord.length)} de ${ord.length}</span><button class="b" type="button" data-pag="${chave}|-1" ${p === 0 ? 'disabled' : ''} aria-label="Página anterior">‹</button><button class="b" type="button" data-pag="${chave}|1" ${p >= tot - 1 ? 'disabled' : ''} aria-label="Próxima página">›</button><span class="pp-app" role="group" aria-label="Itens por página"><span class="mut peq">Por página</span>${[50, 100].map((n) => `<button class="b" type="button" data-pagtam="${n}" aria-pressed="${pagTamApp() === n}">${n}</button>`).join('')}</span></div>`;
   }
   return h;
 }
+
+function pagTamApp() { try { return +localStorage.getItem('painel.pagTam') === 100 ? 100 : 50; } catch (e) { return 50; } }
 
 // ---------- Regras dos leads ----------
 const histDe = (l) => Array.isArray(l.historico) ? l.historico : [];
@@ -2123,13 +2126,13 @@ document.addEventListener('input', (e) => { if (e.target.id !== 'oplf-q') return
   TOPLQP = setTimeout(() => { const s = [e.target.selectionStart, e.target.selectionEnd]; render(); const el = document.getElementById('oplf-q'); if (el) { el.focus(); try { el.setSelectionRange(s[0], s[1]); } catch (_) {} } }, 250); });
 document.addEventListener('change', (e) => { const id = e.target && e.target.id; if (!id || !id.startsWith('oplf-') || id === 'oplf-q') return; FL_OPP()[id.slice(5)] = e.target.value; S.opPg = 0; S.opAb = ''; render(); });
 function listaOpP(L, cardOp, busca) {
-  const POR = busca ? 1e9 : 20, nPg = Math.max(1, Math.ceil(L.length / POR)); S.opPg = Math.min(Math.max(0, S.opPg || 0), nPg - 1);
+  const POR = busca ? 1e9 : pagTamApp(), nPg = Math.max(1, Math.ceil(L.length / POR)); S.opPg = Math.min(Math.max(0, S.opPg || 0), nPg - 1);
   const ini = S.opPg * POR, V = L.slice(ini, ini + POR); if (!busca) S.opAuto = ''; if (busca && L.length === 1 && S.opAuto !== L[0].id) { S.opAb = L[0].id; S.opAuto = L[0].id; } // um lead só (busca pelo nome, "ver nas Oportunidades"): já abre o cartão
   const m = new Map(); L.forEach(({ l }) => { const b = l.campanha || 'sem origem'; m.set(b, (m.get(b) || 0) + 1); });
   const orig = [...m].sort((x, y) => y[1] - x[1] || String(x[0]).localeCompare(String(y[0]), 'pt-BR'));
   const nOf = L.filter((x) => x.o.novas.length).length, nCa = L.filter((x) => x.o.capt.length).length;
   const res = `<div class="opl-res"><div><b>${L.length}</b> lead${L.length === 1 ? '' : 's'} · <b>${nOf}</b> com 🟢 na pauta · <b>${nCa}</b> com 🟠 a captar</div>${orig.length ? `<div class="opl-gr"><span class="rot">Por origem</span>${orig.slice(0, 6).map(([k, v]) => `<span><b>${v}</b> ${esc(k)}</span>`).join('')}${orig.length > 6 ? `<span class="mut">+${orig.length - 6} outr${orig.length - 6 === 1 ? 'a' : 'as'}</span>` : ''}</div>` : ''}</div>`;
-  const nav = nPg > 1 ? `<div class="opl-pag"><span class="mut peq">${ini + 1}–${Math.min(ini + POR, L.length)} de ${L.length} · página ${S.opPg + 1} de ${nPg}</span><button class="b" type="button" data-oppg="-1" ${S.opPg === 0 ? 'disabled' : ''} aria-label="Página anterior">‹</button><button class="b" type="button" data-oppg="1" ${S.opPg >= nPg - 1 ? 'disabled' : ''} aria-label="Próxima página">›</button></div>` : '';
+  const nav = (nPg > 1 || (!busca && L.length > 50)) ? `<div class="opl-pag"><span class="mut peq">${ini + 1}–${Math.min(ini + POR, L.length)} de ${L.length} · página ${S.opPg + 1} de ${nPg}</span><button class="b" type="button" data-oppg="-1" ${S.opPg === 0 ? 'disabled' : ''} aria-label="Página anterior">‹</button><button class="b" type="button" data-oppg="1" ${S.opPg >= nPg - 1 ? 'disabled' : ''} aria-label="Próxima página">›</button><span class="pp-app" role="group" aria-label="Itens por página"><span class="mut peq">Por página</span>${[50, 100].map((n) => `<button class="b" type="button" data-pagtam="${n}" aria-pressed="${pagTamApp() === n}">${n}</button>`).join('')}</span></div>` : '';
   const ordCel = `<div class="opl-ord chips" role="group" aria-label="Ordenar por"><span class="rot">Ordenar por</span>${Object.entries(ORD_OPP).filter(([k]) => k !== 'perfil').map(([k, [r]]) => `<button type="button" data-opord="${k}" aria-pressed="${!!(S.opOrd && S.opOrd.k === k)}">${r}${setaOpP(k)}</button>`).join('')}<button type="button" data-oplfil="nome">⏷ Filtrar</button></div>`;
   const cab = Object.entries(ORD_OPP).map(([k, [r]]) => `<span class="c hc${k === 'ofertas' || k === 'capt' ? ' n' : ''}"><button type="button" data-opord="${k}" title="${k === 'capt' ? 'A captar: capte antes de ofertar · ' : k === 'ofertas' ? 'Pauta: pode ofertar · ' : ''}Ordenar: 1º toque maior → menor, 2º menor → maior, 3º volta à ordem original">${r}${setaOpP(k)}</button>${FIL_OPP[k] ? `<button type="button" class="fil${filOnP(k) ? ' on' : ''}" data-oplfil="${k}" title="Filtrar por ${esc(r.replace(/^[🟢🟠] /u, ''))}" aria-label="Filtrar por ${esc(r.replace(/^[🟢🟠] /u, ''))}">⏷</button>` : ''}</span>`).join('') + '<span></span>';
   const lin = V.map((x) => { const { id, l, o } = x, ab = S.opAb === id, et = l.etapa || 'Novo', per = o.p ? OP.descrevePerfil(o.p, 1) || '—' : 'sem perfil';
@@ -3525,7 +3528,8 @@ document.addEventListener('click', async (ev) => {
   if (d.ord) { const [k, c] = d.ord.split('|'); const st = S.sort[k]; S.sort[k] = { c, d: st && st.c === c ? -st.d : (['valor', 'atu', 'cad', 'entrada', '_ult', 'criado_em', 'area', 'dorm', 'vagas', 'data_prox', '_n', '_mat', '_vmin', '_m2', 'n', 'media', 'min'].includes(c) ? -1 : 1) }; if (k === 'vit') S.pagVit = 0; return render(); }
   if (d.ordm) { const st = S.sort.meus; S.sort.meus = { c: d.ordm, d: st.c === d.ordm ? -st.d : (['_end', 'bairro', 'ref'].includes(d.ordm) ? 1 : -1) }; return render(); }
   if (d.fm !== undefined) { const [k, v] = d.fm.split('|'); S.fm[k] = S.fm[k] === v ? '' : v; return render(); }
-  if (d.pag) { const [k, s] = d.pag.split('|'); if (/^m2[VA]/.test(k)) { S.pagM2 = S.pagM2 || {}; S.pagM2[k] = Math.max(0, (S.pagM2[k] || 0) + Number(s)); return render(); } if (k === 'vit') { S.pagVit = Math.max(0, S.pagVit + Number(s)); render(); document.querySelector('.tabela')?.scrollIntoView({ block: 'start' }); } return; }
+  if (d.pagtam) { try { localStorage.setItem('painel.pagTam', d.pagtam); } catch (e) {} S.pagVit = 0; S.pagM2 = {}; S.pagGen = {}; S.opPg = 0; return render(); }
+  if (d.pag) { const [k, s] = d.pag.split('|'); if (/^m2[VA]/.test(k)) { S.pagM2 = S.pagM2 || {}; S.pagM2[k] = Math.max(0, (S.pagM2[k] || 0) + Number(s)); return render(); } if (k === 'vit') { S.pagVit = Math.max(0, S.pagVit + Number(s)); render(); document.querySelector('.tabela')?.scrollIntoView({ block: 'start' }); } else { S.pagGen = S.pagGen || {}; S.pagGen[k] = Math.max(0, (S.pagGen[k] || 0) + Number(s)); render(); } return; }
   if (d.int !== undefined) { S.filtroInt = S.filtroInt === d.int ? '' : d.int; return render(); }
   if (d.etapa) { S.filtroEtapa = d.etapa; return render(); }
   if (d.pmfiltro != null) { S.pmFiltro = !S.pmFiltro; return render(); }
@@ -4006,3 +4010,4 @@ try {
   mini.querySelector('.tm-bt').addEventListener('click', () => { const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches; window.scrollTo({ top: 0, behavior: calmo ? 'auto' : 'smooth' }); const a = document.querySelector('#abas button[aria-selected="true"]'); if (a) a.focus({ preventScroll: true }); });
 })();
 try { (function () { if (document.getElementById('css-ofertas-claras')) return; const s = document.createElement('style'); s.id = 'css-ofertas-claras'; s.textContent = '.selo-cap,.selo-nao{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;line-height:1.5;padding:1px 8px;border-radius:999px;white-space:nowrap}.selo-cap{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent);border:1px solid color-mix(in srgb,var(--ok) 45%,transparent)}.selo-nao{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent)}.op-of.cap{border-left:4px solid var(--ok)}.op-of .selo-cap{justify-self:start}.op-bt{font-size:12px;font-weight:700;letter-spacing:.03em;margin:4px 0 -2px}.op-bt.cap{color:var(--ok)}.op-bt.nao{color:var(--warn)}.op-leg{display:grid;gap:6px;font-size:13px;line-height:1.5;border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:6px 0 10px}.op-leg .selo-cap,.op-leg .selo-nao{margin-right:4px}.op-como{font-size:12px;margin:0 0 8px}.op-como summary{cursor:pointer}@media(max-width:760px){.op-l2{display:none}}'; document.head.appendChild(s); })(); } catch (e) { setTimeout(() => { throw e; }); }
+/* trocas-pag5050 */
