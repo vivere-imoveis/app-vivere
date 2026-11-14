@@ -93,3 +93,9 @@ body.ml-on.ml-min #ml .ml-g{justify-content:center;padding:8px 0}
 body.ml-on.ml-min #ml .ml-n{position:absolute;top:0;right:2px;font-size:9px;min-width:12px;padding:0 3px}
 body.ml-on.ml-min #ml .ml-topo{justify-content:center}
 @media (min-width:1280px){body.ml-on .wrap{max-width:min(1560px,calc(94vw - 236px))}}
+
+/* Atalhos do app no fim da lateral (14/11/2026): A CAPTAR, Minha senha, Acessos. */
+#ml .ml-sep{margin:12px 4px 4px;padding-top:10px;border-top:1px solid var(--line);text-transform:uppercase;letter-spacing:.18em;font-size:10.5px;color:var(--muted)}
+#ml .ml-app .ml-tx::after{content:" ↗";font-size:11px;opacity:.6}
+#ml .ml-n-ok{background:var(--ok-selo,var(--ok,#2c7350))}
+body.ml-on.ml-min #ml .ml-sep{font-size:0;margin:8px 4px 2px;padding-top:6px}

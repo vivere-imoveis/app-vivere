@@ -22,10 +22,20 @@
     var sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
     var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
     var h = '<span class="ba-ic" aria-hidden="true">🎯</span><span class="ba-t">A CAPTAR</span>' + (n ? '<span class="ba-n"><b>' + n + '</b> livre' + (n === '1' ? '' : 's') + '</span>' : '');
-    if (b.innerHTML !== h) b.innerHTML = h;
+    if (b.innerHTML !== h) { b.innerHTML = h; if (window.MenuLateral) MenuLateral.atualiza(); }
     var rot = 'Abrir o A CAPTAR' + (n ? ': ' + n + ' imóve' + (n === '1' ? 'l livre' : 'is livres') + ' para captar' : '') + '. Abre outra página do app.';
     if (b.title !== rot) { b.title = rot; b.setAttribute('aria-label', rot); }
   }
+  /* Atalhos do app na lateral (14/11/2026): A CAPTAR, Minha senha e, para o gestor, Acessos (menu-lateral.js). */
+  window.MENU_LATERAL_EXTRAS = {
+    itens: function () {
+      var P = window.VIVERE_PONTE, est = P && P.estado ? P.estado() : {}, sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
+      var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
+      return [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha' },
+        est.papel === 'gestor' ? { id: 'acessos', t: 'Acessos', ic: 'escudo', href: 'index.html?aba=acessos' } : null];
+    },
+    abre: function (href) { volta(); location.href = href; }
+  };
   function liga() {
     var abas = document.getElementById('abas');
     if (!abas) return;

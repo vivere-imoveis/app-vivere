@@ -17,6 +17,10 @@
   const modo = () => { if (innerWidth < 900) return 'topo'; const m = ler(LS); return m === 'lateral' || m === 'topo' ? m : (telaCheia() ? 'lateral' : 'topo'); };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let aside = null, sig = '';
+  /* Atalhos de outras páginas do app no fim da lateral (14/11/2026, pedido do Cleiton): o painel-app.js informa A CAPTAR,
+     Minha senha e Acessos em window.MENU_LATERAL_EXTRAS = { itens(): [{ id, t, ic, href, n }], abre(href) }. No PAINEL DO
+     GESTOR do claude.ai não há esse objeto, e a lateral fica só com as abas. */
+  const extras = () => { const E = window.MENU_LATERAL_EXTRAS; try { return E && E.itens ? (E.itens() || []).filter(Boolean) : []; } catch (e) { return []; } };
   function botaoTroca() {
     if (document.getElementById('ml-troca')) return; const tema = document.getElementById('btnTema'); if (!tema) return;
     const b = document.createElement('button'); b.type = 'button'; b.id = 'ml-troca'; b.className = 'btn-tema ml-troca'; b.textContent = '☰';
@@ -37,16 +41,20 @@
     const gs = [...document.querySelectorAll('#abas button[data-aba]')].filter(visivel);
     const ss = [...document.querySelectorAll('.sub-op button[data-aba]')];
     const min = document.body.classList.contains('ml-min');
-    const novo = gs.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + '#' + ss.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + (min ? 'm' : '');
+    const ex = extras();
+    const novo = ex.map((x) => x.id + (x.n || '')).join(',') + '§' + gs.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + '#' + ss.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + (min ? 'm' : '');
     if (novo === sig) return; sig = novo;
     const subs = ss.slice(1);
     aside.innerHTML = `<div class="ml-topo"><span class="ml-tit">Menu</span><button type="button" class="ml-x" data-ml-min title="${min ? 'Abrir o menu' : 'Recolher o menu'}" aria-label="${min ? 'Abrir o menu' : 'Recolher o menu'}">${min ? '»' : '«'}</button></div>` +
       gs.map((b) => { const sel = b.getAttribute('aria-selected') === 'true', t = txt(b);
         return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>` +
-          (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}"><span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : ''); }).join('');
+          (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}"><span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : ''); }).join('') +
+      (ex.length ? `<div class="ml-sep">No app</div>` + ex.map((x) => `<button type="button" class="ml-g ml-app" data-ml-href="${esc(x.href)}" title="${esc(x.t)} · abre outra página do app"><span class="ml-ic">${window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(x.ic) : esc(x.t.slice(0, 2))}</span><span class="ml-tx">${esc(x.t)}</span>${x.n ? `<span class="ml-n ml-n-ok">${esc(x.n)}</span>` : ''}</button>`).join('') : '');
   }
   let pend = 0; const agenda = () => { if (!pend) pend = requestAnimationFrame(() => { pend = 0; try { monta(); } catch (e) {} }); };
   document.addEventListener('click', (e) => {
+    const ap = e.target.closest && e.target.closest('#ml [data-ml-href]');
+    if (ap) { const E = window.MENU_LATERAL_EXTRAS; if (E && E.abre) E.abre(ap.dataset.mlHref); else location.href = ap.dataset.mlHref; return; }
     if (ENCAMINHA) { const a = e.target.closest && e.target.closest('#ml [data-aba]');
       if (a) { const o = [...document.querySelectorAll('#abas button[data-aba], .sub-op button[data-aba]')].find((x) => x.dataset.aba === a.dataset.aba); if (o) { o.click(); scrollTo({ top: 0 }); } return; } }
     const t = e.target.closest && e.target.closest('#ml-troca,[data-ml-min]'); if (!t) return;

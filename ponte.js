@@ -568,5 +568,5 @@
       return (r[0].data || []).filter(function (v) { return !v.distribuido_para && !ocup[v.id]; }).length;
     });
   }
-  window.VIVERE_PONTE = { versao: VERSAO, acaptarLivres: acaptarLivres, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
+  window.VIVERE_PONTE = { versao: VERSAO, acaptarLivres: acaptarLivres, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
 })();

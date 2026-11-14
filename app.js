@@ -40,7 +40,7 @@
   var abaParam = (new URLSearchParams(location.search).get('aba') || '').trim();
   if (abaParam) history.replaceState(null, '', APP_URL + location.hash);
 
-  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
+  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'acessos') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
 
   sb.auth.onAuthStateChange(function (evento, sessao) {
     if (evento === 'PASSWORD_RECOVERY') modoSenha = true;
