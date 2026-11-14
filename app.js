@@ -89,6 +89,8 @@
     /* quem veio do painel (aba A CAPTAR ou botão Captar) ganha a aba de volta para ele */
     var volta = ''; try { volta = sessionStorage.getItem('painel.volta') || ''; } catch (e) { }
     if (!/^painel\.html(\?ver=[a-z0-9_-]{1,40})?$/.test(volta)) volta = '';
+    /* 14/11/2026 (pedido do Cleiton): "Meu painel" sempre no menu para quem já abre o painel (gestor sempre; corretor com o painel oficial). */
+    if (!volta && (estado.eu.papel === 'gestor' || estado.oficial)) volta = 'painel.html';
     if (volta) lista.splice(1, 0, ['painel', volta.indexOf('?ver=') > 0 ? 'Painel · ' + esc(volta.split('?ver=')[1]) : 'Meu painel']);
     if (estado.eu.papel === 'gestor') lista.push(['acessos', 'Acessos']);
     abas.hidden = false;

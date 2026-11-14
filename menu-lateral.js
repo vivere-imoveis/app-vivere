@@ -50,7 +50,11 @@
         return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>` +
           (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}"><span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : ''); }).join('') +
       (ex.length ? `<div class="ml-sep">No app</div>` + ex.map((x) => `<button type="button" class="ml-g ml-app" data-ml-href="${esc(x.href)}" title="${esc(x.t)} · abre outra página do app"><span class="ml-ic">${window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(x.ic) : esc(x.t.slice(0, 2))}</span><span class="ml-tx">${esc(x.t)}</span>${x.n ? `<span class="ml-n ml-n-ok">${esc(x.n)}</span>` : ''}</button>`).join('') : '');
+    mede();
   }
+  /* 14/11/2026 (pedido do Cleiton): a lateral tem a largura do maior título, sem sobra em branco; o conteúdo acompanha. */
+  function mede() { if (!aside || !document.body.classList.contains('ml-on')) return; document.body.style.setProperty('--ml-w', Math.ceil(aside.getBoundingClientRect().width) + 'px'); }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => mede());
   let pend = 0; const agenda = () => { if (!pend) pend = requestAnimationFrame(() => { pend = 0; try { monta(); } catch (e) {} }); };
   document.addEventListener('click', (e) => {
     const ap = e.target.closest && e.target.closest('#ml [data-ml-href]');
