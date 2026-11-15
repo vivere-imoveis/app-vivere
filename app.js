@@ -6,7 +6,7 @@
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj';
   var APP_URL = location.origin + location.pathname;
-  var VERSAO = 'app-vivere 2026-11-11.3';
+  var VERSAO = 'app-vivere 2026-11-15.1'; // botão de olho nos campos de senha (sugestão nº 26 do Jorlei pela caixinha da Vivian)
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -102,6 +102,25 @@
     telaInicio(main);
   }
 
+  /* 2026-11-15.1: botão de olho nos campos de senha (sugestão nº 26, Jorlei, caixinha de sugestões da Vivian). */
+  var OLHO_ABERTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var OLHO_FECHADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.1 10.1 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  function campoSenha(rotulo, nome, auto, extra) {
+    return '<label>' + rotulo + '<span class="senha-campo"><input type="password" name="' + nome + '" autocomplete="' + auto + '"' + (extra || '') + ' required>' +
+      '<button type="button" class="ver-senha" aria-label="Mostrar a senha" aria-pressed="false" title="Mostrar a senha">' + OLHO_ABERTO + '</button></span></label>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.ver-senha'); if (!b) return;
+    e.preventDefault();
+    var i = b.parentNode.querySelector('input'); if (!i) return;
+    var mostrar = i.type === 'password';
+    i.type = mostrar ? 'text' : 'password';
+    b.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
+    b.setAttribute('aria-label', mostrar ? 'Ocultar a senha' : 'Mostrar a senha'); b.title = b.getAttribute('aria-label');
+    b.innerHTML = mostrar ? OLHO_FECHADO : OLHO_ABERTO;
+    i.focus();
+  });
+
   function telaEntrar(main, esqueci) {
     titulo(esqueci ? 'Esqueci minha senha' : 'Entrar');
     if (esqueci) {
@@ -119,7 +138,7 @@
     }
     main.innerHTML = '<form class="form cartao" id="f" novalidate><h2>Entrar</h2>' +
       '<label>E-mail<input type="email" name="email" autocomplete="username" required></label>' +
-      '<label>Senha<input type="password" name="senha" autocomplete="current-password" required></label><div id="m"></div>' +
+      campoSenha('Senha', 'senha', 'current-password') + '<div id="m"></div>' +
       '<button class="btn pri" type="submit">Entrar</button><button class="link" type="button" id="esq">Esqueci minha senha</button></form>';
     $('#esq').onclick = function () { telaEntrar(main, true); };
     $('#f').onsubmit = async function (e) {
@@ -137,8 +156,8 @@
     main.innerHTML = '<form class="form cartao" id="f" novalidate><h2>' + (primeira ? 'Crie a sua senha' : 'Trocar minha senha') + '</h2>' +
       '<p class="s">Mínimo de 8 caracteres. Use uma senha só sua, que você não usa em outro lugar.</p>' +
       '<input type="email" name="username" autocomplete="username" value="' + esc(estado.sessao.user.email) + '" hidden>' +
-      '<label>Nova senha<input type="password" name="s1" autocomplete="new-password" minlength="8" required></label>' +
-      '<label>Repita a senha<input type="password" name="s2" autocomplete="new-password" minlength="8" required></label><div id="m"></div>' +
+      campoSenha('Nova senha', 's1', 'new-password', ' minlength="8"') +
+      campoSenha('Repita a senha', 's2', 'new-password', ' minlength="8"') + '<div id="m"></div>' +
       '<button class="btn pri" type="submit">Salvar a senha</button></form>';
     $('#f').onsubmit = async function (e) {
       e.preventDefault(); var s1 = this.s1.value, s2 = this.s2.value;
