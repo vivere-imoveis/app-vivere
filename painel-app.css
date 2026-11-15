@@ -99,3 +99,51 @@ body.ml-on.ml-min #ml .ml-topo{justify-content:center}
 #ml .ml-app .ml-tx::after{content:" ↗";font-size:11px;opacity:.6}
 #ml .ml-n-ok{background:var(--ok-selo,var(--ok,#2c7350))}
 body.ml-on.ml-min #ml .ml-sep{font-size:0;margin:8px 4px 2px;padding-top:6px}
+
+/* Pendências do corretor (15/11/2026, vis-enderecos-completos-agenciadores F2): botão no cabeçalho e tela por cima do painel
+   (pendencias.js). Celular: botão numa linha só dele, campos em uma coluna, nada com rolagem lateral. */
+#btnPendApp{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--warn-selo);background:var(--soft);color:var(--ink);cursor:pointer}
+#btnPendApp:hover,#btnPendApp:focus-visible{background:var(--panel)}
+#btnPendApp .bp-ic{color:var(--warn-selo)}
+#btnPendApp .bp-t{font-weight:600;letter-spacing:.04em}
+#btnPendApp .bp-n{font-size:12px;color:var(--muted);padding-left:6px;border-left:1px solid var(--line)}
+#btnPendApp .bp-n.tem b{color:var(--bad);font-weight:700}
+@media (max-width:700px){#btnPendApp{order:6;flex:1 1 100%;justify-content:center;padding:8px 12px}}
+html.pend-aberta,html.pend-aberta body{overflow:hidden}
+.pend-tela{position:fixed;inset:0;z-index:40;background:rgba(10,14,20,.55);display:flex;justify-content:center;align-items:flex-start;padding:24px 16px;overflow:auto}
+.pend-tela[hidden]{display:none}
+.pend-caixa{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;width:min(1100px,100%);padding:16px 18px 22px;outline:0;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.pend-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.pend-topo h2{font:500 20px var(--display);margin:0;letter-spacing:.04em}
+.pend-sub{font-size:14px;margin:0 0 12px;line-height:1.45}
+.pend-sub .mut,.pend-caixa .mut{color:var(--muted);font-size:12.5px}
+.pend-abas{margin-bottom:10px}
+.pend-filtro{margin-bottom:12px}
+.pend-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+.pend-im,.pend-ld{display:flex;flex-direction:column;gap:8px}
+.pend-im-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.pend-ref{font:600 15px var(--body);letter-spacing:.02em}
+.pend-orfao{font-size:12px;color:var(--warn-selo);margin-top:2px}
+.pend-grupos{display:grid;gap:6px}
+.pend-g{display:grid;grid-template-columns:132px 1fr;gap:6px;align-items:start}
+.pend-g-t{font:500 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+.pend-g .chips2{display:flex;flex-wrap:wrap;gap:4px}
+.pend-g .chips2 span{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--ink);background:var(--panel)}
+.pend-acao{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.pend-form{border-top:1px solid var(--line);padding-top:10px;display:grid;gap:10px}
+.pend-form .pend-largo{grid-column:span 2}
+.pend-form input[aria-invalid="true"]{border-color:var(--bad)}
+.pend-fora{margin:0;padding-left:18px;font-size:12.5px;color:var(--muted)}
+.pend-aviso{margin:0}
+.pend-msg{margin:0;font-size:13px;color:var(--bad);min-height:0}
+.pend-msg:empty{display:none}
+.pend-pag{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
+.pend-pag .pend-pp{grid-auto-flow:column;align-items:center}
+@media (max-width:700px){
+  .pend-tela{padding:0}
+  .pend-caixa{border-radius:0;min-height:100%;padding:12px 12px 24px}
+  .pend-lista{grid-template-columns:1fr}
+  .pend-g{grid-template-columns:1fr;gap:3px}
+  .pend-form .pend-largo{grid-column:auto}
+  .pend-form .form{grid-template-columns:1fr}
+}

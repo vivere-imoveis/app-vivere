@@ -568,5 +568,20 @@
       return (r[0].data || []).filter(function (v) { return !v.distribuido_para && !ocup[v.id]; }).length;
     });
   }
-  window.VIVERE_PONTE = { versao: VERSAO, acaptarLivres: acaptarLivres, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
+  // 15/11/2026 (vis-enderecos-completos-agenciadores, F2): pendências do painel (imóveis e leads) e correção de cadastro.
+  // O banco só devolve a lista do que falta (nenhum valor do imóvel ou do proprietário); a correção vale na hora no CRM,
+  // no HUB, no site e na ficha do Drive (camada imoveis_correcoes no Supabase).
+  async function pendencias() {
+    await entrou;
+    var r = await sb.rpc('pend_meu_painel', { p_painel: ctx.ver ? ctx.painel : null });
+    if (r.error) throw r.error;
+    return r.data;
+  }
+  async function corrigir(imovel, campos, proprietario) {
+    await entrou;
+    var r = await sb.rpc('corr_gravar_painel', { p_imovel: String(imovel), p_campos: campos || {}, p_proprietario: proprietario || {} });
+    if (r.error) throw r.error;
+    return r.data;
+  }
+  window.VIVERE_PONTE = { versao: VERSAO, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
 })();
