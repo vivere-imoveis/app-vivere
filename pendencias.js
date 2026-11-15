@@ -44,7 +44,7 @@
     carregando = true;
     return P.pendencias().then(function (d) { dados = d || { imoveis: [], leads: [] }; erroCarga = ''; },
       function (e) { erroCarga = (e && e.message) || 'erro'; })
-      .then(function () { carregando = false; pintaBotao(); if (tela()) desenha(); });
+      .then(function () { carregando = false; pintaBotao(); if (tela() && !tela().hidden && !aberto) desenha(); });
   }
 
   /* ---------- botão do cabeçalho ---------- */
@@ -81,7 +81,15 @@
     var cx = t.querySelector('.pend-caixa'); if (cx) cx.focus();
   }
   function fechar() { var t = tela(); if (t) t.hidden = true; document.documentElement.classList.remove('pend-aberta'); aberto = null; var b = document.getElementById('btnPendApp'); if (b) b.focus(); }
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && tela() && !tela().hidden) fechar(); });
+  document.addEventListener('keydown', function (e) {
+    var t = tela(); if (!t || t.hidden) return;
+    if (e.key === 'Escape') return fechar();
+    if (e.key !== 'Tab') return;
+    var f = [].filter.call(t.querySelectorAll('button:not([disabled]),input,select,a[href]'), function (x) { return x.offsetParent !== null; });
+    if (!f.length) return;
+    if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  });
 
   function desenha() {
     var c = document.getElementById('pendCorpo'); if (!c) return;
