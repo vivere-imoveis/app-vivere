@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-16.1'; // A CAPTAR pela ref opaca (revisão do Lucas, hub #3)
+  var VERSAO = 'ponte 2026-11-16.2'; // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1 };
@@ -53,7 +53,7 @@
     var sessao = s && s.data && s.data.session;
     if (!sessao) return paraOInicio();
     ctx.uid = sessao.user.id;
-    var q = await sb.from('acessos').select('email,nome,papel,painel,ativo').eq('user_id', ctx.uid).maybeSingle();
+    var q = await sb.from('acessos').select('email,nome,papel,painel,ativo,corretor_id').eq('user_id', ctx.uid).maybeSingle();
     if (q.error) return fatal('Não deu para conferir o seu acesso agora. Recarregue a página.');
     if (!q.data || !q.data.ativo) return paraOInicio();
     ctx.eu = q.data;
@@ -583,5 +583,5 @@
     if (r.error) throw r.error;
     return r.data;
   }
-  window.VIVERE_PONTE = { versao: VERSAO, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
+  window.VIVERE_PONTE = { versao: VERSAO, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
 })();

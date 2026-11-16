@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -2557,6 +2557,9 @@ const ehLoc = (d) => d.finalidade === 'Locação anual';
 const naoVenda = (d) => !!d.finalidade && d.finalidade !== 'Venda';
 const temConjuge = (d) => /Casad|União/.test(d.p_estado_civil || '');
 const temMatricula = (d) => /matrícula/.test(d.escritura || '');
+// trocas-f3b: placa e áreas de lazer (16/11/2026)
+const temPlaca = (d) => /^Sim/.test(d.placa || ''), semPlaca = (d) => /^Não é permitido/.test(d.placa || ''), lazerSim = (d) => /^Sim/.test(d.lazer || '');
+const pareceCond = (d) => /Apartamento|Cobertura|condomínio|Sala/.test(d.tipo || '') || !!String(d.condominio_nome || '').trim();
 const SECOES = [
   ['Proprietário', [
     { k: 'p_nome', l: 'Nome completo', obr: 1 },
@@ -2624,6 +2627,12 @@ const SECOES = [
     { k: 'averbacao', l: 'Construção averbada na matrícula', t: 'sel', obr: 1, op: ['Sim', 'Não', 'Não se aplica'] },
     { k: 'onus', l: 'Ônus, dívidas ou restrições conhecidas', t: 'area', w: 1 },
   ]],
+  ['Placa e áreas de lazer', [
+    { k: 'placa', l: 'Placa da Vivere no imóvel', t: 'sel', obr: 1, op: ['Sim, já colocada', 'Ainda não', 'Não é permitido'] },
+    { k: 'placa_data', l: 'Data em que a placa foi colocada', t: 'date', obr: temPlaca, se: temPlaca },
+    { k: 'placa_motivo', l: 'Por que não pode ter placa', t: 'sel', obr: semPlaca, se: semPlaca, op: ['Proprietário não autoriza', 'Condomínio não permite', 'Outro motivo (explique nas observações)'] },
+    { k: 'lazer', l: 'Condomínio, prédio ou loteamento com área de lazer', t: 'sel', obr: 1, op: ['Sim, tem área de lazer', 'Não tem área de lazer', 'Não é condomínio, prédio nem loteamento'] },
+  ]],
   ['Agenciamento e visitas', [
     { k: 'exclusivo', l: 'Exclusividade', t: 'sel', obr: 1, op: ['Sim', 'Não'] },
     { k: 'prazo_dias', l: 'Prazo da autorização (dias)', t: 'number', obr: (d) => d.exclusivo === 'Sim' },
@@ -2637,6 +2646,17 @@ const SECOES = [
 const TIPOS_DOC = ['Autorização ou ficha de agenciamento assinada', 'Matrícula ou contrato de aquisição', 'Carnê ou certidão do IPTU', 'Documento do proprietário (RG ou CNH)', 'Boleto do condomínio', 'Outro'];
 const docsObrig = (d) => TIPOS_DOC.slice(0, 4).concat(Number(d.condominio) > 0 ? [TIPOS_DOC[4]] : []);
 const MIN_FOTOS = 8;
+const MIN_FOTOS_LAZER = 3; // trocas-f3b
+const nFotosAll = (n) => (n.fotos || []).length + (n.fotos_vivian || []).length;
+const docsAll = (n) => [...(n.docs || []), ...(n.docs_vivian || [])];
+const nLazer = (n) => (n.fotos_lazer || []).length + (n.fotos_lazer_vivian || []).length;
+const nPlaca = (n) => (n.foto_placa || []).length + (n.foto_placa_vivian || []).length;
+// trava do Aprovar (o envio passa): lazer sem as fotos, ou condomínio sem dizer se tem lazer
+function travaLazer(n) { const d = (n && n.dados) || {}; if (lazerSim(d) && nLazer(n) < MIN_FOTOS_LAZER) return `faltam as fotos das áreas de lazer (${nLazer(n)} de ${MIN_FOTOS_LAZER})`; if (vazio_(d.lazer) && pareceCond(d)) return 'falta dizer se o condomínio, prédio ou loteamento tem área de lazer (e mandar as fotos)'; return ''; }
+// quem decide cadastro novo (16/11/2026): Cleiton, William e Nicollas; fora do app (artefato do Cleiton) vale
+const APROVADORES_CAD = ['cleiton', 'william', 'nicollas'];
+const euPonte = () => { try { return (window.VIVERE_PONTE && window.VIVERE_PONTE.estado && window.VIVERE_PONTE.estado()) || null; } catch (e) { return null; } };
+const podeDecidirCad = () => { const e = euPonte(); return !e || APROVADORES_CAD.includes(String(e.eu_corretor || '')); };
 const rotulo = (c, d) => typeof c.l === 'function' ? c.l(d) : c.l;
 const vazio_ = (v) => v == null || v === '' || (Array.isArray(v) && !v.length);
 const SITUACOES = { rascunho: 'Rascunho', complemento: 'Complementar', pendente: 'Aguardando aprovação', aprovada: 'Aprovada', aplicada: 'Aplicada no site', recusada: 'Recusada', cancelada: 'Cancelada' };
@@ -2658,17 +2678,19 @@ function faltantes(n) {
     const ob = typeof c.obr === 'function' ? c.obr(d) : !!c.obr;
     if (ob && vazio_(d[c.k])) out.push(rotulo(c, d));
   }
-  const fotos = (n.fotos || []).length;
+  const fotos = nFotosAll(n);
   if (fotos < MIN_FOTOS) out.push(`Fotos (${fotos} de ${MIN_FOTOS})`);
-  const tem = new Set((n.docs || []).map((x) => x.tipo));
+  const tem = new Set(docsAll(n).map((x) => x.tipo));
   for (const t of docsObrig(d)) if (!tem.has(t)) out.push('Documento: ' + t);
+  if (temPlaca(d) && !nPlaca(n)) out.push('Foto da placa');
+  if (lazerSim(d) && nLazer(n) < MIN_FOTOS_LAZER) out.push(`Fotos das áreas de lazer (${nLazer(n)} de ${MIN_FOTOS_LAZER})`);
   if (!(n.descricao || '').trim() && !n.pede_descricao) out.push('Descrição do anúncio');
   return out;
 }
 function totalObrig(n) {
   const d = n.dados || {}; let t = 0;
   for (const [, campos] of SECOES) for (const c of campos) { if (c.se && !c.se(d)) continue; if (typeof c.obr === 'function' ? c.obr(d) : c.obr) t++; }
-  return t + 1 + docsObrig(d).length + 1;
+  return t + 1 + docsObrig(d).length + 1 + (temPlaca(d) ? 1 : 0) + (lazerSim(d) ? 1 : 0);
 }
 function campoHTML(c, d) {
   const id = 'c_' + c.k, v = d[c.k], l = esc(rotulo(c, d)), ob = (typeof c.obr === 'function' ? c.obr(d) : c.obr) ? ' *' : '';
@@ -2702,6 +2724,13 @@ function gavetaNovoImovel() {
         <div id="listaFotos">${htmlFotos(n.fotos || [], true)}</div>
         <div class="linha"><label class="b" for="upFotos">+ Adicionar fotos</label><input id="upFotos" type="file" accept="image/*" multiple hidden><label class="b p" for="camFotos">📷 Tirar fotos</label><input id="camFotos" type="file" accept="image/*" capture="environment" hidden></div>
       </fieldset>
+      ${lazerSim(d) || temPlaca(d) || (vazio_(d.lazer) && pareceCond(d)) ? `<fieldset class="sec-f"><legend>Fotos das áreas de lazer e da placa</legend>
+        <p class="peq mut" style="margin:0">${lazerSim(d) ? `Áreas de lazer e de uso comum: pelo menos ${MIN_FOTOS_LAZER} fotos (piscina, salão, academia, playground, fachada, hall…). Sem elas o cadastro não é aprovado. ` : vazio_(d.lazer) ? 'Diga acima se o condomínio, prédio ou loteamento tem área de lazer. ' : ''}${temPlaca(d) ? 'Placa: uma foto da placa colocada.' : ''} Pelo WhatsApp, é só mandar à Vivian dizendo se são do lazer ou da placa.</p>
+        ${lazerSim(d) ? `<p class="peq" style="margin:8px 0 0"><b>Áreas de lazer</b> · ${nLazer(n)} de ${MIN_FOTOS_LAZER}${(n.fotos_lazer_vivian || []).length ? ` (${n.fotos_lazer_vivian.length} pela Vivian)` : ''}</p><div id="listaLazer">${htmlFotosX(n.fotos_lazer || [], 'remlazer')}</div>
+        <div class="linha"><label class="b" for="upLazer">+ Fotos do lazer</label><input id="upLazer" type="file" accept="image/*" multiple hidden><label class="b" for="camLazer">📷 Tirar</label><input id="camLazer" type="file" accept="image/*" capture="environment" hidden></div>` : ''}
+        ${temPlaca(d) ? `<p class="peq" style="margin:8px 0 0"><b>Placa</b> · ${nPlaca(n) ? `${nPlaca(n)} foto(s)${(n.foto_placa_vivian || []).length ? ' (pela Vivian)' : ''}` : 'sem foto'}</p><div id="listaPlaca">${htmlFotosX(n.foto_placa || [], 'remplaca')}</div>
+        <div class="linha"><label class="b" for="upPlaca">+ Foto da placa</label><input id="upPlaca" type="file" accept="image/*" hidden><label class="b" for="camPlaca">📷 Tirar</label><input id="camPlaca" type="file" accept="image/*" capture="environment" hidden></div>` : ''}
+      </fieldset>` : ''}
       <fieldset class="sec-f"><legend>Documentos da captação</legend>
         <p class="peq mut" style="margin:0">Obrigatórios: ${docsObrig(d).map(esc).join(' · ')}.</p>
         <div id="listaDocs">${htmlDocs(n.docs || [], true)}</div>
@@ -2734,7 +2763,7 @@ async function gravarNovo(status, silencioso) {
   if ((status === 'rascunho' || status === 'complemento_rascunho') && n.status_atual === 'complemento') status = 'pendente_rasc';
   const d = n.dados || {};
   const doc = {
-    tipo: n.tipo, status: status === 'pendente_rasc' ? (n.status_orig || 'pendente') : status === 'complemento_rascunho' ? 'rascunho' : status, dados: d, fotos: n.fotos || [], docs: n.docs || [], descricao: n.descricao || '', pede_descricao: !!n.pede_descricao,
+    tipo: n.tipo, status: status === 'pendente_rasc' ? (n.status_orig || 'pendente') : status === 'complemento_rascunho' ? 'rascunho' : status, dados: d, fotos: n.fotos || [], docs: n.docs || [], fotos_lazer: n.fotos_lazer || [], foto_placa: n.foto_placa || [], descricao: n.descricao || '', pede_descricao: !!n.pede_descricao,
     descricao_origem: n.descricao_origem || '', obs: n.obs || '', corretor: S.info.slug || '', atualizado_em: agora(),
     ref: n.tipo === 'fotos' ? (S.meus[n.imovel_id] || {}).ref || '' : [d.tipo, d.bairro].filter(Boolean).join(' · ') || 'Imóvel novo',
     imovel_id: n.imovel_id || '', criado_em: n.criado_em || agora(), faltantes: n.tipo === 'novo_imovel' ? faltantes(n) : [],
@@ -2765,7 +2794,7 @@ async function enviarArquivos(files, destino, tipoDoc) {
       const b = await comprimir(f);
       const r = await S.assets.upload(b, { type: b.type || f.type });
       const item = { id: r.id, nome: f.name, tam: r.sizeBytes };
-      if (destino === 'fotos') S.novo.fotos.push(item); else S.novo.docs.push({ ...item, tipo: tipoDoc });
+      if (destino === 'fotos') S.novo.fotos.push(item); else if (destino === 'lazer') (S.novo.fotos_lazer || (S.novo.fotos_lazer = [])).push(item); else if (destino === 'placa') (S.novo.foto_placa || (S.novo.foto_placa = [])).push(item); else S.novo.docs.push({ ...item, tipo: tipoDoc });
     } catch (e) { if (err) err.textContent = `Não foi possível enviar ${f.name}: ${e && (e.code || e.message) || 'erro'}.`; }
   }
   await gravarNovo(S.novo.status_atual === 'complemento' ? 'complemento_rascunho' : 'rascunho', true);
@@ -2774,6 +2803,8 @@ async function enviarArquivos(files, destino, tipoDoc) {
 function atualizarArquivos() {
   const lf = document.getElementById('listaFotos'); if (lf) lf.innerHTML = htmlFotos(S.novo.fotos || [], true);
   const ld = document.getElementById('listaDocs'); if (ld) ld.innerHTML = htmlDocs(S.novo.docs || [], true);
+  const ll = document.getElementById('listaLazer'); if (ll) ll.innerHTML = htmlFotosX(S.novo.fotos_lazer || [], 'remlazer');
+  const lp = document.getElementById('listaPlaca'); if (lp) lp.innerHTML = htmlFotosX(S.novo.foto_placa || [], 'remplaca');
   const pg = document.getElementById('progNovo'); if (pg) pg.innerHTML = progressoHTML(S.novo);
 }
 function textoParaIA(d, m) {
@@ -2811,6 +2842,34 @@ async function gerarIA(alvo) {
   }
 }
 
+// ---------- trocas-f3b: fotos de lazer e placa, pasta do Drive e arquivos da Vivian (16/11/2026) ----------
+function htmlFotosX(fotos, attr) {
+  return fotos.length ? `<div class="fotos">${fotos.map((f, i) => `<figure><img src="${esc('/_blob/' + f.id)}" alt="Foto ${i + 1}" loading="lazy"><button type="button" data-${attr}="${i}" aria-label="Remover foto ${i + 1}">×</button></figure>`).join('')}</div>` : '';
+}
+function blocoPlacaLazer(s) {
+  const d = s.dados || {}, L = [];
+  if (!vazio_(d.placa)) L.push(`<div><span>Placa</span><b>${esc(d.placa)}${temPlaca(d) && d.placa_data ? ' em ' + esc(String(d.placa_data).split('-').reverse().join('/')) : ''}${semPlaca(d) && d.placa_motivo ? ' · ' + esc(d.placa_motivo) : ''}${temPlaca(d) ? ` · ${nPlaca(s) ? nPlaca(s) + ' foto(s)' : 'sem foto'}` : ''}</b></div>`);
+  if (!vazio_(d.lazer)) L.push(`<div><span>Área de lazer</span><b>${esc(d.lazer)}${lazerSim(d) ? ` · ${nLazer(s)} de ${MIN_FOTOS_LAZER} fotos` : ''}</b></div>`);
+  const tr = travaLazer(s);
+  if (!L.length && !tr) return '';
+  const fotos = [...(s.fotos_lazer || []), ...(s.foto_placa || [])];
+  return `<div class="painel"><h2>Placa e áreas de lazer</h2>${tr ? `<p class="falta" style="margin:6px 0 0">${esc(tr)}</p>` : ''}${L.length ? `<div class="fatos" style="margin-top:10px">${L.join('')}</div>` : ''}${fotos.length ? `<div style="margin-top:10px">${htmlFotos(fotos, false)}</div>` : ''}</div>`;
+}
+function blocoDriveVivian(id, s) {
+  const cd = (S.cadDrive || {})[id] || null;
+  const url = cd && /^https:\/\/drive\.google\.com\//.test(String(cd.url || '')) ? cd.url : '';
+  const arqs = cd && Array.isArray(cd.arquivos) && cd.arquivos.length ? cd.arquivos.map((a) => `<div class="i"><div class="q">${esc(a.sub || '')}</div>${esc(a.nome || '')}</div>`) : [];
+  if (!arqs.length) {
+    const nf = (s.fotos_vivian || []).length, nl = (s.fotos_lazer_vivian || []).length, np = (s.foto_placa_vivian || []).length;
+    if (nf) arqs.push(`<div class="i"><div class="q">Fotos do anúncio</div>${nf} foto(s)</div>`);
+    if (nl) arqs.push(`<div class="i"><div class="q">Áreas de lazer</div>${nl} foto(s)</div>`);
+    if (np) arqs.push(`<div class="i"><div class="q">Placa</div>${np} foto(s)</div>`);
+    (s.docs_vivian || []).forEach((x) => arqs.push(`<div class="i"><div class="q">${esc(x.tipo || 'Documento')}</div>${esc(x.nome || 'arquivo')}</div>`));
+  }
+  if (!url && !arqs.length) return '';
+  return `<div class="painel"><h2>Pasta no Drive e arquivos da Vivian</h2>${url ? `<div class="linha" style="margin-top:8px"><a class="b p" href="${escUrl(url)}" target="_blank" rel="noopener noreferrer">Pasta no Drive${cd.pasta_nome ? ' · ' + esc(cd.pasta_nome) : ''}</a></div>` : `<p class="peq mut" style="margin:6px 0 0">A pasta no Drive nasce quando o cadastro feito pela Vivian vai à diretoria.</p>`}${arqs.length ? `<div class="hist" style="margin-top:10px">${arqs.join('')}</div>` : ''}</div>`;
+}
+
 // ---------- Detalhe de uma solicitação (corretor vê; diretoria aprova) ----------
 function gavetaSol(id) {
   const s = S.sol[id]; if (!s) return '';
@@ -2820,6 +2879,7 @@ function gavetaSol(id) {
     corpo = SECOES.map(([t, campos]) => { const linhas = campos.filter((c) => !vazio_(d[c.k])).map((c) => `<div><span>${esc(rotulo(c, d))}</span><b${/^(logradouro|numero|complemento|comissao|valor|condominio|iptu|entrada_min)$/.test(c.k) ? ' data-sens' : ''}>${esc(Array.isArray(d[c.k]) ? d[c.k].join(', ') : c.t === 'number' && /valor|condominio|iptu|entrada/.test(c.k) ? brl(d[c.k]) : d[c.k])}</b></div>`).join(''); return linhas ? `<div class="painel"><h2>${t}</h2><div class="fatos" style="margin-top:10px">${linhas}</div></div>` : ''; }).join('');
     corpo += `<div class="painel"><h2>Descrição${s.descricao_origem === 'ia' ? ' (gerada com IA e revisada pelo corretor)' : ''}</h2>${s.pede_descricao ? '<p class="falta">O corretor pediu que a Vivere escreva a descrição.</p>' : `<p class="desc">${esc(s.descricao || '—')}</p>`}</div>`;
     corpo += `<div class="painel"><h2>Documentos</h2>${htmlDocs(s.docs || [], false)}</div>`;
+    corpo += blocoPlacaLazer(s) + blocoDriveVivian(id, s);
     const f = faltantes(s); if (f.length) corpo = `<div class="painel"><p class="falta" style="margin:0">Faltando: ${f.map(esc).join(' · ')}</p></div>` + corpo;
   } else if (tipo === 'corretor_anunciante') {
     corpo = `<div class="painel peq"><p style="margin:0">Aviso de que o lead de captação <b>${esc((S.leads[s.lead_painel] || {}).nome || '—')}</b> é corretor ou imobiliária. A entrega diária registra o telefone no cadastro de corretores anunciantes do HUB.</p></div>`;
@@ -2832,16 +2892,17 @@ function gavetaSol(id) {
   }
   if ((s.fotos || []).length) corpo += `<div class="painel"><h2>Fotos (${s.fotos.length})</h2><div style="margin-top:10px">${htmlFotos(s.fotos, false)}</div></div>`;
   const falta = tipo === 'novo_imovel' ? faltantes(s) : [];
-  const aprova = S.gestor && st === 'pendente' && tipo !== 'corretor_anunciante' ? decNoPainel(s) : S.ehDono && st === 'pendente' && tipo === 'corretor_anunciante' ? '<div class="painel peq faixa-dono">Registro automático: a entrega diária marca o telefone no cadastro de corretores anunciantes do HUB (Captação), onde a diretoria pode liberar.</div>' : S.ehDono && st === 'pendente' && tipo === 'captacao' ? decCapt(id, s) : S.ehDono && st === 'pendente' ? `<div class="painel"><h2>Decisão da diretoria</h2>
+  const aprova = S.gestor && st === 'pendente' && tipo !== 'corretor_anunciante' ? decNoPainel(s) : S.ehDono && st === 'pendente' && tipo === 'corretor_anunciante' ? '<div class="painel peq faixa-dono">Registro automático: a entrega diária marca o telefone no cadastro de corretores anunciantes do HUB (Captação), onde a diretoria pode liberar.</div>' : S.ehDono && st === 'pendente' && tipo === 'captacao' ? decCapt(id, s) : S.ehDono && st === 'pendente' && tipo === 'novo_imovel' && !podeDecidirCad() ? '<div class="painel peq faixa-dono">Cadastro de imóvel novo: quem decide é o Cleiton, o William ou o Nicollas (aqui ou pela Vivian).</div>' : S.ehDono && st === 'pendente' ? `<div class="painel"><h2>Decisão da diretoria</h2>${tipo === 'novo_imovel' && travaLazer(s) ? `<p class="falta" style="margin:8px 0 0">Aprovar travado: ${esc(travaLazer(s))}. Peça o complemento.</p>` : ''}
     <label class="c" style="margin-top:10px">Mensagem ao corretor (obrigatória para pedir complemento ou recusar)<textarea id="respDec" placeholder="Ex.: insira mais 10 fotos, com a fachada e a área de lazer"></textarea></label>
     ${falta.length ? `<button class="copiar" type="button" data-inserirfalta="${esc(id)}" style="justify-self:start">Inserir na mensagem o que falta (${falta.length})</button>` : ''}
-    <div class="linha" style="margin-top:10px"><button class="b p" type="button" data-decidir="${esc(id)}|aprovada">Aprovar</button><button class="b" type="button" data-decidir="${esc(id)}|complemento">Pedir complemento</button><button class="b" type="button" data-decidir="${esc(id)}|recusada">Recusar</button><span class="erro" id="eDec"></span></div></div>` : '';
+    <div class="linha" style="margin-top:10px"><button class="b p" type="button" data-decidir="${esc(id)}|aprovada"${tipo === 'novo_imovel' && travaLazer(s) ? ' disabled' : ''}>Aprovar</button><button class="b" type="button" data-decidir="${esc(id)}|complemento">Pedir complemento</button><button class="b" type="button" data-decidir="${esc(id)}|recusada">Recusar</button><span class="erro" id="eDec"></span></div></div>` : '';
   const editavel = tipo !== 'alteracao' && (st === 'rascunho' || st === 'complemento');
   const editar = !S.ehDono && editavel ? `<button class="b p" type="button" data-continuar="${esc(id)}">${st === 'complemento' ? 'Complementar o pedido' : 'Continuar o cadastro'}</button>` : !S.ehDono && st === 'complemento' ? '<span class="peq mut">Envie uma nova alteração com o que a diretoria pediu.</span>' : '';
   const cancelar = !S.ehDono && st === 'pendente' ? `<button class="b" type="button" data-cancelar="${esc(id)}">Cancelar pedido</button>` : '';
   return `<div class="gaveta larga" role="dialog" aria-modal="true" aria-label="Solicitação">
     <div class="cab"><div><p class="mut peq" style="margin:0">${esc({ novo_imovel: 'Cadastro de imóvel', fotos: 'Fotos novas', alteracao: 'Alteração de imóvel', captacao: 'Pedido de captação', corretor_anunciante: 'Aviso de corretor anunciante' }[tipo] || tipo)} · enviada em ${dt(s.enviado_em || s.criado_em)}</p><h3>${esc(s.ref || 'Imóvel')}</h3><p style="margin:6px 0 0">${pillSit(st)}</p>${autorLin(s, 'mut peq', 1)}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${dc.resposta ? `<div class="painel peq ${st === 'complemento' ? 'faixa-dono' : ''}"><b>${st === 'complemento' ? 'A diretoria pediu complemento:' : 'Resposta da diretoria:'}</b> ${esc(dc.resposta)}</div>` : ''}
+    ${dc.por_nome && dc.status ? `<p class="peq mut" style="margin:0">Decidido por ${esc(dc.por_nome)}${dc.origem === 'vivian' ? ' pela Vivian' : ''}${dc.em ? ' em ' + esc(dt(dc.em)) : ''}${dc.auto ? ' (pedido da diretoria)' : ''}</p>` : ''}
     ${corpo}${aprova}<div class="linha">${editar}${cancelar}</div></div>`;
 }
 // decisão do pedido de captação pelo dono (05/11/2026): recusar vale na hora; aprovar fica marcado e a entrega das 7h43
@@ -2865,8 +2926,12 @@ function decCapt(id, s) {
 }
 async function decidir(id, status) {
   const resp = val('respDec'), e = document.getElementById('eDec');
+  const sol0 = S.sol[id] || {};
+  if (sol0.tipo === 'novo_imovel' && !podeDecidirCad()) { e.textContent = 'Cadastro de imóvel novo: só o Cleiton, o William ou o Nicollas decidem.'; return; }
+  if (status === 'aprovada' && sol0.tipo === 'novo_imovel' && travaLazer(sol0)) { e.textContent = 'Não dá para aprovar: ' + travaLazer(sol0) + '. Peça o complemento.'; return; }
   if (status !== 'aprovada' && !resp) { e.textContent = status === 'complemento' ? 'Escreva o que o corretor precisa completar.' : 'Escreva o motivo da recusa para o corretor.'; return; }
   const capt = (S.sol[id] || {}).tipo === 'captacao', doc = { status, resposta: resp, em: agora(), por: 'diretoria' };
+  { const eu = euPonte(); if (eu && eu.eu_nome) { doc.por_nome = eu.eu_nome; if (eu.eu_corretor) doc.por_id = eu.eu_corretor; } doc.origem = doc.origem || 'painel'; }
   if (capt) {
     doc.origem = 'painel';
     if (status === 'aprovada') { doc.entrega = 'pendente'; doc.resposta = (resp ? resp + ' · ' : '') + 'Captação aprovada: o proprietário chega em Meus leads, com telefone e roteiro, na entrega das 7h43.'; }
@@ -3579,6 +3644,8 @@ document.addEventListener('click', async (ev) => {
   if (d.continuar) return continuar(d.continuar);
   if (d.fotosimv) { S.novo = novoRegistro('fotos', { imovel_id: d.fotosimv }); return abrir('fotosimv'); }
   if (d.ia) return gerarIA(d.ia);
+  if (d.remlazer) { S.novo.fotos_lazer.splice(Number(d.remlazer), 1); S.novo.sujo = true; return atualizarArquivos(); }
+  if (d.remplaca) { S.novo.foto_placa.splice(Number(d.remplaca), 1); S.novo.sujo = true; return atualizarArquivos(); }
   if (d.remfoto) { S.novo.fotos.splice(Number(d.remfoto), 1); S.novo.sujo = true; return atualizarArquivos(); }
   if (d.capa) { const [f] = S.novo.fotos.splice(Number(d.capa), 1); S.novo.fotos.unshift(f); S.novo.sujo = true; return atualizarArquivos(); }
   if (d.remdoc) { S.novo.docs.splice(Number(d.remdoc), 1); S.novo.sujo = true; return atualizarArquivos(); }
@@ -3634,6 +3701,8 @@ document.addEventListener('change', (ev) => {
   if (S.novo && el.dataset && el.dataset.campo) { S.novo.dados[el.dataset.campo] = el.dataset.vlr != null ? (numVlr(el.value) ?? '') : el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value.trim(); S.novo.sujo = true; agendarRascunho(); if (el.tagName === 'SELECT') return redesenharGaveta(); return atualizarArquivos(); }
   if (S.novo && el.dataset && el.dataset.multi) { const k = el.dataset.multi; S.novo.dados[k] = [...document.querySelectorAll(`[data-multi="${k}"]:checked`)].map((x) => x.value); S.novo.sujo = true; agendarRascunho(); return atualizarArquivos(); }
   if (el.id === 'ppAlvo') return ajustarProposta();
+  if (/^(up|cam)Lazer$/.test(el.id) && el.files.length) { const fs = [...el.files]; el.value = ''; return enviarArquivos(fs, 'lazer'); }
+  if (/^(up|cam)Placa$/.test(el.id) && el.files.length) { const fs = [...el.files].slice(0, 1); el.value = ''; return enviarArquivos(fs, 'placa'); }
   if (el.id === 'upFotos' && el.files.length) { const fs = [...el.files]; el.value = ''; return enviarArquivos(fs, 'fotos'); }
   if (el.id === 'camFotos' && el.files.length) { const fs = [...el.files]; el.value = ''; return enviarArquivos(fs, 'fotos'); }
   if (el.id === 'upDocs' && el.files.length) { const fs = [...el.files]; el.value = ''; return enviarArquivos(fs, 'docs', val('tipoDoc')); }
@@ -3678,7 +3747,7 @@ render();
     S[alvo] = o; S.prontos.add(alvo); render();
     if (alvo === 'leads' && S.aberto && S.aberto.tipo === 'lead' && S.leads[S.aberto.id]) { const hl = document.getElementById('histLista'); if (hl) hl.innerHTML = htmlHist(S.leads[S.aberto.id]); }
   }, erro);
-  col('leads', 'leads'); col('meus_imoveis', 'meus'); col('catalogo', 'catalogo'); col('solicitacoes', 'sol'); col('decisoes', 'decisoes'); col('eventos_agenciamento', 'eventos'); col('empreendimentos', 'empDocs'); col('fotos', 'fotosDocs'); col('demandas', 'dem'); col('demandas_pedidos', 'demPed'); col('equipe_cartoes', 'eqc'); col('captados', 'capt'); col('tarefas', 'tarefas'); col('atribuicoes', 'atrib');
+  col('leads', 'leads'); col('meus_imoveis', 'meus'); col('catalogo', 'catalogo'); col('solicitacoes', 'sol'); col('decisoes', 'decisoes'); col('cadastro_drive', 'cadDrive'); col('eventos_agenciamento', 'eventos'); col('empreendimentos', 'empDocs'); col('fotos', 'fotosDocs'); col('demandas', 'dem'); col('demandas_pedidos', 'demPed'); col('equipe_cartoes', 'eqc'); col('captados', 'capt'); col('tarefas', 'tarefas'); col('atribuicoes', 'atrib');
   db.doc('controle/prazos').onSnapshot((d) => { S.prazos = d.exists ? d.data() : {}; render(); }, erro);
   db.doc('acaptar/estado').onSnapshot((d) => { S.acapProprio = d.exists ? d.data() : null; S.acap = S.acapProprio || acapDaFoto(); render(); }, () => {});
   (async () => { let u = null; try { u = await window.claude.use('user'); S.ehDono = u ? await u.isOwner() : false; S.uid = u ? await u.id() : null; } catch (e) { S.ehDono = !!S.ehDono; } render();
