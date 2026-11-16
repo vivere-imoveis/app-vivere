@@ -2559,7 +2559,7 @@ const temConjuge = (d) => /Casad|União/.test(d.p_estado_civil || '');
 const temMatricula = (d) => /matrícula/.test(d.escritura || '');
 // trocas-f3b: placa e áreas de lazer (16/11/2026)
 const temPlaca = (d) => /^Sim/.test(d.placa || ''), semPlaca = (d) => /^Não é permitido/.test(d.placa || ''), lazerSim = (d) => /^Sim/.test(d.lazer || '');
-const pareceCond = (d) => /Apartamento|Cobertura|condomínio|Sala/.test(d.tipo || '') || !!String(d.condominio_nome || '').trim();
+const pareceCond = (d) => /Apartamento|Cobertura|condomínio|Sala|Terreno/.test(d.tipo || '') || !!String(d.condominio_nome || '').trim();
 const SECOES = [
   ['Proprietário', [
     { k: 'p_nome', l: 'Nome completo', obr: 1 },
@@ -2649,8 +2649,9 @@ const MIN_FOTOS = 8;
 const MIN_FOTOS_LAZER = 3; // trocas-f3b
 const nFotosAll = (n) => (n.fotos || []).length + (n.fotos_vivian || []).length;
 const docsAll = (n) => [...(n.docs || []), ...(n.docs_vivian || [])];
-const nLazer = (n) => (n.fotos_lazer || []).length + (n.fotos_lazer_vivian || []).length;
-const nPlaca = (n) => (n.foto_placa || []).length + (n.foto_placa_vivian || []).length;
+const arrF = (x) => (Array.isArray(x) ? x : []);
+const nLazer = (n) => arrF(n.fotos_lazer).length + arrF(n.fotos_lazer_vivian).length;
+const nPlaca = (n) => arrF(n.foto_placa).length + arrF(n.foto_placa_vivian).length;
 // trava do Aprovar (o envio passa): lazer sem as fotos, ou condomínio sem dizer se tem lazer
 function travaLazer(n) { const d = (n && n.dados) || {}; if (lazerSim(d) && nLazer(n) < MIN_FOTOS_LAZER) return `faltam as fotos das áreas de lazer (${nLazer(n)} de ${MIN_FOTOS_LAZER})`; if (vazio_(d.lazer) && pareceCond(d)) return 'falta dizer se o condomínio, prédio ou loteamento tem área de lazer (e mandar as fotos)'; return ''; }
 // quem decide cadastro novo (16/11/2026): Cleiton, William e Nicollas; fora do app (artefato do Cleiton) vale
@@ -2726,9 +2727,9 @@ function gavetaNovoImovel() {
       </fieldset>
       ${lazerSim(d) || temPlaca(d) || (vazio_(d.lazer) && pareceCond(d)) ? `<fieldset class="sec-f"><legend>Fotos das áreas de lazer e da placa</legend>
         <p class="peq mut" style="margin:0">${lazerSim(d) ? `Áreas de lazer e de uso comum: pelo menos ${MIN_FOTOS_LAZER} fotos (piscina, salão, academia, playground, fachada, hall…). Sem elas o cadastro não é aprovado. ` : vazio_(d.lazer) ? 'Diga acima se o condomínio, prédio ou loteamento tem área de lazer. ' : ''}${temPlaca(d) ? 'Placa: uma foto da placa colocada.' : ''} Pelo WhatsApp, é só mandar à Vivian dizendo se são do lazer ou da placa.</p>
-        ${lazerSim(d) ? `<p class="peq" style="margin:8px 0 0"><b>Áreas de lazer</b> · ${nLazer(n)} de ${MIN_FOTOS_LAZER}${(n.fotos_lazer_vivian || []).length ? ` (${n.fotos_lazer_vivian.length} pela Vivian)` : ''}</p><div id="listaLazer">${htmlFotosX(n.fotos_lazer || [], 'remlazer')}</div>
+        ${lazerSim(d) ? `<p class="peq" style="margin:8px 0 0"><b>Áreas de lazer</b> · <span id="nLazer">${nLazer(n)}</span> de ${MIN_FOTOS_LAZER}${(n.fotos_lazer_vivian || []).length ? ` (${n.fotos_lazer_vivian.length} pela Vivian)` : ''}</p><div id="listaLazer">${htmlFotosX(n.fotos_lazer || [], 'remlazer')}</div>
         <div class="linha"><label class="b" for="upLazer">+ Fotos do lazer</label><input id="upLazer" type="file" accept="image/*" multiple hidden><label class="b" for="camLazer">📷 Tirar</label><input id="camLazer" type="file" accept="image/*" capture="environment" hidden></div>` : ''}
-        ${temPlaca(d) ? `<p class="peq" style="margin:8px 0 0"><b>Placa</b> · ${nPlaca(n) ? `${nPlaca(n)} foto(s)${(n.foto_placa_vivian || []).length ? ' (pela Vivian)' : ''}` : 'sem foto'}</p><div id="listaPlaca">${htmlFotosX(n.foto_placa || [], 'remplaca')}</div>
+        ${temPlaca(d) ? `<p class="peq" style="margin:8px 0 0"><b>Placa</b> · <span id="nPlaca">${nPlaca(n) ? nPlaca(n) + ' foto(s)' : 'sem foto'}</span>${(n.foto_placa_vivian || []).length ? ' (pela Vivian)' : ''}</p><div id="listaPlaca">${htmlFotosX(n.foto_placa || [], 'remplaca')}</div>
         <div class="linha"><label class="b" for="upPlaca">+ Foto da placa</label><input id="upPlaca" type="file" accept="image/*" hidden><label class="b" for="camPlaca">📷 Tirar</label><input id="camPlaca" type="file" accept="image/*" capture="environment" hidden></div>` : ''}
       </fieldset>` : ''}
       <fieldset class="sec-f"><legend>Documentos da captação</legend>
@@ -2805,6 +2806,8 @@ function atualizarArquivos() {
   const ld = document.getElementById('listaDocs'); if (ld) ld.innerHTML = htmlDocs(S.novo.docs || [], true);
   const ll = document.getElementById('listaLazer'); if (ll) ll.innerHTML = htmlFotosX(S.novo.fotos_lazer || [], 'remlazer');
   const lp = document.getElementById('listaPlaca'); if (lp) lp.innerHTML = htmlFotosX(S.novo.foto_placa || [], 'remplaca');
+  const cl = document.getElementById('nLazer'); if (cl) cl.textContent = nLazer(S.novo);
+  const cp = document.getElementById('nPlaca'); if (cp) cp.textContent = nPlaca(S.novo) ? nPlaca(S.novo) + ' foto(s)' : 'sem foto';
   const pg = document.getElementById('progNovo'); if (pg) pg.innerHTML = progressoHTML(S.novo);
 }
 function textoParaIA(d, m) {
@@ -2844,7 +2847,7 @@ async function gerarIA(alvo) {
 
 // ---------- trocas-f3b: fotos de lazer e placa, pasta do Drive e arquivos da Vivian (16/11/2026) ----------
 function htmlFotosX(fotos, attr) {
-  return fotos.length ? `<div class="fotos">${fotos.map((f, i) => `<figure><img src="${esc('/_blob/' + f.id)}" alt="Foto ${i + 1}" loading="lazy"><button type="button" data-${attr}="${i}" aria-label="Remover foto ${i + 1}">×</button></figure>`).join('')}</div>` : '';
+  return fotos.length ? `<div class="fotos">${fotos.map((f, i) => `<figure><img src="${esc('/_blob/' + f.id)}" alt="Foto ${i + 1}" loading="lazy">${attr ? `<button type="button" data-${attr}="${i}" aria-label="Remover foto ${i + 1}">×</button>` : ''}</figure>`).join('')}</div>` : '';
 }
 function blocoPlacaLazer(s) {
   const d = s.dados || {}, L = [];
@@ -2853,7 +2856,7 @@ function blocoPlacaLazer(s) {
   const tr = travaLazer(s);
   if (!L.length && !tr) return '';
   const fotos = [...(s.fotos_lazer || []), ...(s.foto_placa || [])];
-  return `<div class="painel"><h2>Placa e áreas de lazer</h2>${tr ? `<p class="falta" style="margin:6px 0 0">${esc(tr)}</p>` : ''}${L.length ? `<div class="fatos" style="margin-top:10px">${L.join('')}</div>` : ''}${fotos.length ? `<div style="margin-top:10px">${htmlFotos(fotos, false)}</div>` : ''}</div>`;
+  return `<div class="painel"><h2>Placa e áreas de lazer</h2>${tr ? `<p class="falta" style="margin:6px 0 0">${esc(tr)}</p>` : ''}${L.length ? `<div class="fatos" style="margin-top:10px">${L.join('')}</div>` : ''}${fotos.length ? `<div style="margin-top:10px">${htmlFotosX(fotos, '')}</div>` : ''}</div>`;
 }
 function blocoDriveVivian(id, s) {
   const cd = (S.cadDrive || {})[id] || null;
