@@ -45,20 +45,23 @@
     A.carregando = true;
     var sb = C.sb, minha = ++geracao, uid = C.sessaoUid;
     var r = await Promise.all([
-      sb.from('ac_imoveis').select('id,cod,lista,negocio,tipo,bairro,praca,preco,quartos,area,rua,cep,empreendimento,estrelas,fora_da_ilha,coletado_em,anunciado_em,origem,fonte,distribuido_para,foto_id,plataformas').eq('ativo', true).limit(2000),
-      sb.from('ac_travas').select('id,imovel_id,user_id,nome,email,travado_em,ultimo_contato_em,contatos,solto_em').is('solto_em', null).limit(2000),
-      sb.from('ac_pedidos_captei').select('imovel_id,user_id,nome,pedido_em,status,decidido_em,decidido_por').limit(2000)
+      sb.from('ac_imoveis').select('ref,cod,lista,negocio,tipo,bairro,praca,preco,quartos,area,rua,cep,empreendimento,estrelas,fora_da_ilha,coletado_em,anunciado_em,origem,fonte,distribuido_para,foto_id,plataformas').eq('ativo', true).limit(2000),
+      sb.from('ac_travas').select('id,ref,user_id,nome,email,travado_em,ultimo_contato_em,contatos,solto_em').is('solto_em', null).limit(2000),
+      sb.from('ac_pedidos_captei').select('ref,user_id,nome,pedido_em,status,decidido_em,decidido_por').limit(2000)
     ]);
     if (minha !== geracao || uid !== C.sessaoUid) return;
     var erro = r[0].error || r[1].error || r[2].error;
     if (erro) { C.toast('Não foi possível carregar o A CAPTAR: ' + erro.message); A.carregando = false; return; }
-    A.im = r[0].data || []; A.tr = (r[1].data || []).filter(ativa); A.ped = r[2].data || [];
+    // 16/11/2026 (revisão do Lucas, hub #3): a tela só conhece a ref opaca (ac-…); o id do lead fica no banco.
+    A.im = (r[0].data || []).map(function (v) { v.id = v.ref; return v; });
+    A.tr = (r[1].data || []).map(function (t) { t.imovel_id = t.ref; return t; }).filter(ativa);
+    A.ped = (r[2].data || []).map(function (p) { p.imovel_id = p.ref; return p; });
     var meus = A.tr.filter(function (t) { return t.user_id === C.sessaoUid; }).map(function (t) { return t.imovel_id; });
     A.ct = {};
     if (meus.length) {
-      var q = await sb.from('ac_contatos').select('imovel_id,nome,telefones,emails,link,titulo,descricao').in('imovel_id', meus);
+      var q = await sb.from('ac_contatos').select('ref,nome,telefones,emails,link,titulo,descricao').in('ref', meus);
       if (minha !== geracao) return;
-      (q.data || []).forEach(function (c) { A.ct[c.imovel_id] = c; });
+      (q.data || []).forEach(function (c) { c.imovel_id = c.ref; A.ct[c.ref] = c; });
     }
     A.carregado = true; A.carregando = false;
   }
@@ -330,7 +333,7 @@
     A.ocupado = false;
     if (r.error) { C.toast('Não foi possível gravar agora: ' + r.error.message); desenhar(); return null; }
     if (r.data && r.data.ok === false) {
-      var m = r.data.motivo === 'em_captacao' ? 'Outro corretor pegou este imóvel antes de você.' : r.data.motivo === 'imovel_indisponivel' ? 'Este imóvel não está mais disponível.' : 'Nada foi alterado.';
+      var m = r.data.motivo === 'em_captacao' ? 'Outro corretor pegou este imóvel antes de você.' : r.data.motivo === 'imovel_indisponivel' ? 'Este imóvel não está mais disponível.' : r.data.motivo === 'limite_travas' ? 'Você já tem ' + (r.data.limite || 10) + ' imóveis em captação. Registre o contato ou solte algum para captar outro.' : 'Nada foi alterado.';
       C.toast(m);
     } else if (msgOk) C.toast(msgOk);
     await carregar(); desenhar();
