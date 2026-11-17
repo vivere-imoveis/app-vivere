@@ -286,14 +286,17 @@ try {
 
   // ---------- Kanban ----------
   // itens: {id, nome, etapa, sub (html), pills (html), prox, data_prox, alerta, abre (atributo html), marca (texto)}
+  // cfg.campos (16/11/2026, fatia 2 do CRM): lista dos campos do cartão que aparecem (interesse, alertas, origem, proxima, valor, fechamento, autor); sem ela, todos
   function cartao(chave, x, cfg) {
     const mover = cfg.podeMover && (!cfg.podeMoverItem || cfg.podeMoverItem(x));
-    const venc = x.data_prox && x.data_prox < hoje();
-    return `<div class="vk-card${x.alerta ? ' alerta' : ''}" ${mover ? `data-vk-drag="${esc(chave)}|${esc(x.id)}"` : ''}>
-      <div class="vk-l1">${x.abre ? `<button type="button" class="vk-nome" ${x.abre}>${esc(x.nome || '—')}</button>` : `<b class="vk-nome">${esc(x.nome || '—')}</b>`}${x.pills || ''}</div>
-      ${x.sub ? `<div class="vk-s">${x.sub}</div>` : ''}
-      ${x.prox || x.data_prox ? `<div class="vk-s${venc ? ' venc' : ''}">↳ ${esc(x.prox || 'Ação')}${x.data_prox ? ' · ' + dtc(x.data_prox) : ''}</div>` : ''}
-      ${x.marca ? `<div class="vk-s vk-marca">${esc(x.marca)}</div>` : ''}
+    const venc = x.data_prox && x.data_prox < hoje(), mostra = (k) => !cfg.campos || cfg.campos.includes(k);
+    return `<div class="vk-card${x.alerta && mostra('alertas') ? ' alerta' : ''}" ${mover ? `data-vk-drag="${esc(chave)}|${esc(x.id)}"` : ''}>
+      <div class="vk-l1">${x.abre ? `<button type="button" class="vk-nome" ${x.abre}>${esc(x.nome || '—')}</button>` : `<b class="vk-nome">${esc(x.nome || '—')}</b>`}${mostra('interesse') ? x.pills || '' : ''}${mostra('alertas') ? x.alertas || '' : ''}</div>
+      ${x.sub && mostra('origem') ? `<div class="vk-s">${x.sub}</div>` : ''}
+      ${x.valor && mostra('valor') ? `<div class="vk-s vk-val">${x.valor}</div>` : ''}
+      ${x.fech && mostra('fechamento') ? `<div class="vk-s">${x.fech}</div>` : ''}
+      ${(x.prox || x.data_prox) && mostra('proxima') ? `<div class="vk-s${venc ? ' venc' : ''}">↳ ${esc(x.prox || 'Ação')}${x.data_prox ? ' · ' + dtc(x.data_prox) : ''}</div>` : ''}
+      ${x.marca && mostra('autor') ? `<div class="vk-s vk-marca">${esc(x.marca)}</div>` : ''}
       ${mover ? `<label class="vk-mv"><span>Mover para</span><select data-vk-mover="${esc(chave)}|${esc(x.id)}"><option value="">—</option>${(cfg.destinos || cfg.etapas).filter((e) => e !== x.etapa).map((e) => `<option>${esc(e)}</option>`).join('')}</select></label>` : ''}
     </div>`;
   }
@@ -301,7 +304,7 @@ try {
     const por = {}; cfg.etapas.forEach((e) => (por[e] = []));
     itens.forEach((x) => { const e = por[x.etapa] ? x.etapa : cfg.etapas[0]; por[e].push(x); });
     const ocultas = new Set(cfg.ocultarVazias ? cfg.etapas.filter((e) => !por[e].length) : []);
-    return `<div class="vk" data-vk="${esc(chave)}">${cfg.etapas.filter((e) => !ocultas.has(e)).map((e) => `<div class="vk-col" data-vk-col="${esc(chave)}|${esc(e)}"${cfg.destinos && !cfg.destinos.includes(e) ? ' data-vk-fixa="1"' : ''}><div class="vk-cab"><span>${esc(e)}</span><b>${por[e].length}</b></div><div class="vk-lista">${por[e].slice(0, cfg.max || 200).map((x) => cartao(chave, x, cfg)).join('') || '<div class="vk-vazio">—</div>'}${por[e].length > (cfg.max || 200) ? `<div class="vk-vazio">e mais ${por[e].length - (cfg.max || 200)}</div>` : ''}</div></div>`).join('')}</div>
+    return `<div class="vk" data-vk="${esc(chave)}">${cfg.etapas.filter((e) => !ocultas.has(e)).map((e) => `<div class="vk-col" data-vk-col="${esc(chave)}|${esc(e)}"${cfg.destinos && !cfg.destinos.includes(e) ? ' data-vk-fixa="1"' : ''}><div class="vk-cab"><span>${esc(e)}</span><b>${por[e].length}</b></div>${cfg.somaCol ? `<div class="vk-soma">${cfg.somaCol(e, por[e]) || ''}</div>` : ''}<div class="vk-lista">${por[e].slice(0, cfg.max || 200).map((x) => cartao(chave, x, cfg)).join('') || '<div class="vk-vazio">—</div>'}${por[e].length > (cfg.max || 200) ? `<div class="vk-vazio">e mais ${por[e].length - (cfg.max || 200)}</div>` : ''}</div></div>`).join('')}</div>
       ${cfg.podeMover ? `<p class="vcrm-nota">Arraste o cartão para outra coluna (no celular, toque e segure o cartão e arraste, ou use "Mover para").${cfg.notaMover ? ' ' + esc(cfg.notaMover) : ''}</p>` : cfg.notaLeitura ? `<p class="vcrm-nota">${esc(cfg.notaLeitura)}</p>` : ''}`;
   }
 
@@ -350,7 +353,7 @@ try {
     const blocos = G.map(([rot, f, c]) => {
       const X = L.filter((x) => f(x.data_prox || '')).sort((a, b) => String(a.data_prox || '').localeCompare(String(b.data_prox || '')));
       if (!X.length) return '';
-      return `<div class="va-g ${c}"><div class="va-cab">${rot} <b>${X.length}</b></div>${X.slice(0, 60).map((x) => `<div class="va-i"><span class="va-d">${x.data_prox ? dtc(x.data_prox) : '—'}</span>${x.abre ? `<button type="button" class="vk-nome" ${x.abre}>${esc(x.nome)}</button>` : `<b class="vk-nome">${esc(x.nome)}</b>`}${x.pills ? `<span class="va-p">${x.pills}</span>` : ''}<span class="va-t">${esc(x.prox || '')}${x.etapa ? ` · ${esc(x.etapa)}` : ''}${x.quem ? ` · ${esc(x.quem)}` : ''}</span></div>`).join('')}${X.length > 60 ? `<div class="vk-vazio">e mais ${X.length - 60}</div>` : ''}</div>`;
+      return `<div class="va-g ${c}"><div class="va-cab">${rot} <b>${X.length}</b></div>${X.slice(0, 60).map((x) => `<div class="va-i"><span class="va-d">${x.data_prox ? dtc(x.data_prox) : '—'}</span>${x.abre ? `<button type="button" class="vk-nome" ${x.abre}>${esc(x.nome)}</button>` : `<b class="vk-nome">${esc(x.nome)}</b>`}${x.pills || x.alertas ? `<span class="va-p">${x.pills || ''}${x.alertas || ''}</span>` : ''}<span class="va-t">${esc(x.prox || '')}${x.etapa ? ` · ${esc(x.etapa)}` : ''}${x.quem ? ` · ${esc(x.quem)}` : ''}</span></div>`).join('')}${X.length > 60 ? `<div class="vk-vazio">e mais ${X.length - 60}</div>` : ''}</div>`;
     }).join('');
     return blocos ? `<div class="va">${blocos}</div>` : `<p class="vcrm-nota">${esc(cfg.vazio || 'Nenhuma próxima ação marcada.')}</p>`;
   }
@@ -495,6 +498,7 @@ html.vk-agarrando,html.vk-agarrando *{cursor:grabbing!important}
 .vk-mv{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:4px}
 .vk-mv select{flex:1;min-width:0;font:inherit;font-size:12px;padding:3px 4px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink)}
 .vk-vazio{font-size:12px;color:var(--muted);text-align:center;padding:6px}
+.vk-soma{padding:4px 10px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}.vk-soma b{color:var(--ink)}.vk-val{color:var(--ink)}
 .vp{display:flex;flex-direction:column;gap:6px}
 .vp-l{all:unset;box-sizing:border-box;display:grid;grid-template-columns:140px minmax(80px,1fr) 90px;grid-template-areas:"e bar n" "d d a";gap:4px 10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);cursor:pointer;font-size:13px}
 .vp-l:hover:not([disabled]){border-color:var(--brass)}.vp-l[disabled]{opacity:.5;cursor:default}.vp-l:focus-visible{outline:2px solid var(--brass)}
@@ -1972,26 +1976,35 @@ function vInicio() {
   const sts = Object.entries(S.sol).map(([id, s]) => statusDe(id, s));
   const pend = sts.filter((x) => x === 'pendente').length, compl = sts.filter((x) => x === 'complemento').length;
   const prim = String(S.info.saudacao || '').trim() || (S.info.corretor || '').split(' ')[0];
-  let h = `<section class="sec"><div><p class="mut peq" style="margin:0">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</p><p style="font:500 24px var(--display);margin:2px 0 0">Olá${prim ? ', ' + esc(prim) : ''}.</p></div>
-  <div class="linha"><button class="b p" type="button" data-conversa="">✦ Registrar conversa</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤 Por voz</button></div>
+  // 16/11/2026 (fatia 2 do CRM): cartões e seções do Início ligam/desligam e mudam de ordem em "🧩 Personalizar" (tela_crm)
+  const CART = {
+    abertos: () => `<div class="cartao"><div class="r">Leads em aberto</div><div class="v">${abertos}</div><div class="s">de ${L.length} no total</div></div>`,
+    atrasados: () => `<div class="cartao${venc ? ' alerta' : ''}"><div class="r">Atrasados</div><div class="v">${venc}</div><div class="s">ação vencida ou 1º contato</div></div>`,
+    hoje: () => `<div class="cartao"><div class="r">Para hoje</div><div class="v">${hoje}</div><div class="s">próximas ações marcadas</div></div>`,
+    previsao: () => cartaoPrevisaoInicio(),
+    imoveis: () => `<div class="cartao"><div class="r">Meus imóveis</div><div class="v">${ativos}</div><div class="s">ativos de ${M.length} agenciados</div></div>`,
+    ofertas: () => `<div class="cartao${nOp ? ' alerta' : ''}" style="${nOp ? 'border-color:var(--brass)' : ''}"><div class="r">Ofertas</div><div class="v">${nOp}</div><div class="s">lead${nOp === 1 ? '' : 's'} com imóveis para ofertar · <button class="copiar" type="button" data-aba="oportunidades">ver</button></div></div>`,
+    acaptar: () => S.acap ? `<div class="cartao"><div class="r">🎯 A CAPTAR</div><div class="v">${acapMinhas().length}</div><div class="s">em captação por você · ${linkAcap('abrir', 'copiar')}</div></div>` : '',
+    solic: () => `<div class="cartao${compl ? ' alerta' : ''}"><div class="r">Solicitações</div><div class="v">${pend}</div><div class="s">aguardando aprovação${compl ? ` · <b>${compl} para complementar</b>` : ''}</div></div>`,
+  };
+  const fazer = () => {
+    let f = '';
+    if (!S.ehDono) Object.entries(S.sol).forEach(([sid, s]) => { const dc = S.decisoes[sid]; if (!dc || statusDe(sid, s) !== 'recusada' || !dc.em || dias(dc.em, hojeISO()) > 7) return;
+      f += `<div class="aviso"><span class="pill alta">Alta</span><div><b>Pedido recusado</b> · ${esc(s.ref || 'imóvel')}<div class="o">${esc({ novo_imovel: 'Cadastro', fotos: 'Fotos novas', captacao: 'Captação', corretor_anunciante: 'Aviso de corretor anunciante' }[s.tipo] || 'Alteração')} recusada em ${dt(dc.em)}${dc.resposta ? ': ' + esc(dc.resposta) : ''}</div></div><button class="b" type="button" data-abre="sol:${esc(sid)}">Abrir</button></div>`; });
+    if (compl && !S.ehDono) f += `<div class="aviso"><span class="pill alta">Alta</span><div><b>Pedido para complementar</b><div class="o">A diretoria devolveu ${compl} pedido${compl > 1 ? 's' : ''} pedindo dados, fotos ou documentos.</div></div><button class="b" type="button" data-aba="solicitacoes">Abrir</button></div>`;
+    const fixos = f.length; // avisos fixos (recusa, complemento) contam para o vazio (05/11/2026)
+    f += av.length ? av.map((a) => `<div class="aviso"><span class="pill ${a.p}">${a.p === 'alta' ? 'Alta' : a.p === 'media' ? 'Média' : 'Baixa'}</span><div><b>${esc(a.t)}</b> · ${esc(a.nome)}${hitBA(a)}<div class="o">${esc(a.o)}</div></div>${a.imv ? `<button class="b" type="button" data-agenc="${esc(a.imv)}">Atualizar</button>` : `<button class="b" type="button" data-lead="${esc(a.id)}">Abrir</button>`}</div>`).join('') : (fAv.ativo ? '<div class="vazio">Nenhum aviso atende à busca.</div>' : (fixos ? '' : '<div class="vazio">Nenhum aviso. Tudo em dia.</div>'));
+    return `<div class="painel"><h2 style="margin-bottom:6px">O que fazer agora</h2>${f}</div>`;
+  };
+  const SEC = { tarefas: () => TF.blocoHoje(), fazer, prazos: () => painelPrazos() };
+  const secs = telaOrdem('inicio_secoes');
+  const avisoOculto = !secs.includes('fazer') && venc ? `<p class="mut peq" style="margin:0">“O que fazer agora” está desligado em 🧩 Personalizar, e há ${venc} lead${venc > 1 ? 's' : ''} atrasado${venc > 1 ? 's' : ''}.</p>` : '';
+  return `<section class="sec"><div><p class="mut peq" style="margin:0">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</p><p style="font:500 24px var(--display);margin:2px 0 0">Olá${prim ? ', ' + esc(prim) : ''}.</p></div>
+  <div class="linha"><button class="b p" type="button" data-conversa="">✦ Registrar conversa</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤 Por voz</button><button class="b" type="button" data-tela="inicio" aria-label="Personalizar o Início">🧩 Personalizar</button></div>
   <div class="cartoes">
-    <div class="cartao"><div class="r">Leads em aberto</div><div class="v">${abertos}</div><div class="s">de ${L.length} no total</div></div>
-    <div class="cartao${venc ? ' alerta' : ''}"><div class="r">Atrasados</div><div class="v">${venc}</div><div class="s">ação vencida ou 1º contato</div></div>
-    <div class="cartao"><div class="r">Para hoje</div><div class="v">${hoje}</div><div class="s">próximas ações marcadas</div></div>
-    <div class="cartao"><div class="r">Meus imóveis</div><div class="v">${ativos}</div><div class="s">ativos de ${M.length} agenciados</div></div>
-    <div class="cartao${nOp ? ' alerta' : ''}" style="${nOp ? 'border-color:var(--brass)' : ''}"><div class="r">Ofertas</div><div class="v">${nOp}</div><div class="s">lead${nOp === 1 ? '' : 's'} com imóveis para ofertar · <button class="copiar" type="button" data-aba="oportunidades">ver</button></div></div>
-    ${S.acap ? `<div class="cartao"><div class="r">🎯 A CAPTAR</div><div class="v">${acapMinhas().length}</div><div class="s">em captação por você · ${linkAcap('abrir', 'copiar')}</div></div>` : ''}
-    <div class="cartao${compl ? ' alerta' : ''}"><div class="r">Solicitações</div><div class="v">${pend}</div><div class="s">aguardando aprovação${compl ? ` · <b>${compl} para complementar</b>` : ''}</div></div>
+    ${telaOrdem('inicio_cartoes').map((k) => (CART[k] ? CART[k]() : '')).join('\n    ')}
   </div>
-  ${TF.blocoHoje()}
-  <div class="painel"><h2 style="margin-bottom:6px">O que fazer agora</h2>`;
-  const hFixos0 = h.length; // avisos fixos (recusa, complemento) contam para o vazio (05/11/2026)
-  if (!S.ehDono) Object.entries(S.sol).forEach(([sid, s]) => { const dc = S.decisoes[sid]; if (!dc || statusDe(sid, s) !== 'recusada' || !dc.em || dias(dc.em, hojeISO()) > 7) return;
-    h += `<div class="aviso"><span class="pill alta">Alta</span><div><b>Pedido recusado</b> · ${esc(s.ref || 'imóvel')}<div class="o">${esc({ novo_imovel: 'Cadastro', fotos: 'Fotos novas', captacao: 'Captação', corretor_anunciante: 'Aviso de corretor anunciante' }[s.tipo] || 'Alteração')} recusada em ${dt(dc.em)}${dc.resposta ? ': ' + esc(dc.resposta) : ''}</div></div><button class="b" type="button" data-abre="sol:${esc(sid)}">Abrir</button></div>`; });
-  if (compl && !S.ehDono) h += `<div class="aviso"><span class="pill alta">Alta</span><div><b>Pedido para complementar</b><div class="o">A diretoria devolveu ${compl} pedido${compl > 1 ? 's' : ''} pedindo dados, fotos ou documentos.</div></div><button class="b" type="button" data-aba="solicitacoes">Abrir</button></div>`;
-  h += av.length ? av.map((a) => `<div class="aviso"><span class="pill ${a.p}">${a.p === 'alta' ? 'Alta' : a.p === 'media' ? 'Média' : 'Baixa'}</span><div><b>${esc(a.t)}</b> · ${esc(a.nome)}${hitBA(a)}<div class="o">${esc(a.o)}</div></div>${a.imv ? `<button class="b" type="button" data-agenc="${esc(a.imv)}">Atualizar</button>` : `<button class="b" type="button" data-lead="${esc(a.id)}">Abrir</button>`}</div>`).join('') : (fAv.ativo ? '<div class="vazio">Nenhum aviso atende à busca.</div>' : (h.length > hFixos0 ? '' : '<div class="vazio">Nenhum aviso. Tudo em dia.</div>'));
-  h += `</div>${painelPrazos()}<p class="status">Dados atualizados em ${dt(S.info.atualizado_em)}. A vitrine e os seus imóveis são atualizados pela rotina diária da Vivere.</p></section>`;
-  return h;
+  ${avisoOculto}${secs.map((k) => (SEC[k] ? SEC[k]() : '')).join('')}<p class="status">Dados atualizados em ${dt(S.info.atualizado_em)}. A vitrine e os seus imóveis são atualizados pela rotina diária da Vivere.</p></section>`;
 }
 
 // ---------- Meus leads ----------
@@ -2028,26 +2041,28 @@ function vLeads() {
     ...(FU && !busca ? [] : [{ k: '_f', l: 'Funil', v: (r) => FC.ORDEM.indexOf(r._f), h: (r) => pillFunil(r) }]),
     { k: 'interesse', l: 'Interesse', v: (r) => INT_POR[r._int].i, h: (r) => pillInt(r) },
     { k: 'etapa', l: 'Etapa', v: (r) => FC.ORDEM.indexOf(r._f) * 100 + FC.ordem(r.etapa, r._f), h: (r) => pillEtapa(r) },
+    ...colsValor(),
     { k: 'data_prox', l: 'Próxima ação', h: (r) => r.prox_acao || r.data_prox ? `${esc(r.prox_acao || 'Ação')}<div class="mut peq">${dt(r.data_prox)}</div>` : r._ab ? '<span class="pill sem-prox">sem próxima ação</span>' : '<span class="mut">—</span>' },
     { k: '_ult', l: 'Último registro', h: (r) => dt(r._ult) },
     { k: 'entrada', l: 'Entrada', h: (r) => dt(r.entrada) },
     { k: 'campanha', l: 'Origem', h: (r) => `<span class="peq">${esc(r.campanha || '—')}</span>` },
   ];
+  const colsV = colunasDaTela(cols);   // 16/11/2026 (fatia 2): colunas e ordem escolhidas pelo corretor; Nome sempre primeiro
+  const blocos = { previsao: () => blocoPrevisao(Ltodos.filter((l) => (!FU || l._f === S.funil) && (!S.filtroInt || l._int === S.filtroInt)), FU ? S.funil : null), interesse: () => chipsInt };
+  const etapasVis = telaVis('leads_blocos', 'etapas') || (S.filtroEtapa !== 'abertos');
   return `<section class="sec">
-    <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha"><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
-    ${chipsFunil}${chipsInt}
-    ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
-    ${tabela('leads', cols, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: 'Nenhum lead neste filtro.', cartao: (r) => `
-      <div class="cm-l1"><span class="cm-nome">${esc(r.nome)}</span>${dupDe(r.id)}${pillLado(r)}${pillInt(r)}${r._av.some((a) => a.p === 'alta') ? '<span class="pill alta">atrasado</span>' : ''}${hitBA(r)}<span class="cm-v">${FU ? '' : pillFunil(r)}${pillEtapa(r)}</span></div>
-      <div class="cm-lin"><b>${esc(fone(r.telefone))}</b> · ${esc(r.campanha || 'sem origem')}</div>
-      <div class="cm-lin">${r.prox_acao || r.data_prox ? `Próxima: <b>${esc(r.prox_acao || 'ação')}</b> ${dt(r.data_prox)}` : '<span class="falta">Sem próxima ação</span>'} · último ${r._ult ? dt(r._ult).slice(0, 10) : '—'} · entrada ${r.entrada ? dt(r.entrada).slice(0, 10) : '—'}</div>${autorLin(r, 'cm-lin mut peq')}` })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
+    <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha"><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
+    ${chipsFunil}${telaOrdem('leads_blocos').map((k) => (blocos[k] ? blocos[k]() : '')).join('')}
+    ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca || !etapasVis ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
+    ${tabela('leads', colsV, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: 'Nenhum lead neste filtro.', cartao: (r) => cartaoLeadMovel(r, FU) })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
   </section>`;
 }
 // ---------- Visões dos leads (30/10/2026): Kanban, Pipeline, Funil e Agenda ----------
 function itemVisao(r) {
   const alta = r._av.some((a) => a.p === 'alta');
   return { id: r.id, nome: r.nome, etapa: etapaDe(r), aberta: abertaL(r), prox: r.prox_acao, data_prox: r.data_prox, alerta: alta, abre: `data-abre="lead:${esc(r.id)}"`,
-    pills: pillInt(r) + (alta ? `<span class="pill alta">${esc((r._av.find((a) => a.parado && a.p === 'alta') || {}).t || 'atrasado')}</span>` : r._av.some((a) => a.parado) ? `<span class="pill media">${esc(r._av.find((a) => a.parado).t)}</span>` : '') + (semProx(r) ? '<span class="pill sem-prox">sem próxima ação</span>' : ''), sub: esc([r.campanha, r.imovel_interesse].filter(Boolean).join(' · ')),
+    pills: pillInt(r), alertas: (alta ? `<span class="pill alta">${esc((r._av.find((a) => a.parado && a.p === 'alta') || {}).t || 'atrasado')}</span>` : r._av.some((a) => a.parado) ? `<span class="pill media">${esc(r._av.find((a) => a.parado).t)}</span>` : '') + (semProx(r) ? '<span class="pill sem-prox">sem próxima ação</span>' : ''),
+    valor: valorCartao(r), fech: r.fechamento_prev && abertaL(r) ? `fecha em ${dt(r.fechamento_prev)}${r.fechamento_prev < hojeISO() ? ' <span class="pill alta">vencido</span>' : ''}` : '', sub: esc([r.campanha, r.imovel_interesse].filter(Boolean).join(' · ')),
     dias: r._ult ? dias(r._ult, hojeISO()) : (r.entrada ? dias(r.entrada, hojeISO()) : null), marca: [r.etapa_por === 'diretoria' ? 'movido pela diretoria' : '', autorTxt(r)].filter(Boolean).join(' · ') };
 }
 function visoesLeads(L0, FU) {
@@ -2055,7 +2070,7 @@ function visoesLeads(L0, FU) {
   const pede = `<div class="linha" style="margin:6px 0"><p class="mut" style="margin:0">Kanban, Pipeline e Funil mostram um funil por vez. Escolha:</p>${FC.ORDEM.filter((f) => f !== 'definir').map((f) => `<button class="b" type="button" data-funil="${f}">${FC.FUNIS[f].icone} ${esc(FC.FUNIS[f].rot)}</button>`).join('')}<button class="b" type="button" data-vcrm-tog="leads|lista">ou ver a Lista</button></div>`;
   const notaPz = FU ? ' Prazo de parado por etapa: ' + FU.etapas.filter((e) => FC.paradoDias(e, S.funil, PZ().parado_etapa) != null).map((e) => `${e} ${FC.paradoDias(e, S.funil, PZ().parado_etapa)} d`).join(' · ') + '.' : '';
   return {
-    kanban: () => FU ? VisoesCRM.kanban('leads', I, { etapas: FU.etapas, podeMover: true, notaMover: 'Perdido pede o motivo; a mudança entra no histórico do lead.' + notaPz }) : pede,
+    kanban: () => FU ? VisoesCRM.kanban('leads', I, { etapas: FU.etapas, podeMover: true, campos: telaOrdem('cartao'), somaCol: (e, X) => somaColuna(X, S.funil), notaMover: 'Perdido pede o motivo; a mudança entra no histórico do lead.' + notaPz }) : pede,
     pipeline: () => FU ? VisoesCRM.pipeline('leads', I, { etapas: FU.etapas }) : pede,
     funil: () => FU ? VisoesCRM.funil('leads', VisoesCRM.degrausEtapas(I, FU.etapas, ['Perdido']), { nota: 'Cada degrau conta quem chegou àquela etapa ou passou dela. Perdidos saem do funil.' }) : pede,
     agenda: () => VisoesCRM.agenda('leads', I, { so: (x) => x.aberta, vazio: 'Nenhum lead em aberto.' }),
@@ -2066,7 +2081,7 @@ async function moverLead(id, etapa) {
   let motivo = '';
   if (etapa === 'Perdido') { motivo = await VisoesCRM.pedeMotivo(FC.def(f).motivos); if (!motivo) return; }
   const h = [...histDe(l), { em: agora().slice(0, 16), tipo: 'Observação', texto: `Etapa: ${de} → ${etapa}${motivo ? ' (' + motivo + ')' : ''}.` }];
-  const dados = { etapa, motivo: etapa === 'Perdido' ? motivo : '', data_fechamento: FC.ganho(etapa, f) ? (l.data_fechamento || hojeISO()) : '', historico: h, etapa_em: agora(), etapa_por: 'corretor', atualizado_em: agora(), origem: 'painel' };
+  const dados = { etapa, motivo: etapa === 'Perdido' ? motivo : '', data_fechamento: FC.ganho(etapa, f) ? (l.data_fechamento || hojeISO()) : '', historico: h, etapa_em: agora(), etapa_por: 'corretor', atualizado_em: agora(), origem: 'painel', ...(l.prob != null && l.prob !== '' ? { prob: null } : {}) };   // fatia 2: % ajustada vale só na etapa em que foi dada
   await gravar(() => db.collection('leads').doc(id).update(dados), `${l.nome}: ${etapa}.`);
 }
 function mudouVisoes(chave, v) {
@@ -2099,6 +2114,7 @@ function gavetaLead(id) {
       <label class="c">Data da próxima ação<input id="lData" type="date" value="${esc(l.data_prox || '')}"></label>
       <label class="c">Imóvel de interesse (ref.)<input id="lImovel" list="refsVit" value="${esc(l.imovel_interesse || '')}"></label>
       <label class="c" id="wFech" ${!novo && ganhoL(l) ? '' : 'hidden'}>Data do fechamento<input id="lFech" type="date" value="${esc(l.data_fechamento || '')}"></label>
+      <div class="camp-funil" id="campValor">${camposValorHTML(novo ? 'definir' : funilDe(l), l)}</div>
       <div class="camp-funil" id="campFunil">${camposFunilHTML(novo ? 'definir' : funilDe(l), l.campos)}</div>
       <div class="inteiro"><h2 style="margin:6px 0 0" id="pTit">Perfil do cliente</h2><p class="peq mut" id="pFinAuto" style="margin:2px 0 0" hidden></p></div>
       <label class="c" id="pFinBox">Finalidade<select id="pFin">${['', 'Venda', 'Locação', 'Temporada'].map((o) => `<option ${o === (p.finalidade || '') ? 'selected' : ''} value="${o}">${o || 'Escolha'}</option>`).join('')}</select></label>
@@ -3066,10 +3082,11 @@ function painelPrazos() {
 // 16/11/2026 (ampliação do CRM, fatia 1): alerta de parado etapa a etapa, por funil (padrão em funis-crm.js; o dono ajusta aqui)
 function blocoParadoEtapas(p) {
   const pe = p.parado_etapa || {};
-  return `<details class="pz-etapas"><summary><b>Alerta de parado por etapa</b> <span class="mut peq">(dias sem registro até o lead ficar parado)</span></summary>${FC.ORDEM.map((f) => { const F = FC.FUNIS[f];
-    const linhas = F.etapas.filter((e) => e !== 'Perdido' && e !== F.final).map((e, i) => { const v = FC.paradoDias(e, f, pe);
-      return `<tr><td>${esc(e)}</td><td class="n">${S.ehDono ? `<input id="pze_${f}_${i}" data-pze="${f}|${esc(e)}" type="number" min="0" inputmode="numeric" value="${v == null ? '' : esc(v)}" placeholder="sem alerta" style="max-width:110px" aria-label="${esc(F.rot + ' · ' + e)} (dias)">` : v == null ? '<span class="mut">sem alerta</span>' : `<b>${esc(v)} dia${v === 1 ? '' : 's'}</b>`}</td></tr>`; }).join('');
-    return `<div><b>${esc(F.rot)}</b><table>${linhas}</table></div>`; }).join('')}</details>`;
+  const pb = p.prob_etapa || {};   // 16/11/2026 (fatia 2): probabilidade de fechar por etapa, ao lado do parado
+  return `<details class="pz-etapas"><summary><b>Por etapa: alerta de parado e probabilidade</b> <span class="mut peq">(dias sem registro até o lead ficar parado · chance de fechar usada na previsão do mês)</span></summary>${FC.ORDEM.map((f) => { const F = FC.FUNIS[f];
+    const linhas = F.etapas.filter((e) => e !== 'Perdido' && e !== F.final).map((e, i) => { const v = FC.paradoDias(e, f, pe), pr = FC.probEtapa(e, f, pb), fixa = FC.ganho(e, f) || f === 'definir';
+      return `<tr><td>${esc(e)}</td><td class="n">${S.ehDono ? `<input id="pze_${f}_${i}" data-pze="${f}|${esc(e)}" type="number" min="0" inputmode="numeric" value="${v == null ? '' : esc(v)}" placeholder="sem alerta" style="max-width:110px" aria-label="${esc(F.rot + ' · ' + e)} (dias)">` : v == null ? '<span class="mut">sem alerta</span>' : `<b>${esc(v)} dia${v === 1 ? '' : 's'}</b>`}</td><td class="n">${S.ehDono && !fixa ? `<input id="pbe_${f}_${i}" data-pbe="${f}|${esc(e)}" type="number" min="0" max="100" inputmode="numeric" value="${esc(pr)}" style="max-width:80px" aria-label="${esc(F.rot + ' · ' + e)} (probabilidade em %)"> %` : `<b>${esc(pr)}%</b>${FC.ganho(e, f) ? ' <span class="mut peq">ganho</span>' : ''}`}</td></tr>`; }).join('');
+    return `<div><b>${esc(F.rot)}</b><table><tr><th></th><th class="n peq mut">Parado</th><th class="n peq mut">Chance</th></tr>${linhas}</table></div>`; }).join('')}</details>`;
 }
 async function salvarPrazos() {
   const novo = { ...PZ() };
@@ -3077,6 +3094,9 @@ async function salvarPrazos() {
   const pe = {}; document.querySelectorAll('[data-pze]').forEach((i) => { const [f, e] = i.dataset.pze.split('|'); const v = i.value.trim(); const pad = (FC.FUNIS[f].parado || {})[e];
     if (v === '' ? pad != null : Number(v) !== pad) (pe[f] = pe[f] || {})[e] = v === '' ? null : Number(v); });
   if (document.querySelector('[data-pze]')) novo.parado_etapa = pe;
+  const pb = {}; document.querySelectorAll('[data-pbe]').forEach((i) => { const [f, e] = i.dataset.pbe.split('|'); const v = i.value.trim(); const pad = (FC.FUNIS[f].prob || {})[e];
+    if (v !== '' && Number(v) !== pad) (pb[f] = pb[f] || {})[e] = Math.max(0, Math.min(100, Number(v))); });
+  if (document.querySelector('[data-pbe]')) novo.prob_etapa = pb;
   novo.atualizado_em = agora();
   await gravar(() => db.doc('controle/prazos').set(novo), 'Prazos salvos.');
 }
@@ -3626,7 +3646,7 @@ function popupEmp(e) {
 // ---------- Gavetas ----------
 function abrir(tipo, id, semFoco) {
   S.aberto = { tipo, id };
-  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : gavetaVitrine(id);
+  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : gavetaVitrine(id);
   const so = document.getElementById('sobre');
   so.innerHTML = `<div class="sobre" data-fundo>${html}</div>`;
   if (!semFoco) { const pri = so.querySelector('input,select,textarea,button'); if (pri) pri.focus(); }
@@ -3672,7 +3692,7 @@ async function salvarLead(form) {
   if (etapa === 'Perdido' && !val('lMotivo')) { err.textContent = 'Informe o motivo da perda.'; return; }
   const perfil = { finalidade: FIN_DO_INT[val('lInt')] || '', tipo: val('pTipo'), bairros: val('pBairros'), vmin: numVlr(val('pMin')), vmax: numVlr(val('pMax')), dorm: val('pDorm') ? Number(val('pDorm')) : null, vagas: val('pVagas') ? Number(val('pVagas')) : null, obs: val('pObs'), em: agora().slice(0, 16), por: 'corretor' };
   const intSel = val('lInt');
-  const dados = { ...(INT_POR[intSel] ? { interesse: intSel } : {}), etapa, motivo: etapa === 'Perdido' ? val('lMotivo') : '', prox_acao: val('lProx'), data_prox: val('lData'), imovel_interesse: val('lImovel').toUpperCase(), data_fechamento: FC.ganho(etapa, fSel) ? (val('lFech') || hojeISO()) : '', perfil, ...(FC.def(fSel).campos.length ? { campos: { ...((!novo && S.leads[id] && S.leads[id].campos) || {}), ...lerCamposFunil(fSel) } } : {}), atualizado_em: agora(), origem: 'painel' };
+  const dados = { ...(INT_POR[intSel] ? { interesse: intSel } : {}), etapa, motivo: etapa === 'Perdido' ? val('lMotivo') : '', prox_acao: val('lProx'), data_prox: val('lData'), imovel_interesse: val('lImovel').toUpperCase(), data_fechamento: FC.ganho(etapa, fSel) ? (val('lFech') || hojeISO()) : '', perfil, ...(FC.def(fSel).campos.length ? { campos: { ...((!novo && S.leads[id] && S.leads[id].campos) || {}), ...lerCamposFunil(fSel) } } : {}), ...lerCamposValor(fSel, novo ? null : S.leads[id], etapa), atualizado_em: agora(), origem: 'painel' };
   if (novo) {
     if (!val('lNome') || digitos(val('lTel')).length < 10) { err.textContent = 'Informe o nome e um telefone com DDD.'; return; }
     const hist = val('lObsNovo') ? [{ em: agora().slice(0, 16), tipo: 'Observação', texto: val('lObsNovo') }] : [];
@@ -3821,7 +3841,9 @@ document.addEventListener('change', (ev) => {
     if (se) { const e = FC.etapaNoFunil(se.value, fz); se.innerHTML = optEtapas(fz, e); document.getElementById('wMotivo').hidden = e !== 'Perdido'; document.getElementById('wFech').hidden = !FC.ganho(e, fz); }
     if (sm) sm.innerHTML = '<option value="">Escolha</option>' + optMotivos(fz, sm.value);
     if (cf) cf.innerHTML = camposFunilHTML(fz, l0.campos);
+    const cv = document.getElementById('campValor'); if (cv) cv.innerHTML = camposValorHTML(fz, { ...l0, etapa: se ? se.value : l0.etapa });
   }
+  if (id === 'lEtapa' || id === 'lProb' || id === 'lValor' || id === 'lRecPct' || (ev.target.dataset && ev.target.dataset.cf === 'valor_pretendido')) atualizaResumoValor();
   const el = ev.target;
   if (S.novo && el.dataset && el.dataset.campo) { S.novo.dados[el.dataset.campo] = el.dataset.vlr != null ? (numVlr(el.value) ?? '') : el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value.trim(); S.novo.sujo = true; agendarRascunho(); if (el.tagName === 'SELECT') return redesenharGaveta(); return atualizarArquivos(); }
   if (S.novo && el.dataset && el.dataset.multi) { const k = el.dataset.multi; S.novo.dados[k] = [...document.querySelectorAll(`[data-multi="${k}"]:checked`)].map((x) => x.value); S.novo.sujo = true; agendarRascunho(); return atualizarArquivos(); }
@@ -3859,6 +3881,177 @@ function continuar(id) { const so = S.sol[id]; if (!so) return; S.novo = { ...JS
 document.addEventListener('input', (ev) => { if (S.novo && ev.target.id === 'c_descricao') { S.novo.descricao = ev.target.value; S.novo.descricao_origem = S.novo.descricao_origem === 'ia' ? 'ia_editada' : S.novo.descricao_origem || 'corretor'; S.novo.sujo = true; agendarRascunho(); } });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && S.aberto) fechar(); });
 
+// ---------- Tela configurável, valor e previsão (16/11/2026, fatia 2 da ampliação do CRM) ----------
+// Decisões do Cleiton nos cartões de 16/11/2026: o corretor liga/desliga e ordena os cartões e as seções do Início e os blocos de
+// Meus leads, escolhe as colunas da Lista, os campos do cartão (Kanban e lista do celular) e o funil e a visão de abertura. Fica em
+// data/users/<id>/preferencias, campo tela_crm (como visoes_crm), com cópia no aparelho. Valor do negócio, probabilidade por etapa,
+// receita estimada da Vivere e previsão do mês: regras em funis-crm.js (FC.probDe, FC.receitaDe, FC.previsao). No HUB, numa fatia 2b.
+const TELA_LS = 'painel.tela_crm';
+const TELA_BLOCOS = {
+  inicio_cartoes: [['abertos', 'Leads em aberto'], ['atrasados', 'Atrasados'], ['hoje', 'Para hoje'], ['previsao', 'Previsão do mês'], ['imoveis', 'Meus imóveis'], ['ofertas', 'Ofertas'], ['acaptar', 'A CAPTAR'], ['solic', 'Solicitações']],
+  inicio_secoes: [['tarefas', 'Tarefas de hoje'], ['fazer', 'O que fazer agora'], ['prazos', 'Prazos da Vivere']],
+  leads_blocos: [['previsao', 'Previsão do mês'], ['interesse', 'Filtro por interesse'], ['etapas', 'Filtro por etapa (na Lista)']],
+  colunas: [['telefone', 'Telefone'], ['_f', 'Funil (em Todos e na busca)'], ['interesse', 'Interesse'], ['etapa', 'Etapa'], ['valor', 'Valor'], ['prob', 'Probabilidade'], ['receita', 'Receita estimada'], ['fechamento_prev', 'Fechamento previsto'], ['data_prox', 'Próxima ação'], ['_ult', 'Último registro'], ['entrada', 'Entrada'], ['campanha', 'Origem']],
+  cartao: [['interesse', 'Interesse'], ['alertas', 'Alertas (atrasado, parado, sem próxima ação)'], ['origem', 'Origem e imóvel de interesse'], ['valor', 'Valor e probabilidade'], ['fechamento', 'Fechamento previsto'], ['proxima', 'Próxima ação'], ['autor', 'Quem cadastrou ou moveu']],
+};
+const TELA_GRUPOS = { inicio: [['inicio_cartoes', 'Cartões do Início'], ['inicio_secoes', 'Seções do Início']], leads: [['leads_blocos', 'Blocos de Meus leads'], ['colunas', 'Colunas da Lista (computador)'], ['cartao', 'Campos do cartão (Kanban e lista do celular)']] };
+const TELA_OCULTOS_PADRAO = { colunas: ['prob', 'receita'] };
+S.prevMes = 'este'; S.telaAberta = false; S.telaDb = false;
+function telaLocal() { try { return JSON.parse(localStorage.getItem(TELA_LS) || 'null') || {}; } catch (e) { return {}; } }
+const tela = () => (S.prefs && S.prefs.tela_crm) || telaLocal();
+function telaLista(g) {   // [[k, rótulo, visível]] na ordem do corretor; item novo do sistema entra no fim, visível
+  const T = tela()[g] || {}, base = TELA_BLOCOS[g], ks = base.map((x) => x[0]);
+  const ord = Array.isArray(T.ordem) ? T.ordem.filter((k) => ks.includes(k)) : [];
+  const oc = Array.isArray(T.ocultos) ? T.ocultos : (TELA_OCULTOS_PADRAO[g] || []);
+  return ord.concat(ks.filter((k) => !ord.includes(k))).map((k) => [k, base.find((x) => x[0] === k)[1], !oc.includes(k)]);
+}
+const telaVis = (g, k) => { const x = telaLista(g).find((y) => y[0] === k); return !x || x[2]; };
+const telaOrdem = (g) => telaLista(g).filter((x) => x[2]).map((x) => x[0]);
+function guardarTela(mud, msg) {
+  const t = { ...tela(), ...mud, em: agora() };
+  try { localStorage.setItem(TELA_LS, JSON.stringify(t)); } catch (e) {}
+  S.prefs = { ...S.prefs, tela_crm: t }; render(); if (S.aberto && S.aberto.tipo === 'tela') redesenharGaveta();
+  if (db && S.uid) db.doc(`data/users/${S.uid}/preferencias`).set({ ...S.prefs, atualizado_em: agora() }).then(() => { if (msg) toast(msg); }).catch(() => toast('Não consegui guardar na sua conta: por enquanto vale só neste aparelho.'));
+  else if (msg) toast(msg + ' Por enquanto, só neste aparelho.');
+}
+function aplicarAbertura() {   // funil e visão de abertura: valem ao abrir o painel; depois o corretor navega à vontade
+  if (S.telaAberta) return; S.telaAberta = true;
+  const A = tela().abrir || {};
+  if (A.funil === 'todos' || FC.FUNIS[A.funil]) S.funil = A.funil;
+  if (A.visao && VisoesCRM.VISOES.some((v) => v[0] === A.visao)) S.prefs = { ...S.prefs, visoes_crm: { ...((S.prefs || {}).visoes_crm || {}), leads: [A.visao] } };
+}
+aplicarAbertura();
+
+// ---------- valor, probabilidade e receita no lead ----------
+const tabProb = () => PZ().prob_etapa;
+const lerVlrNeg = (s) => numVlr(s);   // o campo [data-vlr] já pontua enquanto digita (3.500, 1.200.000)
+const moeda = (v) => v == null ? '—' : v >= 1e5 ? curtoBRL(Math.round(v)) : brl(Math.round(v));
+const sensV = (v) => `<span class="sens">${moeda(v)}</span>`;
+function valorCartao(r) {
+  const f = funilDe(r), v = FC.valorDe(r, f); if (v == null || !abertaL(r) && !ganhoL(r)) return '';
+  const p = FC.probDe(r, f, tabProb());
+  return `${sensV(v)}${abertaL(r) ? ` · ${p}%${FC.ajustada(r, f) ? ' (ajustada)' : ''}` : ''}`;
+}
+function somaColuna(X, f) {
+  const L = X.map((x) => S.leads[x.id]).filter(Boolean); const vs = L.map((l) => FC.valorDe(l, f)).filter((v) => v != null);
+  if (!vs.length) return '';
+  const pond = L.reduce((a, l) => a + (FC.valorDe(l, f) || 0) * FC.probDe(l, f, tabProb()) / 100, 0);
+  return `<b class="sens">${moeda(vs.reduce((a, b) => a + b, 0))}</b> · ponderado <span class="sens">${moeda(pond)}</span>`;
+}
+function colsValor() {
+  return [
+    { k: 'valor', l: 'Valor', n: 1, v: (r) => FC.valorDe(r, r._f), h: (r) => { const v = FC.valorDe(r, r._f); return v == null ? '<span class="mut">—</span>' : sensV(v); } },
+    { k: 'prob', l: 'Prob.', n: 1, v: (r) => r._f === 'definir' ? null : FC.probDe(r, r._f, tabProb()), h: (r) => r._f === 'definir' ? '<span class="mut">—</span>' : `${FC.probDe(r, r._f, tabProb())}%${FC.ajustada(r, r._f) ? ' <span class="mut peq" title="Ajustada no negócio">aj.</span>' : ''}` },
+    { k: 'receita', l: 'Receita est.', n: 1, v: (r) => FC.receitaDe(r, r._f), h: (r) => { const v = FC.receitaDe(r, r._f); return v == null ? '<span class="mut">—</span>' : sensV(v); } },
+    { k: 'fechamento_prev', l: 'Fech. previsto', h: (r) => r.fechamento_prev ? `${dt(r.fechamento_prev)}${r._ab && r.fechamento_prev < hojeISO() ? ' <span class="pill alta">vencido</span>' : ''}` : '<span class="mut">—</span>' },
+  ];
+}
+function colunasDaTela(cols) {
+  const por = new Map(cols.map((c) => [c.k, c])), out = [por.get('nome')].filter(Boolean);
+  telaOrdem('colunas').forEach((k) => { if (por.has(k)) out.push(por.get(k)); });
+  cols.forEach((c) => { if (c.k !== 'nome' && !TELA_BLOCOS.colunas.some((x) => x[0] === c.k)) out.push(c); });
+  return out;
+}
+function cartaoLeadMovel(r, FU) {
+  const c = (k) => telaVis('cartao', k), vl = c('valor') ? valorCartao(r) : '';
+  const fe = c('fechamento') && r.fechamento_prev && r._ab ? `fecha em ${dt(r.fechamento_prev)}` : '';
+  return `
+      <div class="cm-l1"><span class="cm-nome">${esc(r.nome)}</span>${dupDe(r.id)}${pillLado(r)}${c('interesse') ? pillInt(r) : ''}${c('alertas') && r._av.some((a) => a.p === 'alta') ? '<span class="pill alta">atrasado</span>' : ''}${hitBA(r)}<span class="cm-v">${FU ? '' : pillFunil(r)}${pillEtapa(r)}</span></div>
+      <div class="cm-lin"><b>${esc(fone(r.telefone))}</b>${c('origem') ? ' · ' + esc(r.campanha || 'sem origem') : ''}</div>
+      ${vl || fe ? `<div class="cm-lin">${[vl, fe].filter(Boolean).join(' · ')}</div>` : ''}
+      <div class="cm-lin">${c('proxima') ? (r.prox_acao || r.data_prox ? `Próxima: <b>${esc(r.prox_acao || 'ação')}</b> ${dt(r.data_prox)}` : '<span class="falta">Sem próxima ação</span>') + ' · ' : ''}último ${r._ult ? dt(r._ult).slice(0, 10) : '—'} · entrada ${r.entrada ? dt(r.entrada).slice(0, 10) : '—'}</div>${c('autor') ? autorLin(r, 'cm-lin mut peq') : ''}`;
+}
+function camposValorHTML(f, l) {
+  const F = FC.def(f); if (!F.valor) return '';
+  l = l || {}; const pe = FC.probEtapa(l.etapa, f, tabProb()), R = F.receita;
+  return `<div class="inteiro"><h2 style="margin:6px 0 0">📈 Valor e previsão</h2></div>
+    ${F.valor.campo ? '' : `<label class="c">${esc(F.valor.rot)}<input id="lValor" ${VLR} placeholder="Ex.: 3.500 ou 1.200.000" value="${esc(fmtVlr(l.valor))}"></label>`}
+    <label class="c">Fechamento previsto<input id="lFechPrev" type="date" value="${esc(l.fechamento_prev || '')}"></label>
+    <label class="c">Probabilidade (%)<input id="lProb" type="number" min="0" max="100" inputmode="numeric" value="${esc(l.prob ?? '')}" placeholder="padrão da etapa: ${pe}%" data-prob-orig="${esc(l.prob ?? '')}"></label>
+    ${R && R.tipo === 'pct' ? `<label class="c">Comissão da Vivere (%)<input id="lRecPct" type="number" min="0" max="100" step="0.5" inputmode="decimal" value="${esc(l.receita_pct ?? '')}" placeholder="padrão: ${R.pct}%"></label>` : ''}
+    <p class="inteiro peq mut" id="resValor" style="margin:0">${resumoValorTxt(f, l)}</p>`;
+}
+function resumoValorTxt(f, l) {
+  const F = FC.def(f), v = FC.valorDe(l, f), p = FC.probDe(l, f, tabProb()), r = FC.receitaDe(l, f);
+  const base = F.valor.campo ? `Valor: o “${F.valor.rot.replace(' (R$)', '')}” dos dados de ${F.rot.toLowerCase()}. ` : '';
+  if (v == null) return base + 'Sem valor, o negócio não entra na previsão do mês.';
+  return `${base}${F.valor.curto} ${sensV(v)} × ${p}% = <b>${sensV(v * p / 100)}</b> ponderado${r != null ? ` · receita da Vivere ${sensV(r)} (${esc(F.receita.tipo === 'pct' ? FC.receitaPct(l, f) + '% do valor' : F.receita.rot)}), ponderada ${sensV(r * p / 100)}` : ''}. A % ajustada volta ao padrão quando o negócio muda de etapa.`;
+}
+function atualizaResumoValor() {
+  const el = document.getElementById('resValor'), fl = document.getElementById('fLead'); if (!el || !fl) return;
+  const f = FC.funilDoInteresse(val('lInt')), l0 = S.leads[fl.dataset.id] || {}, F = FC.def(f);
+  const l = { ...l0, etapa: val('lEtapa'), prob: val('lProb') === '' ? null : Number(val('lProb')), receita_pct: val('lRecPct') === '' ? null : Number(val('lRecPct')), valor: lerVlrNeg(val('lValor')),
+    campos: { ...(l0.campos || {}), ...(F.valor && F.valor.campo && document.getElementById('cf_' + F.valor.campo) ? { [F.valor.campo]: numVlr(val('cf_' + F.valor.campo)) } : {}) } };
+  const pr = document.getElementById('lProb'); if (pr) pr.placeholder = `padrão da etapa: ${FC.probEtapa(l.etapa, f, tabProb())}%`;
+  el.innerHTML = resumoValorTxt(f, l);
+}
+function lerCamposValor(f, l0, etapa) {
+  const F = FC.def(f); if (!F.valor) return {};
+  const o = { fechamento_prev: val('lFechPrev') };
+  if (!F.valor.campo) o.valor = lerVlrNeg(val('lValor'));
+  const pr = val('lProb'), orig = (document.getElementById('lProb') || { dataset: {} }).dataset.probOrig || '';
+  o.prob = pr === '' ? null : Math.max(0, Math.min(100, Number(pr)));
+  if (l0 && etapa !== FC.etapaNoFunil(l0.etapa, f) && pr === orig) o.prob = null;   // mudou de etapa sem mexer na %: volta ao padrão
+  if (F.receita && F.receita.tipo === 'pct') { const rp = val('lRecPct'); o.receita_pct = rp === '' ? null : Math.max(0, Math.min(100, Number(rp))); }
+  return o;
+}
+
+// ---------- previsão do mês ----------
+const mesDe = (d) => String(d || hojeISO()).slice(0, 7);
+const mesSeg = (m) => { const [a, b] = m.split('-').map(Number); return b === 12 ? `${a + 1}-01` : `${a}-${String(b + 1).padStart(2, '0')}`; };
+const rotMes = (m) => { const [a, b] = m.split('-').map(Number); return new Date(a, b - 1, 15).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); };
+function blocoPrevisao(Ls, fu) {
+  const mes = S.prevMes === 'prox' ? mesSeg(mesDe()) : mesDe();
+  const P = FC.previsao(Ls.map((l) => ({ lead: l, f: l._f || funilDe(l) })), mes, tabProb(), hojeISO());
+  const F = fu ? FC.def(fu) : null, comRec = !F || !!F.receita, a = P.abertos, g = P.ganhos;
+  const chip = (k, t) => `<button type="button" data-prevmes="${k}" aria-pressed="${S.prevMes === k}">${t}</button>`;
+  const falta = [P.semValor ? `${P.semValor} sem valor` : '', P.semData ? `${P.semData} sem fechamento previsto` : '', P.vencidos ? `<b style="color:var(--bad)">${P.vencidos} com fechamento previsto vencido</b>` : ''].filter(Boolean).join(' · ');
+  const cart = [];
+  if (F) cart.push(`<div class="cartao"><div class="r">${esc(F.valor ? F.valor.curto : 'Valor')} previsto (ponderado)</div><div class="v">${sensV(a.pond)}</div><div class="s">de ${sensV(a.valor)} em ${a.n} negócio${a.n === 1 ? '' : 's'}</div></div>`);
+  if (comRec) cart.push(`<div class="cartao"><div class="r">Receita da Vivere prevista</div><div class="v">${sensV(a.recPond)}</div><div class="s">ponderada · sem ponderar ${sensV(a.rec)}${F ? '' : ` · ${a.n} negócio${a.n === 1 ? '' : 's'}`}</div></div>`);
+  cart.push(`<div class="cartao"><div class="r">${F && F.ganho ? esc(F.ganho) + ' no mês' : 'Ganhos no mês'}</div><div class="v">${g.n}</div><div class="s">${F ? sensV(g.valor) : ''}${comRec ? `${F ? ' · ' : ''}receita ${sensV(g.rec)}` : ''}</div></div>`);
+  return `<details class="painel prev-mes" ${S.prevAberta === false ? '' : 'open'} data-prevdet><summary><b>📈 Previsão de ${esc(rotMes(mes))}</b> <span class="mut peq">${F ? esc(F.rot) : 'todos os funis'} · valor × probabilidade dos negócios com fechamento previsto no mês</span></summary>
+    <div class="chips" role="group" aria-label="Mês da previsão" style="margin-top:8px">${chip('este', 'Este mês')}${chip('prox', 'Próximo mês')}</div>
+    <div class="cartoes" style="margin-top:8px">${cart.join('')}</div>
+    ${falta ? `<p class="peq mut" style="margin:6px 0 0">Em aberto: ${falta}. Preencha no lead para a previsão ficar certa.</p>` : ''}</details>`;
+}
+function cartaoPrevisaoInicio() {
+  const mes = mesDe(), L = Object.entries(S.leads).map(([id, l]) => ({ id, ...l, _f: funilDe(l) }));
+  const P = FC.previsao(L.map((l) => ({ lead: l, f: l._f })), mes, tabProb(), hojeISO());
+  return `<div class="cartao${P.vencidos ? ' alerta' : ''}"><div class="r">📈 Previsão de ${esc(rotMes(mes).split(' ')[0])}</div><div class="v">${sensV(P.abertos.recPond)}</div><div class="s">receita ponderada · ${P.abertos.n} negócio${P.abertos.n === 1 ? '' : 's'} · ganhos ${sensV(P.ganhos.rec)} · <button class="copiar" type="button" data-aba="leads">ver</button></div></div>`;
+}
+
+// ---------- gaveta "Personalizar" ----------
+function gavetaTela(qual) {
+  const T = tela(), A = T.abrir || {}, grupos = TELA_GRUPOS[qual] || TELA_GRUPOS.leads;
+  const lista = (g, rot) => { const L = telaLista(g);
+    return `<div class="painel tela-g"><h2>${esc(rot)}</h2><ol class="tela-l">${L.map(([k, r, v], i) => `<li><label><input type="checkbox" data-telav="${g}|${k}" ${v ? 'checked' : ''}> ${esc(r)}</label><span class="tela-bt"><button class="b" type="button" data-telam="${g}|${k}|-1" ${i ? '' : 'disabled'} aria-label="Subir ${esc(r)}">↑</button><button class="b" type="button" data-telam="${g}|${k}|1" ${i < L.length - 1 ? '' : 'disabled'} aria-label="Descer ${esc(r)}">↓</button></span></li>`).join('')}</ol></div>`; };
+  const abertura = qual === 'leads' ? `<div class="painel tela-g"><h2>Ao abrir Meus leads</h2><div class="form" style="margin-top:8px">
+      <label class="c">Funil<select data-telaab="funil"><option value="">O último que usei</option>${FC.ORDEM.map((f) => `<option value="${f}" ${A.funil === f ? 'selected' : ''}>${esc(FC.FUNIS[f].rot)}</option>`).join('')}<option value="todos" ${A.funil === 'todos' ? 'selected' : ''}>Todos</option></select></label>
+      <label class="c">Visão<select data-telaab="visao"><option value="">A última que usei</option>${VisoesCRM.VISOES.map(([k, t]) => `<option value="${k}" ${A.visao === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label></div></div>` : '';
+  return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Personalizar a tela">
+    <div class="cab"><div><p class="mut peq" style="margin:0">Personalizar · vale no celular e no computador</p><h3>${qual === 'inicio' ? 'Início' : 'Meus leads'}</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
+    ${abertura}${grupos.map(([g, r]) => lista(g, r)).join('')}
+    <div class="linha"><button class="b" type="button" data-telapadrao="${esc(qual)}">Voltar ao padrão</button><span class="mut peq">Cada mudança já fica salva na sua conta.</span></div></div>`;
+}
+document.addEventListener('click', (ev) => {
+  const t = ev.target.closest && ev.target.closest('[data-tela],[data-telam],[data-telapadrao],[data-prevmes]'); if (!t) return;
+  const d = t.dataset;
+  if (d.tela) return abrir('tela', d.tela);
+  if (d.prevmes) { S.prevMes = d.prevmes === 'prox' ? 'prox' : 'este'; S.prevAberta = true; return render(); }
+  if (d.telam) { const [g, k, s] = d.telam.split('|'), L = telaLista(g).map((x) => x[0]), i = L.indexOf(k), j = i + Number(s); if (i < 0 || j < 0 || j >= L.length) return;
+    [L[i], L[j]] = [L[j], L[i]]; return guardarTela({ [g]: { ...(tela()[g] || {}), ordem: L } }); }
+  if (d.telapadrao) { const mud = {}; (TELA_GRUPOS[d.telapadrao] || []).forEach(([g]) => { mud[g] = {}; }); if (d.telapadrao === 'leads') mud.abrir = {}; return guardarTela(mud, 'Tela de volta ao padrão.'); }
+});
+document.addEventListener('change', (ev) => {
+  const t = ev.target; if (!t || !t.dataset) return;
+  if (t.dataset.telav) { const [g, k] = t.dataset.telav.split('|'), L = telaLista(g), oc = L.filter((x) => (x[0] === k ? !t.checked : !x[2])).map((x) => x[0]);
+    return guardarTela({ [g]: { ...(tela()[g] || {}), ordem: L.map((x) => x[0]), ocultos: oc } }); }
+  if (t.dataset.telaab) { const ab = { ...(tela().abrir || {}), [t.dataset.telaab]: t.value }; return guardarTela({ abrir: ab }, 'Abertura salva: vale da próxima vez que abrir o painel.'); }
+});
+document.addEventListener('toggle', (ev) => { const t = ev.target; if (t && t.matches && t.matches('[data-prevdet]')) S.prevAberta = t.open; }, true);
+(function () { const st = document.createElement('style'); st.id = 'css-tela-crm'; st.textContent = '.tela-l{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}.tela-l li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.tela-l label{display:flex;gap:8px;align-items:center;min-width:0;flex:1}.tela-bt{display:flex;gap:4px;flex:none}.tela-bt .b{padding:4px 10px}.prev-mes summary{cursor:pointer;list-style:revert}.prev-mes .cartoes{margin-bottom:0;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.prev-mes .chips{max-width:420px}@media (max-width:640px){.prev-mes .cartoes{grid-template-columns:1fr 1fr}.prev-mes .cartao .v{font-size:22px}.prev-mes .cartao:last-child:nth-child(odd){grid-column:1/-1}}'; document.head.appendChild(st); })();
+
 // ---------- Banco ----------
 render();
 (async () => {
@@ -3879,6 +4072,7 @@ render();
     if (!S.uid) return;
     db.doc(`data/users/${S.uid}/preferencias`).onSnapshot((d) => {
       S.prefs = d.exists ? { ...d.data() } : {};
+      if (!S.telaDb) { S.telaDb = true; if (S.prefs.tela_crm) { try { localStorage.setItem(TELA_LS, JSON.stringify(S.prefs.tela_crm)); } catch (e) {} S.telaAberta = false; } aplicarAbertura(); render(); }   // fatia 2 do CRM
       const v = Array.isArray(S.prefs.abas) && S.prefs.abas.length ? [...S.prefs.abas] : null;
       if (!d.exists && S.ordemAbas) return; // ainda não foi guardada na conta: fica a do aparelho
       if (v === S.ordemAbas || ReordAbas.igual(v, S.ordemAbas)) return;
