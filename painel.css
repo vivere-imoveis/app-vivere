@@ -479,3 +479,7 @@ td[data-l="Telefone"] .cel,td[data-l="Outro telefone"] .cel{white-space:nowrap}
 .tabela.tem-cm.ta-compacta>table :is(td,th){padding-left:5px;padding-right:5px;font-size:13px}
 .tabela.tem-cm.ta-compacta>table .capa.p{width:52px;height:40px}
 .tabela.tem-cm.ta-compacta{overflow-x:auto}
+/* 17/11/2026 (CRM fatia 4): ações no cartão do Kanban e 🎤 Ditar do Registrar conversa */
+.vk-ac{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+#cvMic.ouvindo{background:var(--bad-bg);color:var(--bad);border-color:var(--bad);animation:vzpulso 1.2s infinite}
+@media (prefers-reduced-motion:reduce){#cvMic.ouvindo{animation:none}}

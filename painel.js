@@ -297,6 +297,7 @@ try {
       ${x.fech && mostra('fechamento') ? `<div class="vk-s">${x.fech}</div>` : ''}
       ${(x.prox || x.data_prox) && mostra('proxima') ? `<div class="vk-s${venc ? ' venc' : ''}">↳ ${esc(x.prox || 'Ação')}${x.data_prox ? ' · ' + dtc(x.data_prox) : ''}</div>` : ''}
       ${x.marca && mostra('autor') ? `<div class="vk-s vk-marca">${esc(x.marca)}</div>` : ''}
+      ${x.acoes ? `<div class="vk-ac">${x.acoes}</div>` : ''}
       ${mover ? `<label class="vk-mv"><span>Mover para</span><select data-vk-mover="${esc(chave)}|${esc(x.id)}"><option value="">—</option>${(cfg.destinos || cfg.etapas).filter((e) => e !== x.etapa).map((e) => `<option>${esc(e)}</option>`).join('')}</select></label>` : ''}
     </div>`;
   }
@@ -2036,7 +2037,7 @@ function vLeads() {
   const cont = (f) => Lf.filter(f).length;
   const chips = [['abertos', `Em aberto (${cont((l) => l._ab)})`], ['semprox', `Sem próxima ação (${cont((l) => l._ab && !l.prox_acao && !l.data_prox)})`], ['todos', `Todos (${cont(() => true)})`], ...(FU ? FU.etapas.map((e) => [e, `${e} (${cont((l) => l._et === e)})`]) : [])].filter(([k, t]) => !/\(0\)$/.test(t) || k === 'abertos' || k === 'todos');
   const cols = [
-    { k: 'nome', l: 'Nome', h: (r) => `<b>${esc(r.nome)}</b>${dupDe(r.id) ? ' ' + dupDe(r.id) : ''}${r._av.some((a) => a.p === 'alta') ? ' <span class="pill alta">atrasado</span>' : ''}${pillLado(r) ? ' ' + pillLado(r) : ''}${hitBA(r)}${autorLin(r)}` },
+    { k: 'nome', l: 'Nome', h: (r) => `<b>${esc(r.nome)}</b>${dupDe(r.id) ? ' ' + dupDe(r.id) : ''}${r._av.some((a) => a.p === 'alta') ? ' <span class="pill alta">atrasado</span>' : ''}${pillLado(r) ? ' ' + pillLado(r) : ''}${hitBA(r)}${autorLin(r)} ${btnConversaLead(r)}` },
     { k: 'telefone', l: 'Telefone', v: (r) => digitos(r.telefone), h: (r) => esc(fone(r.telefone)) },
     ...(FU && !busca ? [] : [{ k: '_f', l: 'Funil', v: (r) => FC.ORDEM.indexOf(r._f), h: (r) => pillFunil(r) }]),
     { k: 'interesse', l: 'Interesse', v: (r) => INT_POR[r._int].i, h: (r) => pillInt(r) },
@@ -2063,8 +2064,10 @@ function itemVisao(r) {
   return { id: r.id, nome: r.nome, etapa: etapaDe(r), aberta: abertaL(r), prox: r.prox_acao, data_prox: r.data_prox, alerta: alta, abre: `data-abre="lead:${esc(r.id)}"`,
     pills: pillInt(r), alertas: (alta ? `<span class="pill alta">${esc((r._av.find((a) => a.parado && a.p === 'alta') || {}).t || 'atrasado')}</span>` : r._av.some((a) => a.parado) ? `<span class="pill media">${esc(r._av.find((a) => a.parado).t)}</span>` : '') + (semProx(r) ? '<span class="pill sem-prox">sem próxima ação</span>' : ''),
     valor: valorCartao(r), fech: r.fechamento_prev && abertaL(r) ? `fecha em ${dt(r.fechamento_prev)}${r.fechamento_prev < hojeISO() ? ' <span class="pill alta">vencido</span>' : ''}` : '', sub: esc([r.campanha, r.imovel_interesse].filter(Boolean).join(' · ')),
-    dias: r._ult ? dias(r._ult, hojeISO()) : (r.entrada ? dias(r.entrada, hojeISO()) : null), marca: [r.etapa_por === 'diretoria' ? 'movido pela diretoria' : '', autorTxt(r)].filter(Boolean).join(' · ') };
+    dias: r._ult ? dias(r._ult, hojeISO()) : (r.entrada ? dias(r.entrada, hojeISO()) : null), marca: [r.etapa_por === 'diretoria' ? 'movido pela diretoria' : '', autorTxt(r)].filter(Boolean).join(' · '), acoes: btnConversaLead(r) };
 }
+// 17/11/2026 (CRM fatia 4, escolha do Cleiton): atalho "✦ Conversa" em cada lead (Kanban, Lista, cartão do celular e ficha do lead)
+function btnConversaLead(r) { return `<button class="copiar" type="button" data-conversa="lead:${esc(r.id)}" title="Registrar conversa com ${esc(r.nome || 'o cliente')}" aria-label="Registrar conversa com ${esc(r.nome || 'o cliente')}">✦ Conversa</button>`; }
 function visoesLeads(L0, FU) {
   const I = L0.map(itemVisao);
   const pede = `<div class="linha" style="margin:6px 0"><p class="mut" style="margin:0">Kanban, Pipeline e Funil mostram um funil por vez. Escolha:</p>${FC.ORDEM.filter((f) => f !== 'definir').map((f) => `<button class="b" type="button" data-funil="${f}">${FC.FUNIS[f].icone} ${esc(FC.FUNIS[f].rot)}</button>`).join('')}<button class="b" type="button" data-vcrm-tog="leads|lista">ou ver a Lista</button></div>`;
@@ -3151,9 +3154,12 @@ function gavetaConversa(alvo) {
   const nomeAlvo = tp === 'lead' ? (S.leads[id] || {}).nome : tp === 'imv' ? (S.meus[id] || {}).ref : '';
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Registrar conversa">
     <div class="cab"><div><p class="mut peq" style="margin:0">Registrar conversa${nomeAlvo ? ' · ' + esc(nomeAlvo) : ''}</p><h3>Conte o que aconteceu</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
-    <p class="peq mut" style="margin:0">🎤 Escreva um resumo, dite pelo microfone do teclado do celular ou cole a conversa do WhatsApp. ${S.ia ? 'A IA organiza etapa, próxima ação, data e perfil do cliente; você confere antes de salvar.' : 'Sem IA neste acesso: o texto vai para o histórico e você ajusta os campos à mão.'}</p>
+    <p class="peq mut" style="margin:0">🎤 Escreva um resumo, dite pelo 🎤 Ditar (ou pelo microfone do teclado do celular), cole a conversa do WhatsApp ou anexe a conversa exportada. ${S.ia ? 'A IA organiza etapa, próxima ação, data e perfil do cliente; você confere antes de salvar.' : 'Sem IA neste acesso: o texto vai para o histórico e você ajusta os campos à mão.'}</p>
     <div class="form" id="fConversa" data-alvo="${esc(alvo || '')}">
       <label class="c inteiro">Resumo ou conversa<textarea id="cvTexto" rows="8" placeholder="Toque no microfone do teclado e fale. Ex.: Liguei para a Esmeralda. Procura apto de 3 quartos no Itacorubi até R$ 1,3 mi, quer visitar sábado de manhã."></textarea></label>
+      <div class="inteiro linha"><button class="b" type="button" id="cvMic" aria-pressed="false" aria-label="Ditar o resumo pelo microfone">🎤 Ditar</button><span class="mut peq" id="cvMicSt"></span></div>
+      <label class="c inteiro">Conversa exportada do WhatsApp (opcional, .txt ou .zip)<input id="cvArquivo" type="file" accept=".txt,.zip,text/plain,application/zip,application/x-zip-compressed"></label>
+      <p class="inteiro peq mut" id="cvArqSt" style="margin:0">No WhatsApp, abra a conversa: no Android, ⋮ › Mais › Exportar conversa; no iPhone, toque no nome do contato › Exportar conversa. Escolha "Sem mídia", salve o arquivo e anexe aqui.</p>
       ${S.iaImagens ? `<label class="c inteiro">Prints da conversa (opcional, até ${S.iaImagens.maxCount})<input id="cvPrints" type="file" accept="${esc((S.iaImagens.mediaTypes || ['image/png', 'image/jpeg']).join(','))}" multiple></label>` : ''}
       <div class="inteiro linha"><button class="b p" type="button" id="cvAnalisar">${S.ia ? '✦ Organizar com IA' : 'Salvar no histórico'}</button><span class="mut peq" id="cvStatus"></span></div>
     </div>
@@ -3186,13 +3192,69 @@ Texto da corretora:
 ${texto}
 """`;
 }
+// 17/11/2026 (CRM fatia 4, escolha do Cleiton): 🎤 Ditar dentro do Registrar conversa e conversa exportada do WhatsApp (.txt ou .zip)
+const CV_MAX = 30000;   // caracteres da conversa exportada que vão à IA (as mensagens mais recentes)
+let cvRec = null;
+function ditarConversa() {
+  const ta = document.getElementById('cvTexto'), st = document.getElementById('cvMicSt'), b = document.getElementById('cvMic'); if (!ta || !st || !b) return;
+  if (cvRec) { try { cvRec.stop(); } catch (e) {} return; }
+  const movel = (() => { try { return matchMedia('(pointer:coarse)').matches; } catch (e) { return false; } })();
+  const C = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const dica = () => { try { ta.focus(); } catch (e) {} st.textContent = movel ? 'Toque no 🎤 do teclado e fale; o texto aparece no campo.' : 'Este navegador não liberou o microfone: dite com Win + H (Windows) ou digite.'; };
+  if (movel || !C) return dica();
+  let r; try { r = new C(); } catch (e) { return dica(); }
+  r.lang = 'pt-BR'; r.interimResults = true; r.continuous = true; r.maxAlternatives = 1;
+  const base = ta.value.trim() ? ta.value.replace(/\s*$/, '') + ' ' : ''; let fin = '', negado = false;
+  r.onresult = (e) => { let inter = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]; if (x.isFinal) fin += x[0].transcript.trim() + ' '; else inter += x[0].transcript; } ta.value = base + fin + inter; };
+  r.onerror = (e) => { if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture')) negado = true; };
+  r.onend = () => { cvRec = null; b.classList.remove('ouvindo'); b.setAttribute('aria-pressed', 'false'); b.textContent = '🎤 Ditar';
+    if (negado) return dica();
+    st.textContent = fin.trim() ? 'Pronto. Confira o texto e toque em Organizar.' : 'Não ouvi nada. Toque em 🎤 Ditar e fale de novo.'; };
+  try { r.start(); cvRec = r; b.classList.add('ouvindo'); b.setAttribute('aria-pressed', 'true'); b.textContent = '⏹ Parar'; st.textContent = 'Ouvindo… fale e toque em Parar quando terminar.'; }
+  catch (e) { cvRec = null; dica(); }
+}
+// lê o .txt da exportação; no .zip, acha o .txt dentro (sem biblioteca: diretório central + DecompressionStream)
+async function lerConversaExportada(f) {
+  if (!/\.zip$/i.test(f.name || '') && !/zip/.test(f.type || '')) return await f.text();
+  const b = new Uint8Array(await f.arrayBuffer()), dv = new DataView(b.buffer, b.byteOffset, b.byteLength), dec = new TextDecoder();
+  let e = -1; for (let i = b.length - 22; i >= Math.max(0, b.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error('zip inválido');
+  let p = dv.getUint32(e + 16, true); const n = dv.getUint16(e + 10, true); let achou = null;
+  for (let k = 0; k < n && p + 46 <= b.length; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const met = dv.getUint16(p + 10, true), csz = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lo = dv.getUint32(p + 42, true);
+    const nm = dec.decode(b.subarray(p + 46, p + 46 + nl)); p += 46 + nl + xl + cl;
+    if (/\.txt$/i.test(nm) && (!achou || /chat|conversa/i.test(nm))) achou = { met, csz, lo };
+  }
+  if (!achou) throw new Error('sem .txt');
+  const ini = achou.lo + 30 + dv.getUint16(achou.lo + 26, true) + dv.getUint16(achou.lo + 28, true), dados = b.subarray(ini, ini + achou.csz);
+  if (achou.met === 0) return dec.decode(dados);
+  if (achou.met === 8 && window.DecompressionStream) return await new Response(new Blob([dados]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  throw new Error('compressão não suportada');
+}
+document.addEventListener('change', async (ev) => {
+  const i = ev.target; if (!i || i.id !== 'cvArquivo') return;
+  const st = document.getElementById('cvArqSt'), f = i.files && i.files[0]; S.cvArq = null; if (!f) return;
+  if (f.size > 20 * 1024 * 1024) { st.textContent = 'Arquivo grande demais (mais de 20 MB). Exporte "Sem mídia".'; i.value = ''; return; }
+  st.textContent = 'Lendo a conversa…';
+  try {
+    const txt = String(await lerConversaExportada(f)).replace(/\r\n/g, '\n').replace(/[\u200e\u200f]/g, '').trim();
+    if (!txt) throw new Error('vazio');
+    const n = (txt.match(/^\[?\d{1,2}\/\d{1,2}\/\d{2,4}/gm) || []).length || txt.split('\n').length;
+    S.cvArq = { nome: f.name, texto: txt, n, cortada: txt.length > CV_MAX };
+    st.textContent = `📎 ${f.name}: ${n} mensagens.${txt.length > CV_MAX ? ' Conversa longa: a IA lê as mensagens mais recentes.' : ''} Toque em Organizar.`;
+  } catch (e) { S.cvArq = null; i.value = ''; st.textContent = 'Não consegui ler este arquivo. Use a exportação do WhatsApp (.txt ou .zip, "Sem mídia").'; }
+});
 let ctrlIA = null;
 async function analisarConversa() {
-  const box = document.getElementById('fConversa'), alvo = box.dataset.alvo || '', texto = val('cvTexto'), st = document.getElementById('cvStatus');
+  const box = document.getElementById('fConversa'), alvo = box.dataset.alvo || '', st = document.getElementById('cvStatus'); let texto = val('cvTexto');
   const prints = document.getElementById('cvPrints'); const imgs = prints && prints.files.length ? [...prints.files].slice(0, S.iaImagens.maxCount) : [];
-  if (!texto && !imgs.length) { st.textContent = 'Escreva o resumo ou anexe os prints.'; return; }
+  if (cvRec) { try { cvRec.stop(); } catch (e) {} }
+  const arq = S.cvArq || null;
+  if (!texto && !imgs.length && !arq) { st.textContent = 'Escreva o resumo, anexe os prints ou a conversa exportada.'; return; }
   if (!S.ia) { // sem IA: vai direto para o histórico do alvo indicado
     const [tp, id] = alvo.split(/:(.*)/s);
+    if (arq) texto = [texto, `[Conversa exportada do WhatsApp: ${arq.nome}, ${arq.n} mensagens; últimas linhas]`, arq.texto.slice(-3000)].filter(Boolean).join('\n');
     if (tp === 'lead') { const l = S.leads[id]; await gravar(() => db.collection('leads').doc(id).update({ historico: [...histDe(l), { em: agora().slice(0, 16), tipo: 'Observação', texto }], atualizado_em: agora(), origem: 'painel' }), 'Registrado no histórico.'); return fechar(); }
     if (tp === 'imv') { await gravar(() => db.collection('eventos_agenciamento').doc('e-' + Date.now().toString(36)).set({ imovel_id: id, ref: (S.meus[id] || {}).ref || '', tipo: 'Outro', texto, em: agora().slice(0, 16), corretor: S.info.slug || '', origem: 'painel' }), 'Registrado.'); return fechar(); }
     st.textContent = 'Abra o lead ou o imóvel e registre por lá.'; return;
@@ -3200,9 +3262,10 @@ async function analisarConversa() {
   st.textContent = 'Organizando…'; document.getElementById('cvAnalisar').disabled = true;
   if (ctrlIA) ctrlIA.abort(); ctrlIA = new AbortController();
   try {
-    const r = await S.ia.json(promptConversa(texto, alvo), { modelTier: 'default', signal: ctrlIA.signal, ...(imgs.length ? { images: imgs } : {}) });
+    const textoIA = arq ? [texto, `Conversa exportada do WhatsApp (${arq.nome}, ${arq.n} mensagens${arq.cortada ? '; só as mais recentes, a conversa é longa' : ''}):`, arq.texto.slice(-CV_MAX)].filter(Boolean).join('\n\n') : texto;
+    const r = await S.ia.json(promptConversa(textoIA, alvo), { modelTier: 'default', signal: ctrlIA.signal, ...(imgs.length ? { images: imgs } : {}) });
     if (alvo) { const [tp, id] = alvo.split(/:(.*)/s); if (tp === 'lead') { r.alvo = 'lead'; r.lead_id = id; } if (tp === 'imv') { r.alvo = 'imovel'; r.imovel_id = id; } }
-    S.proposta = { ...r, texto_original: texto };
+    S.proposta = { ...r, texto_original: texto || (arq ? 'Conversa exportada do WhatsApp: ' + arq.nome : '') };
     st.textContent = r.confianca === 'baixa' ? 'Confiança baixa: confira com atenção.' : '';
     document.getElementById('cvProposta').innerHTML = htmlProposta(S.proposta); ajustarProposta();
   } catch (e) {
@@ -3300,27 +3363,27 @@ async function salvarProposta() {
 }
 
 
-// ---------- Voz: o que já dá para fazer e o que vem com o agente do WhatsApp ----------
+// ---------- Voz: o que já dá para fazer no painel e com a Vivian no WhatsApp ----------
+// 17/11/2026 (CRM fatia 4): texto atualizado — a Vivian já recebe áudio; 🎤 Ditar e conversa exportada no Registrar conversa
 function gavetaVoz() {
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Registrar por voz">
     <div class="cab"><div><p class="mut peq" style="margin:0">Registrar por voz</p><h3>🎤 Fale em vez de digitar</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
-    <div class="painel sec" style="gap:10px"><h2>Já funciona hoje</h2>
-      <p style="margin:0">Em qualquer campo de texto do painel, toque no <b>🎤 do teclado do celular</b> (iPhone ou Gboard no Android) e fale. O texto aparece no campo.</p>
+    <div class="painel sec" style="gap:10px"><h2>No painel</h2>
       <ul class="peq" style="margin:0;padding-left:18px;display:grid;gap:4px">
-        <li><b>Registrar conversa:</b> fale o resumo do contato com o cliente; a IA organiza etapa, próxima ação, data e perfil, e você confere antes de salvar.</li>
+        <li><b>Registrar conversa:</b> toque em <b>🎤 Ditar</b> (no computador) ou no 🎤 do teclado do celular e conte o contato com o cliente; também dá para colar a conversa do WhatsApp ou anexar a conversa exportada. A IA organiza etapa, próxima ação, data e perfil, e você confere antes de salvar.</li>
+        <li><b>Atalho em cada lead:</b> o botão <b>✦ Conversa</b> no Kanban e na Lista já abre o registro com o cliente escolhido.</li>
         <li><b>Atualizar agenciamento:</b> fale o que combinou com o proprietário; conta para o prazo de 30 dias.</li>
         <li><b>Cadastrar imóvel:</b> dite os campos e a descrição; fotos e documentos você anexa no próprio formulário.</li>
       </ul>
       <div class="linha"><button class="b p" type="button" data-conversa="">✦ Registrar conversa agora</button></div>
     </div>
-    <div class="painel sec" style="gap:10px"><h2>Em breve · agente da Vivere no WhatsApp <span class="pill media">previsão</span></h2>
-      <p style="margin:0">Quando o agente estiver no ar, a ideia é você mandar pelo WhatsApp:</p>
+    <div class="painel sec" style="gap:10px"><h2>Com a Vivian, no WhatsApp da Vivere</h2>
       <ul class="peq" style="margin:0;padding-left:18px;display:grid;gap:4px">
-        <li><b>Áudio</b> contando a conversa com o cliente ou com o proprietário, para virar registro no seu CRM;</li>
-        <li><b>Áudio + fotos + documentos</b> de um imóvel novo, para montar o cadastro o mais completo possível;</li>
-        <li>e receber de volta o que ficou faltando para completar.</li>
+        <li>Mande <b>áudio</b> ou texto: ela entende o áudio e responde.</li>
+        <li>Conte a conversa com o cliente: ela confirma com você e registra na hora no seu CRM (histórico, etapa, próxima ação e data). Lead novo também: nome e celular com DDD.</li>
+        <li>Peça a resposta em áudio, se preferir ouvir.</li>
       </ul>
-      <p class="peq mut" style="margin:0">Tudo continua passando pela aprovação da diretoria antes de ir ao site. Ainda não há data: depende da construção do agente.</p>
+      <p class="peq mut" style="margin:0">Em construção: cadastro de imóvel novo pela Vivian com áudio, fotos e documentos. Tudo que vai ao site continua passando pela aprovação da diretoria.</p>
     </div></div>`;
 }
 
@@ -3798,7 +3861,8 @@ document.addEventListener('click', async (ev) => {
   if (d.fesit !== undefined) { S.fe.sit = d.fesit; return render(); }
   if (d.empficha) { S.empFicha = d.empficha; return redesenharGaveta(); }
   if (d.pmver) { const id = d.pmver; if (S.meus[id]) { S.fm = S.fm || { fin: '', sit: '' }; S.q.imoveis = S.meus[id].ref; S.aba = 'imoveis'; render(); window.scrollTo(0, 0); return; } return abrir('vit', id); }
-  if (d.conversa !== undefined) return abrir('conversa', d.conversa);
+  if (d.conversa !== undefined) { S.cvArq = null; if (cvRec) { try { cvRec.stop(); } catch (e) {} } return abrir('conversa', d.conversa); }
+  if (t.id === 'cvMic') return ditarConversa();
   if (d.voz !== undefined) return abrir('voz');
   if (t.id === 'cvAnalisar') return analisarConversa();
   if (t.id === 'ppSalvar') return salvarProposta();
@@ -3959,7 +4023,8 @@ function cartaoLeadMovel(r, FU) {
       <div class="cm-l1"><span class="cm-nome">${esc(r.nome)}</span>${dupDe(r.id)}${pillLado(r)}${c('interesse') ? pillInt(r) : ''}${c('alertas') && r._av.some((a) => a.p === 'alta') ? '<span class="pill alta">atrasado</span>' : ''}${hitBA(r)}<span class="cm-v">${FU ? '' : pillFunil(r)}${pillEtapa(r)}</span></div>
       <div class="cm-lin"><b>${esc(fone(r.telefone))}</b>${c('origem') ? ' · ' + esc(r.campanha || 'sem origem') : ''}</div>
       ${vl || fe ? `<div class="cm-lin">${[vl, fe].filter(Boolean).join(' · ')}</div>` : ''}
-      <div class="cm-lin">${c('proxima') ? (r.prox_acao || r.data_prox ? `Próxima: <b>${esc(r.prox_acao || 'ação')}</b> ${dt(r.data_prox)}` : '<span class="falta">Sem próxima ação</span>') + ' · ' : ''}último ${r._ult ? dt(r._ult).slice(0, 10) : '—'} · entrada ${r.entrada ? dt(r.entrada).slice(0, 10) : '—'}</div>${c('autor') ? autorLin(r, 'cm-lin mut peq') : ''}`;
+      <div class="cm-lin">${c('proxima') ? (r.prox_acao || r.data_prox ? `Próxima: <b>${esc(r.prox_acao || 'ação')}</b> ${dt(r.data_prox)}` : '<span class="falta">Sem próxima ação</span>') + ' · ' : ''}último ${r._ult ? dt(r._ult).slice(0, 10) : '—'} · entrada ${r.entrada ? dt(r.entrada).slice(0, 10) : '—'}</div>${c('autor') ? autorLin(r, 'cm-lin mut peq') : ''}
+      <div class="cm-lin">${btnConversaLead(r)}</div>`;
 }
 function camposValorHTML(f, l) {
   const F = FC.def(f); if (!F.valor) return '';
