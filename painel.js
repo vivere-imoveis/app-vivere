@@ -2688,7 +2688,7 @@ const SECOES = [
     { k: 'p_estado_civil', l: 'Estado civil', t: 'sel', op: ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Separado(a)', 'Viúvo(a)', 'Pessoa jurídica'] },
     { k: 'p_conjuge_nome', l: 'Nome do cônjuge ou companheiro(a)', obr: temConjuge, se: temConjuge },
     { k: 'p_conjuge_cpf', l: 'CPF do cônjuge ou companheiro(a)', obr: temConjuge, se: temConjuge, inp: 'numeric' },
-    { k: 'p_endereco', l: 'Endereço residencial com CEP', obr: 1, w: 1 },
+    { k: 'p_endereco', l: 'Endereço residencial com CEP', rec: 1, w: 1 }, // 17/11/2026: recomendado, não obrigatório (decisão do Cleiton; mesmo ajuste na Vivian 2026-11-17.5)
     { k: 'p_rg', l: 'RG ou outro documento' },
     { k: 'p_profissao', l: 'Profissão' },
     { k: 'p_nascimento', l: 'Data de nascimento', t: 'date' },
@@ -2813,7 +2813,7 @@ function totalObrig(n) {
   return t + 1 + docsObrig(d).length + 1 + (temPlaca(d) ? 1 : 0) + (lazerSim(d) ? 1 : 0);
 }
 function campoHTML(c, d) {
-  const id = 'c_' + c.k, v = d[c.k], l = esc(rotulo(c, d)), ob = (typeof c.obr === 'function' ? c.obr(d) : c.obr) ? ' *' : '';
+  const id = 'c_' + c.k, v = d[c.k], l = esc(rotulo(c, d)), ob = (typeof c.obr === 'function' ? c.obr(d) : c.obr) ? ' *' : c.rec ? ' <span class="mut peq">(recomendado)</span>' : '';
   const cls = 'c' + (c.w ? ' inteiro' : '');
   if (c.t === 'sel') return `<label class="${cls}">${l}${ob}<select id="${id}" data-campo="${c.k}"><option value="">Escolha</option>${c.op.map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
   if (c.t === 'multi') return `<div class="${cls}"><span>${l}${ob}</span><div class="opcoes">${c.op.map((o, i) => `<label><input type="checkbox" id="${id}_${i}" data-multi="${c.k}" value="${esc(o)}" ${(v || []).includes(o) ? 'checked' : ''}>${esc(o)}</label>`).join('')}</div></div>`;
