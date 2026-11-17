@@ -2357,7 +2357,7 @@ function seloDivulg(m) {
   const pl = (cls, txt, tit) => `<span class="pill ${cls}" title="${esc(tit || '')}">${esc(txt)}</span>`;
   // anúncio inativo não é cobrado nas Pendências: mostra só a resposta, sem falta (crítico da P3b)
   if (p.falta && m.ativo) out.push(pl('media', '🪧 ' + (p.falta === 'Placa da Vivere' ? 'Placa: falta informar' : p.falta), dica));
-  else if (p.s === 'ainda_nao') out.push(pl('', '🪧 Placa ainda não colocada', 'Anúncio inativo'));
+  else if (p.s === 'ainda_nao') out.push(pl('', '🪧 Placa ainda não colocada', 'Placa ainda não colocada'));
   else if (p.s === 'sim') out.push(pl('ok', '🪧 Placa' + (p.data ? ' desde ' + DIV_DT(p.data) : '') + (p.fotos ? ' · ' + p.fotos + ' foto' + (p.fotos > 1 ? 's' : '') : ''), 'Placa da Vivere colocada'));
   else if (p.s === 'nao_permitido') out.push(pl('', '🪧 Sem placa' + (p.motivo ? ': ' + p.motivo : ''), 'Placa não permitida (falta sanada)'));
   if (l) {
