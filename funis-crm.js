@@ -153,7 +153,7 @@
   // Ao entrar na etapa, o BANCO (gatilho no Supabase) preenche a próxima ação e a data (se o corretor não pôs outra na mesma mudança),
   // cria a tarefa na aba Tarefas, avisa a diretoria no ganho e agenda a reativação do perdido em 90 dias. Esta tabela é só o padrão
   // mostrado no app; o banco tem a mesma (privado.auto_etapa_padrao) e lê a sobreposição de controle/prazos.auto_etapa.
-  const REATIVAR = { dias: 90, exceto: ['Corretor anunciante', 'Pediu para não ser contatado'] };
+  const REATIVAR = { dias: 90, exceto: ['Corretor anunciante', 'Pediu para não ser contatado', 'Contato inválido', 'Duplicado'] };
   function autoEtapa(etapa, f, tabela) {
     const e = etapaNoFunil(etapa, f), T = tabela && tabela[f];
     if (T && Object.prototype.hasOwnProperty.call(T, e)) { const x = T[e]; return x && x.acao ? { acao: String(x.acao), dias: Number(x.dias) >= 0 ? Number(x.dias) : 1 } : null; }
