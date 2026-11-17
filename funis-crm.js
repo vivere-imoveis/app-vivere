@@ -13,6 +13,7 @@
       prob: { Novo: 5, 'Contato feito': 10, Qualificado: 20, 'Visita agendada': 30, 'Visita feita': 40, Proposta: 60, 'Análise cadastral': 75, 'Contrato e garantia': 90 },
       etapas: ['Novo', 'Contato feito', 'Qualificado', 'Visita agendada', 'Visita feita', 'Proposta', 'Análise cadastral', 'Contrato e garantia', 'Fechado', 'Perdido'],
       parado: { 'Contato feito': 3, Qualificado: 5, 'Visita agendada': 3, 'Visita feita': 2, Proposta: 3, 'Análise cadastral': 2, 'Contrato e garantia': 3 },
+      auto: { 'Contato feito': ['Qualificar: renda, garantia e mudança', 1], Qualificado: ['Enviar opções e marcar visita', 1], 'Visita agendada': ['Confirmar a visita', 1], 'Visita feita': ['Pedir retorno da visita', 1], Proposta: ['Retorno do proprietário', 3], 'Análise cadastral': ['Cobrar documentos do cadastro', 1], 'Contrato e garantia': ['Conferir assinaturas e garantia', 2] },
       motivos: ['Sem retorno', 'Renda insuficiente', 'Reprovado na análise cadastral', 'Sem garantia aceita', 'Alugou com outro', 'Desistiu', 'Sem perfil/orçamento', 'Contato inválido', 'Duplicado', 'Corretor anunciante', 'Outro'],
       campos: [
         { k: 'renda', rot: 'Renda mensal comprovável (R$)', tipo: 'vlr' },
@@ -27,6 +28,7 @@
       prob: { Novo: 2, 'Contato feito': 5, Qualificado: 10, 'Visita agendada': 15, 'Visita feita': 25, Proposta: 40, Negociação: 55, 'Documentação e financiamento': 80 },
       etapas: ['Novo', 'Contato feito', 'Qualificado', 'Visita agendada', 'Visita feita', 'Proposta', 'Negociação', 'Documentação e financiamento', 'Fechado', 'Perdido'],
       parado: { 'Contato feito': 3, Qualificado: 7, 'Visita agendada': 3, 'Visita feita': 3, Proposta: 3, Negociação: 5, 'Documentação e financiamento': 10 },
+      auto: { 'Contato feito': ['Qualificar: valor, financiamento e prazo', 1], Qualificado: ['Enviar opções e marcar visita', 1], 'Visita agendada': ['Confirmar a visita', 1], 'Visita feita': ['Pedir retorno da visita', 1], Proposta: ['Retorno do vendedor', 3], Negociação: ['Fechar condições e minuta', 2], 'Documentação e financiamento': ['Acompanhar documentos e banco', 3] },
       motivos: ['Sem retorno', 'Sem orçamento ou crédito', 'Financiamento negado', 'Comprou com outro', 'Desistiu', 'Sem perfil/orçamento', 'Contato inválido', 'Duplicado', 'Corretor anunciante', 'Outro'],
       campos: [
         { k: 'pagamento', rot: 'Forma de pagamento', tipo: 'multi', ops: ['À vista', 'Financiamento', 'FGTS', 'Permuta', 'Consórcio'] },
@@ -40,6 +42,7 @@
       prob: { 'A captar': 5, 'Contato feito': 15, 'Avaliação do imóvel': 30, 'Proposta de agenciamento': 50 },
       etapas: ['A captar', 'Contato feito', 'Avaliação do imóvel', 'Proposta de agenciamento', 'Captado', 'Cadastro completo', 'No ar', 'Perdido'],
       parado: { 'A captar': 7, 'Contato feito': 2, 'Avaliação do imóvel': 5, 'Proposta de agenciamento': 3, Captado: 3, 'Cadastro completo': 2 },
+      auto: { 'Contato feito': ['Marcar avaliação do imóvel', 2], 'Avaliação do imóvel': ['Enviar proposta de agenciamento', 2], 'Proposta de agenciamento': ['Retorno do proprietário', 3], Captado: ['Completar cadastro: fotos, documentos e ficha', 3], 'Cadastro completo': ['Conferir o anúncio no ar', 2] },
       motivos: ['Sem retorno', 'Não aceita autorização ou exclusividade', 'Valor fora do mercado', 'Fechou com outra imobiliária', 'Desistiu de vender ou alugar', 'Documentação irregular', 'Pediu para não ser contatado', 'Contato inválido', 'Duplicado', 'Corretor anunciante', 'Outro'],
       campos: [
         { k: 'valor_pretendido', rot: 'Valor pretendido (R$)', tipo: 'vlr' },
@@ -54,6 +57,7 @@
       prob: { Novo: 10, 'Contato feito': 20, 'Datas e perfil': 30, 'Opções enviadas': 45, Reserva: 75 },
       etapas: ['Novo', 'Contato feito', 'Datas e perfil', 'Opções enviadas', 'Reserva', 'Contrato assinado', 'Entrada', 'Concluída', 'Perdido'],
       parado: { 'Contato feito': 1, 'Datas e perfil': 1, 'Opções enviadas': 2, Reserva: 2 },
+      auto: { 'Contato feito': ['Confirmar datas e perfil', 1], 'Datas e perfil': ['Enviar opções', 1], 'Opções enviadas': ['Pedir retorno das opções', 1], Reserva: ['Cobrar sinal de 50%', 1], 'Contrato assinado': ['Combinar entrada e chaves', 1], Entrada: ['Checar se está tudo ok', 1] },
       motivos: ['Sem retorno', 'Sem imóvel nas datas', 'Preço', 'Fechou com outro', 'Desistiu', 'Contato inválido', 'Duplicado', 'Corretor anunciante', 'Outro'],
       campos: [
         { k: 'chegada', rot: 'Chegada', tipo: 'data' },
@@ -145,7 +149,17 @@
     });
     return P;
   }
+  // ---------- fatia 6 (17/11/2026, decisões do Cleiton): automação por etapa ----------
+  // Ao entrar na etapa, o BANCO (gatilho no Supabase) preenche a próxima ação e a data (se o corretor não pôs outra na mesma mudança),
+  // cria a tarefa na aba Tarefas, avisa a diretoria no ganho e agenda a reativação do perdido em 90 dias. Esta tabela é só o padrão
+  // mostrado no app; o banco tem a mesma (privado.auto_etapa_padrao) e lê a sobreposição de controle/prazos.auto_etapa.
+  const REATIVAR = { dias: 90, exceto: ['Corretor anunciante', 'Pediu para não ser contatado', 'Contato inválido', 'Duplicado'] };
+  function autoEtapa(etapa, f, tabela) {
+    const e = etapaNoFunil(etapa, f), T = tabela && tabela[f];
+    if (T && Object.prototype.hasOwnProperty.call(T, e)) { const x = T[e]; return x && x.acao ? { acao: String(x.acao), dias: Number(x.dias) >= 0 ? Number(x.dias) : 1 } : null; }
+    const p = (def(f).auto || {})[e]; return p ? { acao: p[0], dias: p[1] } : null;
+  }
   const todasEtapas = () => { const s = []; ORDEM.forEach((f) => FUNIS[f].etapas.forEach((e) => { if (!s.includes(e)) s.push(e); })); return s; };
   const todosMotivos = () => { const s = []; ORDEM.forEach((f) => FUNIS[f].motivos.forEach((m) => { if (!s.includes(m)) s.push(m); })); return s; };
-  window.FunisCRM = { FUNIS, ORDEM, DO_INTERESSE, LEGADO, NIVEL, funilDoInteresse, def, etapaNoFunil, ordem, aberta, ganho, paradoDias, todasEtapas, todosMotivos, probEtapa, probDe, ajustada, valorDe, receitaPct, receitaDe, previsao, versao: '2026-11-16.2' };
+  window.FunisCRM = { FUNIS, ORDEM, DO_INTERESSE, LEGADO, NIVEL, funilDoInteresse, def, etapaNoFunil, ordem, aberta, ganho, paradoDias, todasEtapas, todosMotivos, probEtapa, probDe, ajustada, valorDe, receitaPct, receitaDe, previsao, autoEtapa, REATIVAR, versao: '2026-11-17.1' };
 })();

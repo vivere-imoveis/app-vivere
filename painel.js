@@ -964,7 +964,7 @@ const semProx = (l) => abertaL(l) && !l.prox_acao && !l.data_prox;
 const optEtapas = (f, sel) => FC.def(f).etapas.map((e) => `<option ${e === sel ? 'selected' : ''}>${esc(e)}</option>`).join('');
 const optMotivos = (f, sel) => { const M = FC.def(f).motivos.slice(); if (sel && !M.includes(sel)) M.push(sel); return M.map((m) => `<option ${m === sel ? 'selected' : ''}>${esc(m)}</option>`).join(''); };
 const telChave = (t) => digitos(t).slice(-8);
-(function () { const st = document.createElement('style'); st.textContent = '.pill.funil-p{background:transparent;border:1px solid var(--line);color:var(--ink);white-space:nowrap}.pill.sem-prox{background:transparent;border:1px dashed var(--warn);color:var(--warn);white-space:nowrap}.funil-chips{margin:0 0 6px}.funil-chips button{font-weight:600}.camp-funil{display:contents}.neg-lig{display:grid;gap:6px;margin-top:8px}.neg-lig .i{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.pz-etapas{display:grid;gap:10px;margin-top:10px}.pz-etapas table{border-collapse:collapse;width:100%;font-size:13px}.pz-etapas td{padding:3px 6px;border-top:1px solid var(--line)}.pz-etapas td.n{text-align:right;white-space:nowrap}'; document.head.appendChild(st); })();
+(function () { const st = document.createElement('style'); st.textContent = '.pill.funil-p{background:transparent;border:1px solid var(--line);color:var(--ink);white-space:nowrap}.pill.sem-prox{background:transparent;border:1px dashed var(--warn);color:var(--warn);white-space:nowrap}.funil-chips{margin:0 0 6px}.funil-chips button{font-weight:600}.camp-funil{display:contents}.neg-lig{display:grid;gap:6px;margin-top:8px}.neg-lig .i{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.pz-etapas{display:grid;gap:10px;margin-top:10px}.pz-etapas table{border-collapse:collapse;width:100%;font-size:13px}.pz-etapas td{padding:3px 6px;border-top:1px solid var(--line)}.pz-etapas td.n{text-align:right;white-space:nowrap}.pz-etapas td.pz-auto{overflow-wrap:anywhere;min-width:0}.pz-etapas td.pz-auto input:not([type=number]){width:100%;min-width:0;box-sizing:border-box}@media (max-width:560px){.pz-etapas td{padding:3px 4px}.pz-etapas table{table-layout:fixed}.pz-etapas td:first-child{width:28%}.pz-etapas td.n{width:19%}}'; document.head.appendChild(st); })();
 function camposFunilHTML(f, c) {
   c = c || {}; const F = FC.def(f); if (!F.campos.length) return '';
   return `<div class="inteiro"><h2 style="margin:6px 0 0">${F.icone} Dados de ${esc(F.rot.toLowerCase())}</h2></div>` + F.campos.map((x) => {
@@ -1556,7 +1556,7 @@ const autorLin = (d, cls, hora) => { const t = autorTxt(d, hora); return t ? `<d
 const TF = (() => {
   const PRI = [['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa']];
   const PRI_I = { alta: 0, media: 1, baixa: 2 };
-  const ORIG = { corretor: 'Você', vivian: 'Vivian', diretoria: 'Diretoria' };
+  const ORIG = { corretor: 'Você', vivian: 'Vivian', diretoria: 'Diretoria', automacao: 'Automação do CRM' };
   const FILTROS = [['abertas', 'A fazer'], ['recados', 'Recados'], ['hoje', 'Hoje'], ['atrasadas', 'Atrasadas'], ['semana', 'Próximos 7 dias'], ['sem_data', 'Sem data'], ['feitas', 'Feitas'], ['todas', 'Todas']];
   const hm = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   const emDias = (n) => { const d = new Date(Date.now() + n * 864e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -3086,10 +3086,13 @@ function painelPrazos() {
 function blocoParadoEtapas(p) {
   const pe = p.parado_etapa || {};
   const pb = p.prob_etapa || {};   // 16/11/2026 (fatia 2): probabilidade de fechar por etapa, ao lado do parado
-  return `<details class="pz-etapas"><summary><b>Por etapa: alerta de parado e probabilidade</b> <span class="mut peq">(dias sem registro até o lead ficar parado · chance de fechar usada na previsão do mês)</span></summary>${FC.ORDEM.map((f) => { const F = FC.FUNIS[f];
+  const pa = p.auto_etapa || {};   // 17/11/2026 (fatia 6): próxima ação automática ao entrar na etapa (o banco aplica)
+  return `<details class="pz-etapas"><summary><b>Por etapa: alerta de parado, probabilidade e ação automática</b> <span class="mut peq">(dias sem registro até o lead ficar parado · chance de fechar usada na previsão do mês · próxima ação e tarefa criadas sozinhas ao entrar na etapa; vazio = sem ação)</span></summary>${FC.ORDEM.map((f) => { const F = FC.FUNIS[f];
     const linhas = F.etapas.filter((e) => e !== 'Perdido' && e !== F.final).map((e, i) => { const v = FC.paradoDias(e, f, pe), pr = FC.probEtapa(e, f, pb), fixa = FC.ganho(e, f) || f === 'definir';
-      return `<tr><td>${esc(e)}</td><td class="n">${S.ehDono ? `<input id="pze_${f}_${i}" data-pze="${f}|${esc(e)}" type="number" min="0" inputmode="numeric" value="${v == null ? '' : esc(v)}" placeholder="sem alerta" style="max-width:110px" aria-label="${esc(F.rot + ' · ' + e)} (dias)">` : v == null ? '<span class="mut">sem alerta</span>' : `<b>${esc(v)} dia${v === 1 ? '' : 's'}</b>`}</td><td class="n">${S.ehDono && !fixa ? `<input id="pbe_${f}_${i}" data-pbe="${f}|${esc(e)}" type="number" min="0" max="100" inputmode="numeric" value="${esc(pr)}" style="max-width:80px" aria-label="${esc(F.rot + ' · ' + e)} (probabilidade em %)"> %` : `<b>${esc(pr)}%</b>${FC.ganho(e, f) ? ' <span class="mut peq">ganho</span>' : ''}`}</td></tr>`; }).join('');
-    return `<div><b>${esc(F.rot)}</b><table><tr><th></th><th class="n peq mut">Parado</th><th class="n peq mut">Chance</th></tr>${linhas}</table></div>`; }).join('')}</details>`;
+      return `<tr><td>${esc(e)}</td><td class="n">${S.ehDono ? `<input id="pze_${f}_${i}" data-pze="${f}|${esc(e)}" type="number" min="0" inputmode="numeric" value="${v == null ? '' : esc(v)}" placeholder="sem alerta" style="max-width:110px" aria-label="${esc(F.rot + ' · ' + e)} (dias)">` : v == null ? '<span class="mut">sem alerta</span>' : `<b>${esc(v)} dia${v === 1 ? '' : 's'}</b>`}</td><td class="n">${S.ehDono && !fixa ? `<input id="pbe_${f}_${i}" data-pbe="${f}|${esc(e)}" type="number" min="0" max="100" inputmode="numeric" value="${esc(pr)}" style="max-width:80px" aria-label="${esc(F.rot + ' · ' + e)} (probabilidade em %)"> %` : `<b>${esc(pr)}%</b>${FC.ganho(e, f) ? ' <span class="mut peq">ganho</span>' : ''}`}</td><td class="pz-auto">${(() => { const a = FC.autoEtapa(e, f, pa);
+        return S.ehDono ? `<input id="pae_${f}_${i}" data-pae="${f}|${esc(e)}" maxlength="120" value="${esc(a ? a.acao : '')}" placeholder="sem ação" aria-label="${esc(F.rot + ' · ' + e)} (ação automática)"> <input id="pad_${f}_${i}" data-pad="${f}|${esc(e)}" type="number" min="0" max="60" inputmode="numeric" value="${esc(a ? a.dias : '')}" style="max-width:64px" aria-label="${esc(F.rot + ' · ' + e)} (dias para a ação)"> <span class="mut peq">d</span>`
+          : a ? `${esc(a.acao)} <span class="mut peq">(+${esc(a.dias)}d)</span>` : '<span class="mut">—</span>'; })()}</td></tr>`; }).join('');
+    return `<div><b>${esc(F.rot)}</b><table><tr><th></th><th class="n peq mut">Parado</th><th class="n peq mut">Chance</th><th class="peq mut">Ação automática</th></tr>${linhas}</table></div>`; }).join('')}<p class="peq mut" style="margin:8px 0 0">No ganho, a diretoria recebe a pendência no HUB; no Perdido, o lead volta como tarefa de reativação em ${FC.REATIVAR.dias} dias (menos ${esc(FC.REATIVAR.exceto.join(' e '))}).</p></details>`;
 }
 async function salvarPrazos() {
   const novo = { ...PZ() };
@@ -3100,6 +3103,13 @@ async function salvarPrazos() {
   const pb = {}; document.querySelectorAll('[data-pbe]').forEach((i) => { const [f, e] = i.dataset.pbe.split('|'); const v = i.value.trim(); const pad = (FC.FUNIS[f].prob || {})[e];
     if (v !== '' && Number(v) !== pad) (pb[f] = pb[f] || {})[e] = Math.max(0, Math.min(100, Number(v))); });
   if (document.querySelector('[data-pbe]')) novo.prob_etapa = pb;
+  // 17/11/2026 (fatia 6): só grava o que difere do padrão; vazio num campo que tinha ação padrão = desligar (null)
+  const pa = {}; document.querySelectorAll('[data-pae]').forEach((i) => { const [f, e] = i.dataset.pae.split('|'); const ac = i.value.trim().slice(0, 120);
+    const dEl = document.querySelector(`[data-pad="${CSS.escape(f + '|' + e)}"]`), dv = dEl && dEl.value !== '' ? Math.max(0, Math.min(60, Math.round(Number(dEl.value)))) : 1;
+    const pad = (FC.FUNIS[f].auto || {})[e];
+    if (!ac) { if (pad) (pa[f] = pa[f] || {})[e] = null; return; }
+    if (!pad || pad[0] !== ac || pad[1] !== dv) (pa[f] = pa[f] || {})[e] = { acao: ac, dias: dv }; });
+  if (document.querySelector('[data-pae]')) novo.auto_etapa = pa;
   novo.atualizado_em = agora();
   await gravar(() => db.doc('controle/prazos').set(novo), 'Prazos salvos.');
 }
