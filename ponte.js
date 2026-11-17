@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-17.2'; // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-17.3'; // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1, metas_equipes: 1 };   // metas_equipes: fatia 7 do CRM (placar das equipes, sem nomes)
@@ -608,6 +608,19 @@
   function paraBase64(f) {
     return new Promise(function (ok, falha) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).split(',')[1] || ''); }; fr.onerror = function () { falha(fr.error); }; fr.readAsDataURL(f); });
   }
+  // 17/11/2026 (perfil do lead, F2): "Gerar perfil" no lead chama a função lead-perfil, que confere no servidor se o lead é do
+  // painel de quem pede, conta o limite por pessoa e devolve o perfil (que também fica gravado em perfil_ia, só o servidor grava).
+  async function perfil(docId, sinal) {
+    await entrou;
+    var s = await sb.auth.getSession(), tok = s && s.data && s.data.session && s.data.session.access_token;
+    if (!tok) throw erro('Sessão expirada. Entre de novo.', 'not_granted');
+    var r;
+    try { r = await fetch(SB_URL + '/functions/v1/lead-perfil?acao=pedir', { method: 'POST', headers: { authorization: 'Bearer ' + tok, apikey: SB_CHAVE, 'content-type': 'application/json' }, body: JSON.stringify({ doc_id: String(docId) }), signal: sinal }); }
+    catch (e) { if (e && e.name === 'AbortError') throw erro('cancelado', 'cancelled'); throw erro('Sem conexão agora.', 'unavailable'); }
+    var j = await r.json().catch(function () { return {}; });
+    if (!r.ok || !j.ok) { var e2 = erro(j.erro || ('erro ' + r.status), j.codigo || (r.status === 429 ? 'rate_limited' : r.status === 401 || r.status === 403 ? 'not_granted' : 'unavailable')); e2.limite = j.limite; throw e2; }
+    return j;
+  }
   var ia = {
     json: async function (prompt, op) {
       op = op || {};
@@ -619,5 +632,5 @@
     },
     limits: async function () { var j = await chamarIA({ tipo: 'limites' }); return { images: j.imagens, limite: j.limite, usados: j.usados }; }
   };
-  window.VIVERE_PONTE = { versao: VERSAO, ia: ia, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, divulgacao: divulgacao, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
+  window.VIVERE_PONTE = { versao: VERSAO, ia: ia, perfil: perfil, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, divulgacao: divulgacao, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
 })();

@@ -777,7 +777,7 @@ const INICIO_CRM = '2026-10-18';
 
 // ---------- Estado ----------
 const S = {
-  aba: 'inicio', leads: {}, meus: {}, vitrine: [], sol: {}, info: {}, prontos: new Set(), capt: {},
+  aba: 'inicio', perfilIA: {}, leads: {}, meus: {}, vitrine: [], sol: {}, info: {}, prontos: new Set(), capt: {},
   opLado: 'procura', opTem: 'com', opTemOrd: { k: 'n', d: -1 }, opTemMais: false,
   sort: {}, filtroEtapa: 'abertos', filtroInt: '', buscaLead: '', pagVit: 0,
   fv: { fin: '', tipo: '', bairro: '', dorm: '', vagas: '', vmin: '', vmax: '', m2min: '', m2max: '' },
@@ -2107,7 +2107,7 @@ function gavetaLead(id) {
   const refs = S.vitrine.map((v) => v.ref).filter(Boolean);
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillFunil(l) + pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>${autorLin(l, 'mut peq', 1)}`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
-    ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoResumoIA(id)}${blocoCorAnun(id, l)}`}
+    ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoResumoIA(id)}${blocoPerfilIA(id)}${blocoCorAnun(id, l)}`}
     <form id="fLead" class="form" data-id="${esc(id || '')}">
       ${novo ? `<label class="c inteiro">Nome<input id="lNome" required></label><label class="c">Telefone<input id="lTel" inputmode="tel" required></label><label class="c">Origem<select id="lOrig">${['Indicação', 'Plantão', 'Portal', 'Instagram', 'Site', 'Outro'].map((o) => `<option>${o}</option>`).join('')}</select></label>` : ''}
       <label class="c">Interesse<select id="lInt">${optInt(novo ? 'a_definir' : interesseDe(l))}</select></label>
@@ -2128,6 +2128,8 @@ function gavetaLead(id) {
       <label class="c">Dormitórios (mín.)<input id="pDorm" type="number" min="0" inputmode="numeric" value="${esc(p.dorm ?? '')}"></label>
       <label class="c">Vagas (mín.)<input id="pVagas" type="number" min="0" inputmode="numeric" value="${esc(p.vagas ?? '')}"></label>
       <label class="c inteiro">Observações (vista, andar, piscina…)<input id="pObs" value="${esc(p.obs || '')}"></label>
+      <label class="c inteiro">Redes que o próprio cliente informou (opcional)<input id="pRedes" maxlength="300" value="${esc(l.redes || '')}" placeholder="@perfil ou link que ele passou"></label>
+      <label class="c inteiro peq" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="pCons" style="width:auto" ${l.consentimento && l.consentimento.ok ? 'checked' : ''}> O cliente autorizou usar as redes que ele informou no perfil da Vivian (LGPD)</label>
       ${novo ? '<label class="c inteiro">Primeiro registro (opcional)<textarea id="lObsNovo" placeholder="Como chegou, o que procura"></textarea></label>' : ''}
       <div class="inteiro linha"><button class="b p" type="submit">${novo ? 'Cadastrar lead' : 'Salvar alterações'}</button><span class="erro" id="eLead"></span></div>
     </form>
@@ -3419,6 +3421,53 @@ function blocoResumoIA(id) {
     <p class="peq mut" id="rvSt" style="margin:8px 0 0">Gerado em ${dt(r.em)}${S.gestor ? ' · só leitura na visão do gestor' : ''}. Confira antes de aplicar.</p></div>`;
 }
 function atualizaRV(id) { const b = document.getElementById('rvBox'); if (b) b.outerHTML = blocoResumoIA(id); }
+
+// ---------- 🧭 Perfil do cliente pela Vivian (tarefa vivere-ia-perfil-amplo-leads, F2, 17/11/2026) ----------
+// Gerado no servidor (função lead-perfil) a cada lead novo e conversa nova, com teto diário; o corretor dono vê aqui.
+// Fontes só da Vivere e as redes que o próprio cliente informou, com consentimento (decisão do Cleiton, LGPD). Sugestão, não decisão.
+S.pfTemp = S.pfTemp || {};
+const PF_MOM = { explorando: 'Explorando', comparando: 'Comparando', decidido: 'Decidido', parado: 'Parado', indefinido: 'Momento indefinido' };
+const PF_URG = { alta: 'Urgência alta', media: 'Urgência média', baixa: 'Urgência baixa', indefinida: 'Urgência indefinida' };
+const PF_CONF = { alta: 'confiança alta', media: 'confiança média', baixa: 'confiança baixa' };
+const PF_FONTE = { lead: 'cadastro', historico: 'conversas', site: 'site', carteira: 'carteira', redes_informadas: 'redes informadas' };
+const pfLista = (t, a) => { const v = (Array.isArray(a) ? a : []).map(String).filter((x) => x.trim()); return v.length ? `<div style="margin-top:8px"><b class="peq">${esc(t)}</b><ul class="peq" style="margin:4px 0 0;padding-left:18px">${v.slice(0, 8).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''; };
+function blocoPerfilIA(id) {
+  if (S.gestor) return '';   // na visão do gestor o perfil fica no HUB (decisão: app só para o corretor do lead)
+  const l = S.leads[id]; if (!l) return '';
+  const doc = S.pfTemp[id] || S.perfilIA[id] || null, p = doc && doc.perfil, pode = !!(window.VIVERE_PONTE && window.VIVERE_PONTE.perfil);
+  const cab = `<div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><h2 style="margin:0">🧭 Perfil do cliente</h2>${pode ? `<button class="b${p ? '' : ' p'}" type="button" data-pfgerar="${esc(id)}">${p ? 'Atualizar perfil' : 'Gerar perfil'}</button>` : ''}</div>`;
+  if (!p) return `<div class="painel" id="pfBox">${cab}<p class="peq mut" id="pfSt" style="margin:6px 0 0">${pode ? 'A Vivian monta o perfil sozinha quando o lead entra e a cada conversa nova. Se ainda não apareceu, toque em Gerar perfil.' : 'O perfil aparece aqui quando a Vivian gerar.'}</p></div>`;
+  const b = p.busca || {}, ab = p.abordagem || {};
+  const pills = [PF_MOM[p.momento], PF_URG[p.urgencia]].filter(Boolean).map((x) => `<span class="pill">${esc(x)}</span>`).join(' ');
+  const buscaTx = [b.finalidade, (b.tipos || []).join(', '), (b.bairros || []).length ? 'em ' + b.bairros.join(', ') : '', b.quartos ? b.quartos + ' quartos' : '', b.faixa, b.prazo ? 'prazo: ' + b.prazo : ''].map((x) => String(x || '').trim()).filter(Boolean).join(' · ');
+  const ims = (p.imoveis || []).filter((x) => x && x.ref);
+  return `<div class="painel" id="pfBox">${cab}
+    <p style="margin:8px 0 0">${pills ? pills + ' ' : ''}${esc(p.resumo || '')}</p>
+    ${buscaTx ? `<p class="peq" style="margin:8px 0 0"><b>O que busca:</b> ${esc(buscaTx)}</p>` : ''}
+    ${pfLista('Obrigatório para ele', b.obrigatorios)}${pfLista('Desejável', b.desejaveis)}
+    ${ab.tom || (ab.ganchos || []).length ? `<div style="margin-top:8px"><b class="peq">Como abordar</b>${ab.tom ? `<p class="peq" style="margin:4px 0 0">${esc(ab.tom)}</p>` : ''}${pfLista('Assuntos para criar conexão', ab.ganchos)}${pfLista('Evitar', ab.evitar)}${ab.canal_horario ? `<p class="peq mut" style="margin:4px 0 0">Canal e horário: ${esc(ab.canal_horario)}</p>` : ''}</div>` : ''}
+    ${pfLista('O que ele contou', p.quem_e)}${pfLista('Motivações', p.motivacoes)}${pfLista('Objeções', p.objecoes)}
+    ${pfLista('Perguntas para completar o perfil', p.perguntas)}
+    ${p.amplitude ? `<p class="peq" style="margin:8px 0 0"><b>Além do imóvel que ele viu:</b> ${esc(p.amplitude)}</p>` : ''}
+    ${ims.length ? `<div style="margin-top:8px"><b class="peq">Imóveis da carteira que combinam</b><ul class="peq" style="margin:4px 0 0;padding-left:18px">${ims.map((x) => `<li><b>${esc(x.ref)}</b> · ${esc(x.porque || '')}</li>`).join('')}</ul></div>` : ''}
+    ${pfLista('Falta saber', p.lacunas)}
+    <p class="peq mut" id="pfSt" style="margin:8px 0 0">Sugestão da IA${p.confianca ? ' (' + esc(PF_CONF[p.confianca] || p.confianca) + ')' : ''}, só com o que o cliente informou nos canais da Vivere${(p.fontes || []).length ? ': ' + p.fontes.map((f) => PF_FONTE[f] || f).join(', ') : ''}. Gerado em ${dt(String(doc.gerado_em_local || doc.gerado_em || '').slice(0, 16))}. Confira antes de usar.</p></div>`;
+}
+function atualizaPF(id) { const b = document.getElementById('pfBox'); if (b) b.outerHTML = blocoPerfilIA(id); }
+async function gerarPerfilIA(id) {
+  const P = window.VIVERE_PONTE; if (!P || !P.perfil || !S.leads[id]) return;
+  const st = document.getElementById('pfSt'), b = document.querySelector('[data-pfgerar]');
+  if (st) st.textContent = 'A Vivian está montando o perfil (uns 20 segundos)…'; if (b) b.disabled = true;
+  try {
+    const r = await P.perfil(id);
+    S.pfTemp[id] = { perfil: r.perfil, gerado_em_local: agora().slice(0, 16) };
+    atualizaPF(id);
+    const st2 = document.getElementById('pfSt'); if (st2 && r.usados) st2.textContent += ` Perfis pedidos hoje: ${r.usados} de ${r.limite}.`;
+  } catch (e) {
+    const st3 = document.getElementById('pfSt'); if (st3) st3.textContent = e && e.code === 'rate_limited' ? `Você usou os ${e.limite || 30} pedidos de perfil de hoje. Amanhã libera de novo.` : e && e.code === 'not_granted' ? 'O perfil não foi liberado neste acesso.' : 'Não consegui gerar o perfil agora. Tente de novo em instantes.';
+  } finally { const b2 = document.querySelector('[data-pfgerar]'); if (b2) b2.disabled = false; }
+}
+document.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('[data-pfgerar]'); if (b) { ev.preventDefault(); gerarPerfilIA(b.dataset.pfgerar); } });
 let ctrlRV = null;
 async function gerarResumoIA(id) {
   const l = S.leads[id], ia = iaConv(), st = document.getElementById('rvSt'), b = document.querySelector('[data-rvgerar]'); if (!l || !ia) return;
@@ -3842,7 +3891,13 @@ async function salvarLead(form) {
   if (etapa === 'Perdido' && !val('lMotivo')) { err.textContent = 'Informe o motivo da perda.'; return; }
   const perfil = { finalidade: FIN_DO_INT[val('lInt')] || '', tipo: val('pTipo'), bairros: val('pBairros'), vmin: numVlr(val('pMin')), vmax: numVlr(val('pMax')), dorm: val('pDorm') ? Number(val('pDorm')) : null, vagas: val('pVagas') ? Number(val('pVagas')) : null, obs: val('pObs'), em: agora().slice(0, 16), por: 'corretor' };
   const intSel = val('lInt');
-  const dados = { ...(INT_POR[intSel] ? { interesse: intSel } : {}), etapa, motivo: etapa === 'Perdido' ? val('lMotivo') : '', prox_acao: val('lProx'), data_prox: val('lData'), imovel_interesse: val('lImovel').toUpperCase(), data_fechamento: FC.ganho(etapa, fSel) ? (val('lFech') || hojeISO()) : '', perfil, ...(FC.def(fSel).campos.length ? { campos: { ...((!novo && S.leads[id] && S.leads[id].campos) || {}), ...lerCamposFunil(fSel) } } : {}), ...lerCamposValor(fSel, novo ? null : S.leads[id], etapa), atualizado_em: agora(), origem: 'painel' };
+  // perfil do lead (vivere-ia-perfil-amplo-leads F2, 17/11/2026): redes só as que o cliente informou; consentimento registrado com data
+  const l0 = (!novo && S.leads[id]) || {}, consMarc = !!(document.getElementById('pCons') || {}).checked, redesV = val('pRedes').trim().slice(0, 300);
+  const extraPerfil = {};
+  if (redesV || l0.redes) extraPerfil.redes = redesV;
+  if (consMarc) extraPerfil.consentimento = l0.consentimento && l0.consentimento.ok ? l0.consentimento : { ok: true, em: agora().slice(0, 16), por: 'corretor', canal: 'corretor' };
+  else if (l0.consentimento && l0.consentimento.ok) extraPerfil.consentimento = { ok: false, em: agora().slice(0, 16), por: 'corretor', canal: 'corretor' };
+  const dados = { ...(INT_POR[intSel] ? { interesse: intSel } : {}), etapa, motivo: etapa === 'Perdido' ? val('lMotivo') : '', prox_acao: val('lProx'), data_prox: val('lData'), imovel_interesse: val('lImovel').toUpperCase(), data_fechamento: FC.ganho(etapa, fSel) ? (val('lFech') || hojeISO()) : '', perfil, ...extraPerfil, ...(FC.def(fSel).campos.length ? { campos: { ...((!novo && S.leads[id] && S.leads[id].campos) || {}), ...lerCamposFunil(fSel) } } : {}), ...lerCamposValor(fSel, novo ? null : S.leads[id], etapa), atualizado_em: agora(), origem: 'painel' };
   if (novo) {
     if (!val('lNome') || digitos(val('lTel')).length < 10) { err.textContent = 'Informe o nome e um telefone com DDD.'; return; }
     const hist = val('lObsNovo') ? [{ em: agora().slice(0, 16), tipo: 'Observação', texto: val('lObsNovo') }] : [];
@@ -4298,9 +4353,11 @@ render();
     const o = {}; snap.docs.forEach((d) => { if (d.exists) o[d.id] = d.data(); });
     if (S.gestor && G_ALVOS.has(alvo)) { S.prontos.add(alvo); return render(); }
     S[alvo] = o; S.prontos.add(alvo); render();
+    if (alvo === 'perfilIA' && S.aberto && S.aberto.tipo === 'lead') atualizaPF(S.aberto.id);
     if (alvo === 'leads' && S.aberto && S.aberto.tipo === 'lead' && S.leads[S.aberto.id]) { const hl = document.getElementById('histLista'); if (hl) hl.innerHTML = htmlHist(S.leads[S.aberto.id]); }
   }, erro);
   col('metas', 'metas'); col('metas_equipes', 'metasEq'); col('metas_videos', 'metasVid');   // fatia 7 do CRM: metas por corretor
+  col('perfil_ia', 'perfilIA');   // perfil do lead pela IA (lead-perfil, F2 17/11/2026): só o servidor grava
   col('leads', 'leads'); col('meus_imoveis', 'meus'); col('catalogo', 'catalogo'); col('solicitacoes', 'sol'); col('decisoes', 'decisoes'); col('cadastro_drive', 'cadDrive'); col('eventos_agenciamento', 'eventos'); col('empreendimentos', 'empDocs'); col('fotos', 'fotosDocs'); col('demandas', 'dem'); col('demandas_pedidos', 'demPed'); col('equipe_cartoes', 'eqc'); col('captados', 'capt'); col('tarefas', 'tarefas'); col('atribuicoes', 'atrib');
   db.doc('controle/prazos').onSnapshot((d) => { S.prazos = d.exists ? d.data() : {}; render(); }, erro);
   db.doc('acaptar/estado').onSnapshot((d) => { S.acapProprio = d.exists ? d.data() : null; S.acap = S.acapProprio || acapDaFoto(); render(); }, () => {});
