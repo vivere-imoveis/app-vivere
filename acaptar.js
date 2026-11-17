@@ -281,6 +281,39 @@
   }
 
   function nContatos(t) { var n = (t.contatos || []).length; return n ? n + (n === 1 ? ' contato registrado' : ' contatos registrados') : 'nenhum contato ainda'; }
+  /* 16/11/2026 (ampliação do CRM, fatia 1b; decisão do Cleiton): o imóvel travado entra no funil Captação de Meus leads em
+     "A captar" e o contato registrado aqui leva o lead a "Contato feito". O lead NÃO leva nome nem telefone do proprietário:
+     o contato continua só no A CAPTAR, enquanto a captação valer; o lead aponta para o imóvel pelo código. Falha aqui não
+     desfaz a trava nem o contato (só avisa). */
+  var TIPO_PT = { apartment: 'Apartamento', house: 'Casa', land: 'Terreno', commercial: 'Comercial' };
+  async function ligarFunil(acao, id, nota) {
+    try {
+      var painel = C.eu && C.eu.painel; if (!painel || /^(_|u:)/.test(painel)) return;
+      var v = acharIm(id) || {}, doc = 'ac-' + String(id).replace(/^ac-/, '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 60);
+      var agora = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 19), hoje = agora.slice(0, 10);
+      var q = await C.sb.from('painel_docs').select('dados').eq('painel', painel).eq('colecao', 'leads').eq('doc_id', doc).maybeSingle();
+      if (q.error) throw q.error;
+      var l = q.data && q.data.dados, hist = l && Array.isArray(l.historico) ? l.historico.slice() : [];
+      var cod = v.cod || '', aluguel = v.negocio === 'aluguel';
+      var linha = acao === 'captar' ? 'Imóvel ' + cod + ' em captação por você no A CAPTAR (o contato do proprietário fica lá).' : 'Contato registrado no A CAPTAR' + (nota ? ': ' + String(nota).slice(0, 400) : '.');
+      hist.push({ em: agora.slice(0, 16), tipo: acao === 'captar' ? 'Observação' : 'WhatsApp', texto: linha });
+      var dados, mesclar = !!l;
+      if (!l) {
+        dados = { nome: ('Proprietário · ' + [cod, v.bairro].filter(Boolean).join(' · ')).slice(0, 120), telefone: '', interesse: aluguel ? 'locador_anual' : 'vendedor',
+          etapa: acao === 'captar' ? 'A captar' : 'Contato feito', motivo: '', campanha: 'A CAPTAR', entrada: hoje, acaptar_ref: id, acaptar_cod: cod,
+          prox_acao: acao === 'captar' ? 'Primeiro contato com o proprietário (A CAPTAR)' : '', data_prox: acao === 'captar' ? hoje : '', imovel_interesse: '', data_fechamento: '',
+          perfil: { finalidade: aluguel ? 'Locação' : 'Venda', tipo: TIPO_PT[v.tipo] || '', bairros: v.bairro || '', vmin: v.preco || null, vmax: v.preco || null, em: agora.slice(0, 16), por: 'acaptar' },
+          captacao: { papel: aluguel ? 'locador' : 'vendedor', lado: 'tem', fin: aluguel ? 'anual' : 'venda', bairro: v.bairro || '', tipo: TIPO_PT[v.tipo] || '', valor: v.preco || null },
+          historico: hist, criado_no_painel: true, origem: 'acaptar', atualizado_em: agora };
+      } else {
+        dados = { historico: hist, atualizado_em: agora, origem: 'acaptar' };
+        if (acao === 'captar' && l.etapa === 'Perdido') { dados.etapa = 'A captar'; dados.motivo = ''; dados.etapa_em = agora; dados.etapa_por = 'corretor'; }
+        if (acao === 'registrar' && (!l.etapa || l.etapa === 'A captar' || l.etapa === 'Novo')) { dados.etapa = 'Contato feito'; dados.etapa_em = agora; dados.etapa_por = 'corretor'; dados.prox_acao = ''; dados.data_prox = ''; }
+      }
+      var r = await C.sb.rpc('painel_gravar', { p_painel: painel, p_colecao: 'leads', p_doc: doc, p_dados: dados, p_mesclar: mesclar });
+      if (r.error) throw r.error;
+    } catch (e) { C.toast('A captação foi gravada, mas o lead do funil Captação não: ' + ((e && e.message) || 'erro') + '.'); }
+  }
   function acharIm(id) { for (var i = 0; i < A.im.length; i++) if (A.im[i].id === id) return A.im[i]; return null; }
 
   function telaCaptei() {
@@ -377,8 +410,8 @@
         var id = b.dataset.id, a = b.dataset.acao;
         if (a === 'confirmar') { A.confirmar = id; desenhar(); }
         else if (a === 'cancelar') { A.confirmar = null; A.soltar = null; desenhar(); }
-        else if (a === 'captar') { A.confirmar = null; rpc('ac_travar', { p_imovel: id }, 'Imóvel em captação por você. O contato está em “Minhas captações”.').then(function (d) { if (d && d.ok) { A.sub = 'minhas'; desenhar(); } }); }
-        else if (a === 'registrar') { var ta = raiz.querySelector('#nota-' + CSS.escape(id)); rpc('ac_registrar_contato', { p_imovel: id, p_nota: ta ? ta.value : '' }, 'Contato registrado. O prazo de 7 dias recomeçou.'); }
+        else if (a === 'captar') { A.confirmar = null; rpc('ac_travar', { p_imovel: id }, 'Imóvel em captação por você. O contato está em “Minhas captações”.').then(function (d) { if (d && d.ok) { A.sub = 'minhas'; desenhar(); ligarFunil('captar', id, ''); } }); }
+        else if (a === 'registrar') { var ta = raiz.querySelector('#nota-' + CSS.escape(id)), nota = ta ? ta.value : ''; rpc('ac_registrar_contato', { p_imovel: id, p_nota: nota }, 'Contato registrado. O prazo de 7 dias recomeçou.').then(function (d) { if (d && d.ok !== false) ligarFunil('registrar', id, nota); }); }
         else if (a === 'soltar') { A.soltar = id; desenhar(); }
         else if (a === 'soltar_ok') { A.soltar = null; rpc('ac_soltar', { p_imovel: id }, 'Imóvel solto. Ele voltou para os disponíveis.'); }
         else if (a === 'pedir') rpc('ac_pedir_captei', { p_imovel: id }, 'Pedido enviado à diretoria.');
