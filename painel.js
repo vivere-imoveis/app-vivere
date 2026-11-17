@@ -2355,11 +2355,13 @@ function seloDivulg(m) {
   const p = dv.placa || {}, l = dv.lazer, out = [], dica = 'Resolva em Pendências › Placa e lazer ou mande à Vivian';
   if (!m.ativo && !p.s && !(l && l.s)) return '';
   const pl = (cls, txt, tit) => `<span class="pill ${cls}" title="${esc(tit || '')}">${esc(txt)}</span>`;
-  if (p.falta) out.push(pl('media', '🪧 ' + (p.falta === 'Placa da Vivere' ? 'Placa: falta informar' : p.falta), dica));
+  // anúncio inativo não é cobrado nas Pendências: mostra só a resposta, sem falta (crítico da P3b)
+  if (p.falta && m.ativo) out.push(pl('media', '🪧 ' + (p.falta === 'Placa da Vivere' ? 'Placa: falta informar' : p.falta), dica));
+  else if (p.s === 'ainda_nao') out.push(pl('', '🪧 Placa ainda não colocada', 'Anúncio inativo'));
   else if (p.s === 'sim') out.push(pl('ok', '🪧 Placa' + (p.data ? ' desde ' + DIV_DT(p.data) : '') + (p.fotos ? ' · ' + p.fotos + ' foto' + (p.fotos > 1 ? 's' : '') : ''), 'Placa da Vivere colocada'));
   else if (p.s === 'nao_permitido') out.push(pl('', '🪧 Sem placa' + (p.motivo ? ': ' + p.motivo : ''), 'Placa não permitida (falta sanada)'));
   if (l) {
-    if (l.falta) out.push(pl('media', '🏊 ' + (l.falta === 'Fotos das áreas de lazer' ? 'Lazer: falta informar' : l.falta), dica));
+    if (l.falta && m.ativo) out.push(pl('media', '🏊 ' + (l.falta === 'Fotos das áreas de lazer' ? 'Lazer: falta informar' : l.falta), dica));
     else if (l.s === 'tem') out.push(pl('ok', '🏊 Lazer · ' + (l.fotos || 0) + ' foto' + (l.fotos === 1 ? '' : 's'), 'Fotos das áreas de lazer'));
     else if (l.s === 'nao_tem') out.push(pl('', '🏊 Sem área de lazer', 'Declarado: o condomínio não tem área de lazer'));
     else if (l.s === 'ja_no_anuncio') out.push(pl('ok', '🏊 Lazer já no anúncio', 'Fotos do lazer já estão no anúncio'));
