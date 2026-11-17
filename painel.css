@@ -483,3 +483,6 @@ td[data-l="Telefone"] .cel,td[data-l="Outro telefone"] .cel{white-space:nowrap}
 .vk-ac{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 #cvMic.ouvindo{background:var(--bad-bg);color:var(--bad);border-color:var(--bad);animation:vzpulso 1.2s infinite}
 @media (prefers-reduced-motion:reduce){#cvMic.ouvindo{animation:none}}
+
+/* metas por corretor (fatia 7 do CRM, 17/11/2026) */
+.mt-bloco{display:grid;gap:8px}.mt-grade{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))}.mt-lin{display:grid;gap:4px;min-width:0}.mt-lin .num{white-space:nowrap}.mt-det{display:inline}.mt-det summary{display:inline;cursor:pointer;text-decoration:underline}.mt-placar summary{cursor:pointer}.mt-placar .tabela{margin-top:6px}
