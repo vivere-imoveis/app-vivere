@@ -1997,7 +1997,7 @@ function vInicio() {
     f += av.length ? av.map((a) => `<div class="aviso"><span class="pill ${a.p}">${a.p === 'alta' ? 'Alta' : a.p === 'media' ? 'Média' : 'Baixa'}</span><div><b>${esc(a.t)}</b> · ${esc(a.nome)}${hitBA(a)}<div class="o">${esc(a.o)}</div></div>${a.imv ? `<button class="b" type="button" data-agenc="${esc(a.imv)}">Atualizar</button>` : `<button class="b" type="button" data-lead="${esc(a.id)}">Abrir</button>`}</div>`).join('') : (fAv.ativo ? '<div class="vazio">Nenhum aviso atende à busca.</div>' : (fixos ? '' : '<div class="vazio">Nenhum aviso. Tudo em dia.</div>'));
     return `<div class="painel"><h2 style="margin-bottom:6px">O que fazer agora</h2>${f}</div>`;
   };
-  const SEC = { tarefas: () => TF.blocoHoje(), fazer, prazos: () => painelPrazos() };
+  const SEC = { metas: () => (window.MetasCRM ? MetasCRM.bloco({ doc: (S.metas || {}).atual, eq: (S.metasEq || {}).placar, hoje: hojeISO() }) : ''), tarefas: () => TF.blocoHoje(), fazer, prazos: () => painelPrazos() };   // metas: fatia 7 do CRM (17/11/2026)
   const secs = telaOrdem('inicio_secoes');
   const avisoOculto = !secs.includes('fazer') && venc ? `<p class="mut peq" style="margin:0">“O que fazer agora” está desligado em 🧩 Personalizar, e há ${venc} lead${venc > 1 ? 's' : ''} atrasado${venc > 1 ? 's' : ''}.</p>` : '';
   return `<section class="sec"><div><p class="mut peq" style="margin:0">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</p><p style="font:500 24px var(--display);margin:2px 0 0">Olá${prim ? ', ' + esc(prim) : ''}.</p></div>
@@ -3796,7 +3796,7 @@ function popupEmp(e) {
 // ---------- Gavetas ----------
 function abrir(tipo, id, semFoco) {
   S.aberto = { tipo, id };
-  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : tipo === 'rel' ? gavetaRel() : gavetaVitrine(id);
+  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : tipo === 'rel' ? gavetaRel() : tipo === 'metasvid' ? gavetaMetasVid(id) : gavetaVitrine(id);
   const so = document.getElementById('sobre');
   so.innerHTML = `<div class="sobre" data-fundo>${html}</div>`;
   if (!semFoco) { const pri = so.querySelector('input,select,textarea,button'); if (pri) pri.focus(); }
@@ -4043,7 +4043,7 @@ document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && S.aber
 const TELA_LS = 'painel.tela_crm';
 const TELA_BLOCOS = {
   inicio_cartoes: [['abertos', 'Leads em aberto'], ['atrasados', 'Atrasados'], ['hoje', 'Para hoje'], ['previsao', 'Previsão do mês'], ['imoveis', 'Meus imóveis'], ['ofertas', 'Ofertas'], ['acaptar', 'A CAPTAR'], ['solic', 'Solicitações']],
-  inicio_secoes: [['tarefas', 'Tarefas de hoje'], ['fazer', 'O que fazer agora'], ['prazos', 'Prazos da Vivere']],
+  inicio_secoes: [['metas', 'Minhas metas'], ['tarefas', 'Tarefas de hoje'], ['fazer', 'O que fazer agora'], ['prazos', 'Prazos da Vivere']],
   leads_blocos: [['previsao', 'Previsão do mês'], ['interesse', 'Filtro por interesse'], ['etapas', 'Filtro por etapa (na Lista)']],
   colunas: [['telefone', 'Telefone'], ['_f', 'Funil (em Todos e na busca)'], ['interesse', 'Interesse'], ['etapa', 'Etapa'], ['valor', 'Valor'], ['prob', 'Probabilidade'], ['receita', 'Receita estimada'], ['fechamento_prev', 'Fechamento previsto'], ['data_prox', 'Próxima ação'], ['_ult', 'Último registro'], ['entrada', 'Entrada'], ['campanha', 'Origem']],
   cartao: [['interesse', 'Interesse'], ['alertas', 'Alertas (atrasado, parado, sem próxima ação)'], ['origem', 'Origem e imóvel de interesse'], ['valor', 'Valor e probabilidade'], ['fechamento', 'Fechamento previsto'], ['proxima', 'Próxima ação'], ['autor', 'Quem cadastrou ou moveu']],
@@ -4230,6 +4230,33 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('change', (ev) => { const t = ev.target; if (!t || !t.dataset || (t.dataset.relde == null && t.dataset.relate == null)) return;
   if (t.dataset.relde != null) REL.de = t.value; else REL.ate = t.value; relGuarda(); redesenharGaveta(); });
 
+// ---------- Metas por corretor (17/11/2026, fatia 7 do CRM; módulo metas-crm.js) ----------
+function gavetaMetasVid(modo) {
+  if (!window.MetasCRM) return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Metas"><div class="cab"><h3>Metas</h3><button class="b" type="button" data-fechar>Fechar</button></div><p class="mut">O módulo de metas não carregou. Recarregue a página.</p></div>`;
+  return MetasCRM.gaveta({ doc: (S.metas || {}).atual, videos: S.metasVid || {}, modo, hoje: hojeISO() });
+}
+document.addEventListener('click', async (ev) => {
+  const t = ev.target.closest && ev.target.closest('[data-metavid]'); if (!t || !window.MetasCRM) return;
+  const a = t.dataset.metavid, doc = (S.metas || {}).atual || {}, per = doc.periodo || {};
+  if (a === 'novo' || a === 'lista' || a === 'saldo') return abrir('metasvid', a);
+  if (!db) return toast('Sem conexão com os dados agora.');
+  if (a === 'gravar') {
+    const r = MetasCRM.lerForm(hojeISO(), per); if (r.erro) return toast(r.erro);
+    const id = 'v-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    if (await gravar(() => db.collection('metas_videos').doc(id).set(r), r.qtd > 1 ? `${r.qtd} registrados. ✓` : 'Registrado. ✓')) abrir('metasvid', 'lista', true);
+    return;
+  }
+  if (a === 'gravarsaldo') {
+    const n = parseInt((document.getElementById('mvSaldo') || {}).value, 10);
+    if (!(n >= 0 && n <= 500)) return toast('Informe um número de 0 a 500.');
+    if (await gravar(() => db.collection('metas_videos').doc('_saldo').set({ n, em: hojeISO(), origem: 'app' }), 'Informado. A diretoria vai conferir.')) abrir('metasvid', 'saldo', true);
+    return;
+  }
+  if (a === 'remover' && t.dataset.id) {
+    if (await gravar(() => db.collection('metas_videos').doc(t.dataset.id).update({ removido: true, removido_em: new Date().toISOString().slice(0, 19) }), 'Registro tirado.')) abrir('metasvid', 'lista', true);
+  }
+});
+
 function gavetaTela(qual) {
   const T = tela(), A = T.abrir || {}, grupos = TELA_GRUPOS[qual] || TELA_GRUPOS.leads;
   const lista = (g, rot) => { const L = telaLista(g);
@@ -4273,6 +4300,7 @@ render();
     S[alvo] = o; S.prontos.add(alvo); render();
     if (alvo === 'leads' && S.aberto && S.aberto.tipo === 'lead' && S.leads[S.aberto.id]) { const hl = document.getElementById('histLista'); if (hl) hl.innerHTML = htmlHist(S.leads[S.aberto.id]); }
   }, erro);
+  col('metas', 'metas'); col('metas_equipes', 'metasEq'); col('metas_videos', 'metasVid');   // fatia 7 do CRM: metas por corretor
   col('leads', 'leads'); col('meus_imoveis', 'meus'); col('catalogo', 'catalogo'); col('solicitacoes', 'sol'); col('decisoes', 'decisoes'); col('cadastro_drive', 'cadDrive'); col('eventos_agenciamento', 'eventos'); col('empreendimentos', 'empDocs'); col('fotos', 'fotosDocs'); col('demandas', 'dem'); col('demandas_pedidos', 'demPed'); col('equipe_cartoes', 'eqc'); col('captados', 'capt'); col('tarefas', 'tarefas'); col('atribuicoes', 'atrib');
   db.doc('controle/prazos').onSnapshot((d) => { S.prazos = d.exists ? d.data() : {}; render(); }, erro);
   db.doc('acaptar/estado').onSnapshot((d) => { S.acapProprio = d.exists ? d.data() : null; S.acap = S.acapProprio || acapDaFoto(); render(); }, () => {});

@@ -6,10 +6,10 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-17.1'; // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-17.2'; // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
-  var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1 };
+  var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1, metas_equipes: 1 };   // metas_equipes: fatia 7 do CRM (placar das equipes, sem nomes)
   // Aba Gestor (fatia 5, 10/11/2026): a diretoria, no próprio painel, lê os painéis de todos direto do banco, sem foto do dia.
   // O painel.js pede as coleções g_*; a ponte monta cada uma a partir da coleção de origem de todos os painéis,
   // com _dono (o painel) e _id (o id lá) em cada registro. É só leitura: nada é gravado em g_*.
