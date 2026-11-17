@@ -148,3 +148,6 @@ html.pend-aberta,html.pend-aberta body{overflow:hidden}
   .pend-form .pend-largo{grid-column:auto}
   .pend-form .form{grid-template-columns:1fr}
 }
+
+/* 16/11/2026 (ampliação do CRM, fatia 1): campo escondido do formulário some de fato (motivo da perda, data do fechamento, finalidade) */
+.form [hidden]{display:none!important}
