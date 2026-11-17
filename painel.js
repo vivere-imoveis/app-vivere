@@ -2051,7 +2051,7 @@ function vLeads() {
   const blocos = { previsao: () => blocoPrevisao(Ltodos.filter((l) => (!FU || l._f === S.funil) && (!S.filtroInt || l._int === S.filtroInt)), FU ? S.funil : null), interesse: () => chipsInt };
   const etapasVis = telaVis('leads_blocos', 'etapas') || (S.filtroEtapa !== 'abertos');
   return `<section class="sec">
-    <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha"><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
+    <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha"><button class="b" type="button" data-relabre="" aria-label="Relatórios e exportação">📊 Relatórios</button><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
     ${chipsFunil}${telaOrdem('leads_blocos').map((k) => (blocos[k] ? blocos[k]() : '')).join('')}
     ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca || !etapasVis ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
     ${tabela('leads', colsV, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: 'Nenhum lead neste filtro.', cartao: (r) => cartaoLeadMovel(r, FU) })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
@@ -3646,7 +3646,7 @@ function popupEmp(e) {
 // ---------- Gavetas ----------
 function abrir(tipo, id, semFoco) {
   S.aberto = { tipo, id };
-  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : gavetaVitrine(id);
+  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : tipo === 'rel' ? gavetaRel() : gavetaVitrine(id);
   const so = document.getElementById('sobre');
   so.innerHTML = `<div class="sobre" data-fundo>${html}</div>`;
   if (!semFoco) { const pri = so.querySelector('input,select,textarea,button'); if (pri) pri.focus(); }
@@ -4022,6 +4022,59 @@ function cartaoPrevisaoInicio() {
 }
 
 // ---------- gaveta "Personalizar" ----------
+// ---------- Relatórios e exportação (16/11/2026, fatia 3 da ampliação do CRM; decisões do Cleiton) ----------
+// Conversão por etapa, tempo por etapa, motivos de perda e origem, do período escolhido (pela entrada do lead), em relatorios-crm.js
+// (o mesmo módulo do HUB). Baixar em Excel, CSV e PDF; a lista de leads sai SEM telefone e e-mail (LGPD).
+const REL = { funil: '', per: 'tudo', de: '', ate: '' };
+try { Object.assign(REL, JSON.parse(localStorage.getItem('painel.rel') || '{}')); } catch (e) {}
+const relGuarda = () => { try { localStorage.setItem('painel.rel', JSON.stringify(REL)); } catch (e) {} };
+function relItens() {
+  return Object.entries(S.leads || {}).map(([id, l]) => { const k = interesseDe(l); return { lead: { ...l, _id: id }, f: funilDe(l), cor: l._dono || '', intRot: (INT_POR[k] || {}).rot || '' }; }); }
+function relOpts() { return { periodo: RelatoriosCRM.periodo(REL.per, hojeISO(), REL.de, REL.ate), funil: REL.funil, hoje: hojeISO(), prazos: PZ().parado_etapa, probTabela: PZ().prob_etapa }; }
+function relSub(o) { const P = o.periodo, F = o.funil ? FC.def(o.funil).rot : 'todos os funis', dB = (x) => (x ? x.split('-').reverse().join('/') : '…');
+  return `${(S.info && (S.info.saudacao || S.info.corretor)) || 'Corretor'} · ${F} · ${P.k === 'tudo' ? 'todo o período' : P.k === 'intervalo' ? `entrada de ${dB(P.de)} a ${dB(P.ate)}` : `${P.rot.toLowerCase()} (entrada de ${dB(P.de)} a ${dB(P.ate)})`}`; }
+function gavetaRel() {
+  if (!window.RelatoriosCRM) return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Relatórios"><div class="cab"><h3>Relatórios</h3><button class="b" type="button" data-fechar>Fechar</button></div><p class="mut">O módulo de relatórios não carregou. Recarregue a página.</p></div>`;
+  const o = relOpts(), R = RelatoriosCRM.calcular(relItens(), o), Sx = RelatoriosCRM.secoes(R);
+  const cont = {}; relItens().forEach((x) => { cont[x.f] = (cont[x.f] || 0) + 1; });
+  const chip = (k, t, on, attr) => `<button type="button" ${attr}="${esc(k)}" aria-pressed="${on}">${esc(t)}</button>`;
+  return `<div class="gaveta larga" role="dialog" aria-modal="true" aria-label="Relatórios e exportação">
+    <div class="cab"><div><p class="mut peq" style="margin:0">Relatórios dos seus leads · ${esc(relSub(o))}</p><h3>📊 Relatórios</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
+    <div class="chips" role="group" aria-label="Funil">${chip('', `Todos (${Object.values(cont).reduce((a, b) => a + b, 0)})`, !REL.funil, 'data-relfunil')}${FC.ORDEM.filter((f) => cont[f]).map((f) => chip(f, `${FC.FUNIS[f].icone} ${FC.FUNIS[f].rot} (${cont[f]})`, REL.funil === f, 'data-relfunil')).join('')}</div>
+    <div class="chips" role="group" aria-label="Período (pela entrada do lead)">${RelatoriosCRM.PERIODOS.map(([k, t]) => chip(k, t, REL.per === k, 'data-relper')).join('')}</div>
+    ${REL.per === 'intervalo' ? `<div class="linha"><label class="peq">De <input type="date" data-relde value="${esc(REL.de)}"></label><label class="peq">Até <input type="date" data-relate value="${esc(REL.ate)}"></label></div>` : ''}
+    <div class="painel"><h2 style="margin:0 0 6px">Baixar</h2><div class="linha"><span class="peq mut">Relatórios:</span><button class="b" type="button" data-relbx="rel|xlsx">Excel</button><button class="b" type="button" data-relbx="rel|csv">CSV</button><button class="b" type="button" data-relbx="rel|pdf">PDF</button></div>
+      <div class="linha" style="margin-top:6px"><span class="peq mut">Lista de leads (sem telefone e e-mail):</span><button class="b" type="button" data-relbx="lista|xlsx">Excel</button><button class="b" type="button" data-relbx="lista|csv">CSV</button><button class="b" type="button" data-relbx="lista|pdf">PDF</button></div>
+      <p class="mut peq" style="margin:6px 0 0">Tudo sai com o funil e o período escolhidos acima. O período conta pela data de entrada do lead.</p></div>
+    <div class="painel" style="min-width:0">${RelatoriosCRM.html(Sx)}</div></div>`;
+}
+let JSPDF_APP = null;
+function carregaPDF() { if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) return Promise.resolve(window.jspdf); if (JSPDF_APP) return JSPDF_APP;
+  const scr = (src) => new Promise((ok, er) => { const x = document.createElement('script'); x.src = src; x.onload = ok; x.onerror = () => er(new Error(src)); document.head.appendChild(x); });
+  JSPDF_APP = scr('vendor/jspdf-2.5.1.umd.min.js').then(() => scr('vendor/jspdf-autotable-3.8.2.min.js')).then(() => window.jspdf); JSPDF_APP.catch(() => { JSPDF_APP = null; }); return JSPDF_APP; }
+async function relBaixar(qual, fmt) {
+  const RC = RelatoriosCRM, o = relOpts(), itens = relItens(), hoje = hojeISO();
+  const Sx = qual === 'lista' ? [RC.secaoLista(itens, o)] : RC.secoes(RC.calcular(itens, o));
+  if (!Sx.length || (qual === 'lista' && !Sx[0].linhas.length)) return toast('Nada para baixar neste funil e período.');
+  const titulo = qual === 'lista' ? 'Lista de leads' : 'Relatórios do CRM', sub = relSub(o), quem = (S.info && (S.info.saudacao || S.info.corretor)) || 'corretor';
+  const nome = (ext) => RC.nomeArq(['VIS', titulo, quem, o.funil ? FC.def(o.funil).rot : '', hoje], ext);
+  try {
+    if (fmt === 'csv') RC.baixar(RC.csv(Sx, `${titulo} · ${sub}`), nome('csv'));
+    else if (fmt === 'xlsx') RC.baixar(RC.xlsx(RC.abasDe(Sx), `${titulo} · ${sub}`), nome('xlsx'));
+    else { toast('Gerando o PDF…'); const jp = await carregaPDF(); RC.baixar(RC.pdf(jp, Sx, { titulo, sub, rodape: `Vivere · ${titulo} · ${hoje.split('-').reverse().join('/')}` }), nome('pdf')); }
+  } catch (e) { toast('Não consegui gerar o arquivo. Tente de novo.'); }
+}
+document.addEventListener('click', (ev) => {
+  const t = ev.target.closest && ev.target.closest('[data-relabre],[data-relfunil],[data-relper],[data-relbx]'); if (!t) return;
+  const d = t.dataset;
+  if (d.relabre != null) return abrir('rel');
+  if (d.relfunil != null) { REL.funil = d.relfunil; relGuarda(); return redesenharGaveta(); }
+  if (d.relper != null) { REL.per = d.relper; relGuarda(); return redesenharGaveta(); }
+  if (d.relbx) { const [q, f] = d.relbx.split('|'); return relBaixar(q, f); }
+});
+document.addEventListener('change', (ev) => { const t = ev.target; if (!t || !t.dataset || (t.dataset.relde == null && t.dataset.relate == null)) return;
+  if (t.dataset.relde != null) REL.de = t.value; else REL.ate = t.value; relGuarda(); redesenharGaveta(); });
+
 function gavetaTela(qual) {
   const T = tela(), A = T.abrir || {}, grupos = TELA_GRUPOS[qual] || TELA_GRUPOS.leads;
   const lista = (g, rot) => { const L = telaLista(g);
