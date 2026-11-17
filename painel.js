@@ -2107,7 +2107,7 @@ function gavetaLead(id) {
   const refs = S.vitrine.map((v) => v.ref).filter(Boolean);
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillFunil(l) + pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>${autorLin(l, 'mut peq', 1)}`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
-    ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoCorAnun(id, l)}`}
+    ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoResumoIA(id)}${blocoCorAnun(id, l)}`}
     <form id="fLead" class="form" data-id="${esc(id || '')}">
       ${novo ? `<label class="c inteiro">Nome<input id="lNome" required></label><label class="c">Telefone<input id="lTel" inputmode="tel" required></label><label class="c">Origem<select id="lOrig">${['Indicação', 'Plantão', 'Portal', 'Instagram', 'Site', 'Outro'].map((o) => `<option>${o}</option>`).join('')}</select></label>` : ''}
       <label class="c">Interesse<select id="lInt">${optInt(novo ? 'a_definir' : interesseDe(l))}</select></label>
@@ -3154,14 +3154,14 @@ function gavetaConversa(alvo) {
   const nomeAlvo = tp === 'lead' ? (S.leads[id] || {}).nome : tp === 'imv' ? (S.meus[id] || {}).ref : '';
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Registrar conversa">
     <div class="cab"><div><p class="mut peq" style="margin:0">Registrar conversa${nomeAlvo ? ' · ' + esc(nomeAlvo) : ''}</p><h3>Conte o que aconteceu</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
-    <p class="peq mut" style="margin:0">🎤 Escreva um resumo, dite pelo 🎤 Ditar (ou pelo microfone do teclado do celular), cole a conversa do WhatsApp ou anexe a conversa exportada. ${S.ia ? 'A IA organiza etapa, próxima ação, data e perfil do cliente; você confere antes de salvar.' : 'Sem IA neste acesso: o texto vai para o histórico e você ajusta os campos à mão.'}</p>
+    <p class="peq mut" style="margin:0">🎤 Escreva um resumo, dite pelo 🎤 Ditar (ou pelo microfone do teclado do celular), cole a conversa do WhatsApp ou anexe a conversa exportada. ${iaConv() ? 'A IA organiza etapa, próxima ação, data e perfil do cliente; você confere antes de salvar.' : 'Sem IA neste acesso: o texto vai para o histórico e você ajusta os campos à mão.'}</p>
     <div class="form" id="fConversa" data-alvo="${esc(alvo || '')}">
       <label class="c inteiro">Resumo ou conversa<textarea id="cvTexto" rows="8" placeholder="Toque no microfone do teclado e fale. Ex.: Liguei para a Esmeralda. Procura apto de 3 quartos no Itacorubi até R$ 1,3 mi, quer visitar sábado de manhã."></textarea></label>
       <div class="inteiro linha"><button class="b" type="button" id="cvMic" aria-pressed="false" aria-label="Ditar o resumo pelo microfone">🎤 Ditar</button><span class="mut peq" id="cvMicSt"></span></div>
       <label class="c inteiro">Conversa exportada do WhatsApp (opcional, .txt ou .zip)<input id="cvArquivo" type="file" accept=".txt,.zip,text/plain,application/zip,application/x-zip-compressed"></label>
       <p class="inteiro peq mut" id="cvArqSt" style="margin:0">No WhatsApp, abra a conversa: no Android, ⋮ › Mais › Exportar conversa; no iPhone, toque no nome do contato › Exportar conversa. Escolha "Sem mídia", salve o arquivo e anexe aqui.</p>
       ${S.iaImagens ? `<label class="c inteiro">Prints da conversa (opcional, até ${S.iaImagens.maxCount})<input id="cvPrints" type="file" accept="${esc((S.iaImagens.mediaTypes || ['image/png', 'image/jpeg']).join(','))}" multiple></label>` : ''}
-      <div class="inteiro linha"><button class="b p" type="button" id="cvAnalisar">${S.ia ? '✦ Organizar com IA' : 'Salvar no histórico'}</button><span class="mut peq" id="cvStatus"></span></div>
+      <div class="inteiro linha"><button class="b p" type="button" id="cvAnalisar">${iaConv() ? '✦ Organizar com IA' : 'Salvar no histórico'}</button><span class="mut peq" id="cvStatus"></span></div>
     </div>
     <div id="cvProposta"></div></div>`;
 }
@@ -3252,7 +3252,7 @@ async function analisarConversa() {
   if (cvRec) { try { cvRec.stop(); } catch (e) {} }
   const arq = S.cvArq || null;
   if (!texto && !imgs.length && !arq) { st.textContent = 'Escreva o resumo, anexe os prints ou a conversa exportada.'; return; }
-  if (!S.ia) { // sem IA: vai direto para o histórico do alvo indicado
+  if (!iaConv()) { // sem IA: vai direto para o histórico do alvo indicado
     const [tp, id] = alvo.split(/:(.*)/s);
     if (arq) texto = [texto, `[Conversa exportada do WhatsApp: ${arq.nome}, ${arq.n} mensagens; últimas linhas]`, arq.texto.slice(-3000)].filter(Boolean).join('\n');
     if (tp === 'lead') { const l = S.leads[id]; await gravar(() => db.collection('leads').doc(id).update({ historico: [...histDe(l), { em: agora().slice(0, 16), tipo: 'Observação', texto }], atualizado_em: agora(), origem: 'painel' }), 'Registrado no histórico.'); return fechar(); }
@@ -3263,14 +3263,14 @@ async function analisarConversa() {
   if (ctrlIA) ctrlIA.abort(); ctrlIA = new AbortController();
   try {
     const textoIA = arq ? [texto, `Conversa exportada do WhatsApp (${arq.nome}, ${arq.n} mensagens${arq.cortada ? '; só as mais recentes, a conversa é longa' : ''}):`, arq.texto.slice(-CV_MAX)].filter(Boolean).join('\n\n') : texto;
-    const r = await S.ia.json(promptConversa(textoIA, alvo), { modelTier: 'default', signal: ctrlIA.signal, ...(imgs.length ? { images: imgs } : {}) });
+    const r = await iaJson(promptConversa(textoIA, alvo), { modelTier: 'default', signal: ctrlIA.signal, ...(imgs.length ? { images: imgs } : {}) }, 'organizar');
     if (alvo) { const [tp, id] = alvo.split(/:(.*)/s); if (tp === 'lead') { r.alvo = 'lead'; r.lead_id = id; } if (tp === 'imv') { r.alvo = 'imovel'; r.imovel_id = id; } }
     S.proposta = { ...r, texto_original: texto || (arq ? 'Conversa exportada do WhatsApp: ' + arq.nome : '') };
     st.textContent = r.confianca === 'baixa' ? 'Confiança baixa: confira com atenção.' : '';
     document.getElementById('cvProposta').innerHTML = htmlProposta(S.proposta); ajustarProposta();
   } catch (e) {
     if (e && e.code === 'cancelled') return;
-    st.textContent = e && e.code === 'rate_limited' ? 'Limite de uso da IA atingido agora. Tente mais tarde.' : e && e.code === 'not_granted' ? 'A IA não foi liberada neste acesso.' : 'Não consegui organizar. Tente de novo ou escreva mais detalhes.';
+    st.textContent = e && e.code === 'rate_limited' ? (S.iaApp && !S.ia ? `Você usou os ${e.limite || 30} Organizar com IA de hoje. Amanhã libera de novo; até lá, registre à mão.` : 'Limite de uso da IA atingido agora. Tente mais tarde.') : e && e.code === 'not_granted' ? 'A IA não foi liberada neste acesso.' : 'Não consegui organizar. Tente de novo ou escreva mais detalhes.';
   } finally { const b = document.getElementById('cvAnalisar'); if (b) b.disabled = false; }
 }
 function htmlProposta(r) {
@@ -3362,6 +3362,83 @@ async function salvarProposta() {
   if (ok) { fechar(); S.aba = 'leads'; render(); }
 }
 
+
+// ---------- ✦ Resumo da Vivian do lead (CRM fatia 5, 17/11/2026, decisões do Cleiton) ----------
+// Sob pedido, por lead: resumo, chance de ganho e próxima ação. A chance e a próxima ação são SUGESTÕES: o corretor aplica com 1 toque.
+// O último resumo fica no lead (campo resumo_ia) para não gastar outro pedido; no app o limite é de 30 por pessoa por dia (função painel-ia).
+const iaConv = () => S.ia || S.iaApp || null;
+function iaJson(prompt, op, tipo) { return S.ia ? S.ia.json(prompt, op) : S.iaApp.json(prompt, { ...op, tipo }); }
+S.rvTemp = S.rvTemp || {};
+function promptResumoLead(id, l) {
+  const f = funilDe(l), F = FC.def(f), e = etapaDe(l), tab = tabProb(), hoje = hojeISO();
+  const diasEtapa = l.etapa_em ? Math.max(0, Math.round((Date.parse(hoje) - Date.parse(String(l.etapa_em).slice(0, 10))) / 864e5)) : null;
+  const hist = [...histDe(l)].sort((a, b) => String(a.em).localeCompare(String(b.em))).slice(-40).map((x) => ({ em: String(x.em || '').slice(0, 16), tipo: x.tipo || 'Registro', texto: String(x.texto || '').replace(/(\(?\d{2}\)?[\s-]?)?\d{4,5}[-\s]?\d{4}\b/g, '[tel]').replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '[e-mail]').slice(0, 600) }));
+  const tabela = f === 'definir' ? null : Object.fromEntries(F.etapas.filter((x) => x !== 'Perdido').map((x) => [x, FC.probEtapa(x, f, tab)]));
+  const lead = { primeiro_nome: String(l.nome || '').trim().split(/\s+/)[0] || null, funil: F.rot, etapa: e, dias_na_etapa: diasEtapa, alerta_parado_dias: f === 'definir' ? null : FC.paradoDias(e, f, PZ().parado_etapa), interesse: (INT_POR[interesseDe(l)] || {}).rot || null, origem: l.campanha || null, entrada: l.entrada || null,
+    prob_atual: f === 'definir' ? null : FC.probDe(l, f, tab), prob_ajustada: f === 'definir' ? false : FC.ajustada(l, f), valor: f === 'definir' ? null : FC.valorDe(l, f), fechamento_previsto: l.fechamento_prev || null,
+    proxima_acao: l.prox_acao || null, data_proxima_acao: l.data_prox || null, imovel_interesse: l.imovel_interesse || null, perfil: l.perfil ? { finalidade: l.perfil.finalidade, tipo: l.perfil.tipo, bairros: l.perfil.bairros, vmin: l.perfil.vmin, vmax: l.perfil.vmax, dorm: l.perfil.dorm, vagas: l.perfil.vagas, obs: l.perfil.obs } : null, campos_do_funil: l.campos || null, historico: hist };
+  return `Hoje é ${hoje}. Analise este lead do CRM de uma corretora da Vivere e devolva um resumo para ela agir agora.
+- Funil "${F.rot}"${tabela ? `, etapas e probabilidade padrão de cada uma (tabela da Vivere): ${JSON.stringify(tabela)}` : ' (interesse ainda a definir)'}.
+- "resumo": até 4 frases objetivas: quem é o cliente, o que procura ou oferece, em que pé está e o que pesa a favor ou contra.
+- "situacao": "quente", "morno" ou "frio".
+- "chance": a sua estimativa de ganho do negócio, de 0 a 100, partindo da probabilidade padrão da etapa e ajustando pelo que o histórico mostra (interesse real, resposta do cliente, visita, proposta, tempo parado, objeções). Se a etapa for de ganho ou perda, ou o funil estiver a definir, use null.
+- "motivo_chance": 1 frase com o porquê da chance (cite o fato do histórico que pesou).
+- "proxima_acao": a próxima ação concreta (verbo no infinitivo, até 12 palavras) e "data_proxima_acao" (AAAA-MM-DD, de hoje em diante; se já houver data combinada no histórico, use-a).
+- "alertas": até 3 pontos de atenção curtos (ex.: parado além do prazo, sem próxima ação, falta perfil ou valor); lista vazia se não houver.
+- Não invente fatos; se o histórico for pobre, diga isso no resumo e mantenha a chance perto da padrão.
+Responda só com JSON neste formato:
+{"resumo":"...","situacao":"morno","chance":null,"motivo_chance":null,"proxima_acao":null,"data_proxima_acao":null,"alertas":[]}
+
+Lead: ${JSON.stringify(lead)}`;
+}
+function blocoResumoIA(id) {
+  const l = S.leads[id]; if (!l) return '';
+  const r = S.rvTemp[id] || l.resumo_ia || null, ia = iaConv(), f = funilDe(l);
+  const cab = `<div class="linha" style="justify-content:space-between"><h2 style="margin:0">✦ Resumo da Vivian</h2>${ia ? `<button class="b${r ? '' : ' p'}" type="button" data-rvgerar="${esc(id)}">${r ? 'Atualizar resumo' : 'Gerar resumo'}</button>` : ''}</div>`;
+  if (!r) return `<div class="painel" id="rvBox">${cab}<p class="peq mut" id="rvSt" style="margin:6px 0 0">${ia ? 'A Vivian lê o histórico do lead e devolve o resumo, a chance de ganho e a próxima ação. Você decide o que aplicar.' : 'Resumo pela IA indisponível neste acesso.'}</p></div>`;
+  const pAt = f === 'definir' ? null : FC.probDe(l, f, tabProb()), pEt = f === 'definir' ? null : FC.probEtapa(l.etapa, f, tabProb());
+  const ch = r.chance == null || r.chance === '' || !isFinite(Number(r.chance)) ? null : Math.max(0, Math.min(100, Math.round(Number(r.chance))));
+  const podeProb = ch != null && f !== 'definir' && FC.aberta(l.etapa, f) && !S.gestor, podeProx = r.proxima_acao && !S.gestor;
+  const proxIgual = podeProx && (l.prox_acao || '') === r.proxima_acao && (l.data_prox || '') === (r.data_proxima_acao || '');
+  const sit = { quente: '🔥 Quente', morno: '🌤️ Morno', frio: '❄️ Frio' }[String(r.situacao || '').toLowerCase()] || '';
+  return `<div class="painel" id="rvBox">${cab}
+    <p style="margin:8px 0 0">${sit ? `<span class="pill">${esc(sit)}</span> ` : ''}${esc(r.resumo || '')}</p>
+    ${ch != null ? `<div class="linha" style="margin-top:8px;flex-wrap:wrap;gap:8px"><span>Chance de ganho: <b>${ch}%</b>${pAt != null ? ` <span class="mut peq">(hoje ${pAt}%${pEt != null && pEt !== pAt ? `, padrão da etapa ${pEt}%` : ''})</span>` : ''}</span>${podeProb ? (Number(l.prob) === ch ? '<span class="mut peq">✓ aplicada</span>' : `<button class="b" type="button" data-rvprob="${esc(id)}">Aplicar ${ch}%</button>`) : ''}</div>${r.motivo_chance ? `<p class="peq mut" style="margin:2px 0 0">${esc(r.motivo_chance)}</p>` : ''}` : ''}
+    ${r.proxima_acao ? `<div class="linha" style="margin-top:8px;flex-wrap:wrap;gap:8px"><span>Próxima ação: <b>${esc(r.proxima_acao)}</b>${r.data_proxima_acao ? ' · ' + dt(r.data_proxima_acao) : ''}</span>${podeProx ? (proxIgual ? '<span class="mut peq">✓ aplicada</span>' : `<button class="b" type="button" data-rvprox="${esc(id)}">Aplicar próxima ação</button>`) : ''}</div>` : ''}
+    ${(r.alertas || []).length ? `<ul class="peq" style="margin:8px 0 0;padding-left:18px">${r.alertas.slice(0, 3).map((a) => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}
+    <p class="peq mut" id="rvSt" style="margin:8px 0 0">Gerado em ${dt(r.em)}${S.gestor ? ' · só leitura na visão do gestor' : ''}. Confira antes de aplicar.</p></div>`;
+}
+function atualizaRV(id) { const b = document.getElementById('rvBox'); if (b) b.outerHTML = blocoResumoIA(id); }
+let ctrlRV = null;
+async function gerarResumoIA(id) {
+  const l = S.leads[id], ia = iaConv(), st = document.getElementById('rvSt'), b = document.querySelector('[data-rvgerar]'); if (!l || !ia) return;
+  if (st) st.textContent = 'A Vivian está lendo o histórico…'; if (b) b.disabled = true;
+  if (ctrlRV) ctrlRV.abort(); ctrlRV = new AbortController();
+  try {
+    const r = await iaJson(promptResumoLead(id, l), { modelTier: 'default', signal: ctrlRV.signal }, 'resumo');
+    const al = Array.isArray(r.alertas) ? r.alertas.map(String).filter(Boolean).slice(0, 3) : [];
+    const res = { em: agora().slice(0, 16), resumo: String(r.resumo || '').slice(0, 900), situacao: r.situacao || null, chance: r.chance ?? null, motivo_chance: r.motivo_chance || null, proxima_acao: r.proxima_acao ? String(r.proxima_acao).slice(0, 160) : null, data_proxima_acao: /^\d{4}-\d{2}-\d{2}$/.test(r.data_proxima_acao || '') ? r.data_proxima_acao : null, alertas: al, por: S.info.slug || '' };
+    S.rvTemp[id] = res;
+    if (S.aberto && S.aberto.tipo === 'lead' && S.aberto.id === id) atualizaRV(id);
+    if (!S.gestor) { try { await db.collection('leads').doc(id).update({ resumo_ia: res }); delete S.rvTemp[id]; } catch (e) { /* fica só nesta tela */ } }
+    const u = S.iaApp && !S.ia && S.iaApp.ultimo; const st2 = document.getElementById('rvSt'); if (st2 && u && u.usados) st2.textContent += ` Resumos hoje: ${u.usados} de ${u.limite}.`;
+  } catch (e) {
+    if (e && e.code === 'cancelled') return;
+    const st3 = document.getElementById('rvSt'); if (st3) st3.textContent = e && e.code === 'rate_limited' ? `Você usou os ${e.limite || 30} resumos de hoje. Amanhã libera de novo.` : e && e.code === 'not_granted' ? 'A IA não foi liberada neste acesso.' : 'Não consegui gerar o resumo agora. Tente de novo em instantes.';
+  } finally { const b2 = document.querySelector('[data-rvgerar]'); if (b2) b2.disabled = false; }
+}
+async function aplicarRV(id, oque) {
+  const l = S.leads[id], r = S.rvTemp[id] || (l && l.resumo_ia); if (!l || !r) return;
+  if (oque === 'prob') {
+    const f = funilDe(l), ch = Math.max(0, Math.min(100, Math.round(Number(r.chance)))); if (!isFinite(ch) || f === 'definir') return;
+    const ok = await gravar(() => db.collection('leads').doc(id).update({ prob: ch, historico: [...histDe(l), { em: agora().slice(0, 16), tipo: 'Observação', texto: `Chance ajustada pela Vivian: ${FC.probDe(l, f, tabProb())}% → ${ch}%${r.motivo_chance ? ' (' + r.motivo_chance + ')' : ''}.`, origem: 'ia' }], atualizado_em: agora(), origem: 'painel' }), `Chance de ${ch}% aplicada.`);
+    if (ok) { S.leads[id] = { ...S.leads[id], prob: ch }; const i = document.getElementById('lProb'); if (i) { i.value = ch; i.dataset.probOrig = String(ch); } atualizaRV(id); const hl = document.getElementById('histLista'); if (hl && S.leads[id]) hl.innerHTML = htmlHist(S.leads[id]); }
+    return;
+  }
+  const dados = { prox_acao: r.proxima_acao, atualizado_em: agora(), origem: 'painel' }; if (r.data_proxima_acao) dados.data_prox = r.data_proxima_acao;
+  const ok = await gravar(() => db.collection('leads').doc(id).update(dados), 'Próxima ação aplicada.');
+  if (ok) { S.leads[id] = { ...S.leads[id], ...dados }; const a = document.getElementById('lProx'), d = document.getElementById('lData'); if (a) a.value = dados.prox_acao; if (d && dados.data_prox) d.value = dados.data_prox; atualizaRV(id); }
+}
 
 // ---------- Voz: o que já dá para fazer no painel e com a Vivian no WhatsApp ----------
 // 17/11/2026 (CRM fatia 4): texto atualizado — a Vivian já recebe áudio; 🎤 Ditar e conversa exportada no Registrar conversa
@@ -3865,6 +3942,9 @@ document.addEventListener('click', async (ev) => {
   if (t.id === 'cvMic') return ditarConversa();
   if (d.voz !== undefined) return abrir('voz');
   if (t.id === 'cvAnalisar') return analisarConversa();
+  if (d.rvgerar) return gerarResumoIA(d.rvgerar);
+  if (d.rvprob) return aplicarRV(d.rvprob, 'prob');
+  if (d.rvprox) return aplicarRV(d.rvprox, 'prox');
   if (t.id === 'ppSalvar') return salvarProposta();
   if (t.id === 'salvarPrazos') return salvarPrazos();
   if (d.inserirfalta) { const ta = document.getElementById('respDec'); const f = faltantes(S.sol[d.inserirfalta]); ta.value = (ta.value ? ta.value.trim() + '\n' : '') + 'Complete, por favor: ' + f.join('; ') + '.'; ta.focus(); return; }
@@ -4198,7 +4278,9 @@ render();
     }, () => {});
   })();
   (async () => { try { S.assets = await window.claude.use('assets'); } catch (e) { S.assets = null; } })();
-  (async () => { try { S.ia = await window.claude.use('sample'); const lim = S.ia ? await S.ia.limits().catch(() => null) : null; S.iaImagens = lim && lim.images ? lim.images : null; } catch (e) { S.ia = null; } })();
+  (async () => { try { S.ia = await window.claude.use('sample'); const lim = S.ia ? await S.ia.limits().catch(() => null) : null; S.iaImagens = lim && lim.images ? lim.images : null; } catch (e) { S.ia = null; }
+    // 17/11/2026 (CRM fatia 5): no app, a IA do Registrar conversa e do Resumo da Vivian vem da função painel-ia (ponte); o sample segue desligado
+    if (!S.ia && window.VIVERE_PONTE && window.VIVERE_PONTE.ia) { S.iaApp = window.VIVERE_PONTE.ia; if (!S.iaImagens) S.iaImagens = { maxCount: 4, mediaTypes: ['image/png', 'image/jpeg', 'image/webp'] }; if (S.aberto && S.aberto.tipo === 'lead') { const b = document.getElementById('rvBox'); if (b) b.outerHTML = blocoResumoIA(S.aberto.id); } } })();
   db.collection('galeria').onSnapshot((snap) => { /* FICHA-IMOVEL-GALERIA */ const m = {}; let cdn = ''; snap.docs.forEach((d) => { if (!d.exists) return; const x = d.data() || {}; if (x.cdn) cdn = x.cdn; Object.assign(m, x.i || {}); }); S.galeria = m; S.galCdn = cdn; render(); }, () => {});
   db.collection('vitrine').onSnapshot((snap) => {
     S.vitrine = snap.docs.filter((d) => d.exists).flatMap((d) => d.data().itens || []); S.prontos.add('vitrine'); render();
