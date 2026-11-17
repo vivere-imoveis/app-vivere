@@ -857,18 +857,19 @@ function pagTamApp() { try { return +localStorage.getItem('painel.pagTam') === 1
 const histDe = (l) => Array.isArray(l.historico) ? l.historico : [];
 const ultimoReg = (l) => { const h = histDe(l).map((x) => x.em).filter(Boolean).sort(); return h.length ? h[h.length - 1] : null; };
 function avisosDe(id, l) {
-  const out = [], hoje = hojeISO(), et = l.etapa || 'Novo', ult = ultimoReg(l);
+  const out = [], hoje = hojeISO(), f = funilDe(l), et = etapaDe(l), ab = abertaL(l), ult = ultimoReg(l);
   const pz = PZ();
-  if (et === 'Novo' && !ult && l.entrada && l.entrada >= INICIO_CRM && (Date.now() - new Date(l.entrada + 'T12:00')) > pz.primeiro_contato_h * 36e5) out.push({ p: 'alta', t: 'Primeiro contato atrasado', o: 'Fazer o primeiro contato e registrar' });
-  if (ABERTAS.has(et) && l.data_prox && l.data_prox < hoje) out.push({ p: 'alta', t: 'Próxima ação vencida', o: `${l.prox_acao || 'Ação'} era para ${dt(l.data_prox)}` });
-  if (ABERTAS.has(et) && l.data_prox === hoje) out.push({ p: 'media', t: 'Ação para hoje', o: l.prox_acao || 'Ação marcada para hoje' });
-  if (ABERTAS.has(et) && !l.prox_acao && !l.data_prox) out.push({ p: 'media', t: 'Sem próxima ação', o: 'Definir a próxima ação e a data' });
+  if (et === FC.def(f).etapas[0] && !ult && l.entrada && l.entrada >= INICIO_CRM && (Date.now() - new Date(l.entrada + 'T12:00')) > pz.primeiro_contato_h * 36e5) out.push({ p: 'alta', t: 'Primeiro contato atrasado', o: 'Fazer o primeiro contato e registrar' });
+  if (ab && l.data_prox && l.data_prox < hoje) out.push({ p: 'alta', t: 'Próxima ação vencida', o: `${l.prox_acao || 'Ação'} era para ${dt(l.data_prox)}` });
+  if (ab && l.data_prox === hoje) out.push({ p: 'media', t: 'Ação para hoje', o: l.prox_acao || 'Ação marcada para hoje' });
+  if (ab && !l.prox_acao && !l.data_prox) out.push({ p: 'media', t: 'Sem próxima ação', o: 'Definir a próxima ação e a data' });
   if (et === 'Perdido' && !l.motivo) out.push({ p: 'media', t: 'Perdido sem motivo', o: 'Informar o motivo da perda' });
   const base = ult ? ult.slice(0, 10) : (l.entrada && l.entrada > INICIO_CRM ? l.entrada : INICIO_CRM);
   const d = dias(base, hoje);
-  if (/Proposta|Negociação/.test(et) && d >= pz.proposta_retorno_dias && !(l.data_prox && l.data_prox >= hoje)) out.push({ p: 'alta', t: 'Retorno da proposta', o: `${d} dias sem registro (prazo de ${pz.proposta_retorno_dias})` });
-  else if (ABERTAS.has(et) && ult && d >= pz.lead_parado_dias) out.push({ p: 'media', t: 'Lead parado', o: `${d} dias sem registro (prazo de ${pz.lead_parado_dias})` });
-  if (d >= pz.recontato_dias && !out.some((a) => a.t === 'Lead parado' || a.t === 'Retorno da proposta')) out.push({ p: 'baixa', t: 'Recontato', o: `${d} dias sem registro` });
+  // 16/11/2026 (Pipedrive, aprovado pelo Cleiton): prazo de parado etapa a etapa, por funil (controle/prazos.parado_etapa sobrepõe o padrão)
+  const lim = ab ? FC.paradoDias(l.etapa, f, pz.parado_etapa) : null;
+  if (lim != null && d >= lim && !(l.data_prox && l.data_prox >= hoje)) out.push({ p: /Proposta|Negociação|Análise|Contrato|Reserva|Documentação|Captado|Cadastro/.test(et) ? 'alta' : 'media', t: 'Parado em ' + et, o: `${d} dia${d === 1 ? '' : 's'} sem registro (prazo da etapa: ${lim})`, parado: true });
+  if (d >= pz.recontato_dias && !out.some((a) => a.parado)) out.push({ p: 'baixa', t: 'Recontato', o: `${d} dias sem registro` });
   return out.map((a) => ({ ...a, id, nome: l.nome }));
 }
 const todosAvisos = () => Object.entries(S.leads).flatMap(([id, l]) => avisosDe(id, l)).concat(avisosAgenc()).sort((a, b) => ({ alta: 0, media: 1, baixa: 2 }[a.p] - { alta: 0, media: 1, baixa: 2 }[b.p]));
@@ -896,7 +897,7 @@ function opsDoLead(lead) {
   const marcadas = (st) => Object.entries(marcas).filter(([, m]) => m.st === st).map(([id, m]) => ({ id, ...m, it: ctx.porId.get(id) })).sort((a, b) => String(b.em).localeCompare(String(a.em)));
   return { p, ia, novas, ofertados: marcadas('ofertado'), descartados: marcadas('descartado'), capt: captDoPerfil(p, 6) };
 }
-function leadsComOfertas() { if (!S.prontos.has('vitrine')) return []; return Object.entries(S.leads).filter(([, l]) => ABERTAS.has(l.etapa || 'Novo') && ladoDe(l) !== 'tem').filter(([id, l]) => { const o = opsDoLead(leadN(id, l)); return o.novas.length || nCaptAcao(o); }); }
+function leadsComOfertas() { if (!S.prontos.has('vitrine')) return []; return Object.entries(S.leads).filter(([, l]) => abertaL(l) && ladoDe(l) !== 'tem').filter(([id, l]) => { const o = opsDoLead(leadN(id, l)); return o.novas.length || nCaptAcao(o); }); }
 
 /* ---------- Captação em dois lados (01/11/2026, decisão do Cleiton) ----------
    🔎 PROCURA (locatário, comprador e os clientes comuns) × 🏠 TEM (locador, vendedor, operador de renda).
@@ -944,6 +945,65 @@ function interesseDerivado(l, pEf) {
 const interesseDe = (l, pEf) => (l && INT_POR[l.interesse] ? l.interesse : interesseDerivado(l, pEf));
 function pillInt(l, pEf) { const k = interesseDe(l, pEf), x = INT_POR[k]; return `<span class="pill int-${x.lado}" title="Interesse: ${esc(x.rot)}${l && INT_POR[l.interesse] ? '' : ' (deduzido do perfil; confirme no lead)'}">${esc(x.curto)}</span>`; }
 const optInt = (sel) => INTERESSES.map(([k, rot]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${esc(rot)}</option>`).join('');
+/* Funis do CRM (16/11/2026, ampliação do CRM, fatia 1; decisões do Cleiton nos cartões do dia): o funil sai do interesse do lead
+   (FunisCRM, em funis-crm.js). A etapa antiga (9 etapas de antes) aparece na etapa equivalente do funil e só é regravada quando o
+   corretor mexe no lead. ETAPAS, ABERTAS e MOTIVOS ficam só por compatibilidade. */
+const FC = window.FunisCRM;
+const funilDe = (l, pEf) => FC.funilDoInteresse(interesseDe(l, pEf));
+const etapaDe = (l) => FC.etapaNoFunil(l && l.etapa, funilDe(l));
+const abertaL = (l) => FC.aberta(l && l.etapa, funilDe(l));
+const ganhoL = (l) => FC.ganho(l && l.etapa, funilDe(l));
+const pillEtapa = (l) => { const e = etapaDe(l); return `<span class="pill ${ganhoL(l) ? 'ok' : e === 'Perdido' ? 'perdido' : ''}">${esc(e)}</span>`; };
+const pillFunil = (l) => { const F = FC.def(funilDe(l)); return `<span class="pill funil-p" title="Funil ${esc(F.rot)}">${esc(F.rot)}</span>`; };
+const semProx = (l) => abertaL(l) && !l.prox_acao && !l.data_prox;
+const optEtapas = (f, sel) => FC.def(f).etapas.map((e) => `<option ${e === sel ? 'selected' : ''}>${esc(e)}</option>`).join('');
+const optMotivos = (f, sel) => { const M = FC.def(f).motivos.slice(); if (sel && !M.includes(sel)) M.push(sel); return M.map((m) => `<option ${m === sel ? 'selected' : ''}>${esc(m)}</option>`).join(''); };
+const telChave = (t) => digitos(t).slice(-8);
+(function () { const st = document.createElement('style'); st.textContent = '.pill.funil-p{background:transparent;border:1px solid var(--line);color:var(--ink);white-space:nowrap}.pill.sem-prox{background:transparent;border:1px dashed var(--warn);color:var(--warn);white-space:nowrap}.funil-chips{margin:0 0 6px}.funil-chips button{font-weight:600}.camp-funil{display:contents}.neg-lig{display:grid;gap:6px;margin-top:8px}.neg-lig .i{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.pz-etapas{display:grid;gap:10px;margin-top:10px}.pz-etapas table{border-collapse:collapse;width:100%;font-size:13px}.pz-etapas td{padding:3px 6px;border-top:1px solid var(--line)}.pz-etapas td.n{text-align:right;white-space:nowrap}'; document.head.appendChild(st); })();
+function camposFunilHTML(f, c) {
+  c = c || {}; const F = FC.def(f); if (!F.campos.length) return '';
+  return `<div class="inteiro"><h2 style="margin:6px 0 0">${F.icone} Dados de ${esc(F.rot.toLowerCase())}</h2></div>` + F.campos.map((x) => {
+    const v = c[x.k], id = 'cf_' + x.k;
+    if (x.tipo === 'sel') return `<label class="c">${esc(x.rot)}<select id="${id}" data-cf="${x.k}"><option value="">—</option>${x.ops.map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+    if (x.tipo === 'multi') { const a = Array.isArray(v) ? v : []; return `<fieldset class="c inteiro" style="border:0;padding:0;margin:0"><legend class="peq mut">${esc(x.rot)}</legend><div class="linha">${x.ops.map((o) => `<label class="peq"><input type="checkbox" data-cfm="${x.k}" value="${esc(o)}" ${a.includes(o) ? 'checked' : ''}> ${esc(o)}</label>`).join('')}</div></fieldset>`; }
+    if (x.tipo === 'vlr') return `<label class="c">${esc(x.rot)}<input id="${id}" data-cf="${x.k}" data-cfv="1" ${VLR} value="${esc(fmtVlr(v))}"></label>`;
+    if (x.tipo === 'num') return `<label class="c">${esc(x.rot)}<input id="${id}" data-cf="${x.k}" type="number" min="0" inputmode="numeric" value="${esc(v ?? '')}"></label>`;
+    if (x.tipo === 'data') return `<label class="c">${esc(x.rot)}<input id="${id}" data-cf="${x.k}" type="date" value="${esc(v || '')}"></label>`;
+    return `<label class="c">${esc(x.rot)}<input id="${id}" data-cf="${x.k}" value="${esc(v || '')}"></label>`;
+  }).join('');
+}
+function lerCamposFunil(f) {
+  const out = {};
+  FC.def(f).campos.forEach((x) => {
+    if (x.tipo === 'multi') { out[x.k] = [...document.querySelectorAll(`[data-cfm="${x.k}"]:checked`)].map((i) => i.value); return; }
+    const el = document.getElementById('cf_' + x.k); if (!el) return; const v = el.value.trim();
+    out[x.k] = x.tipo === 'vlr' ? numVlr(v) : x.tipo === 'num' ? (v === '' ? null : Number(v)) : v;
+  });
+  return out;
+}
+// negócios ligados (16/11/2026, decisão do Cleiton): a mesma pessoa em mais de um funil; o elo é o telefone (8 últimos dígitos)
+function negociosDaPessoa(id, l) {
+  const k = telChave(l.telefone); if (k.length < 8) return [];
+  return Object.entries(S.leads).filter(([i, x]) => i !== id && telChave(x.telefone) === k).map(([i, x]) => ({ id: i, ...x }));
+}
+function blocoNegocios(id, l) {
+  const N = negociosDaPessoa(id, l), f = funilDe(l);
+  const outros = FC.ORDEM.filter((k) => k !== 'definir' && k !== f);
+  const ints = INTERESSES.filter(([k]) => k !== 'a_definir' && FC.funilDoInteresse(k) !== f);
+  return `<div class="painel"><h2>Negócios desta pessoa</h2>
+    ${N.length ? `<div class="neg-lig">${N.map((x) => `<div class="i">${pillFunil(x)}${pillEtapa(x)}<span class="peq mut">${esc(x.campanha || '')}</span><button class="b" type="button" data-abre="lead:${esc(x.id)}">Abrir</button></div>`).join('')}</div>` : '<p class="mut peq" style="margin:6px 0 0">Nenhum outro negócio com este telefone.</p>'}
+    ${outros.length && digitos(l.telefone).length >= 10 ? `<div class="linha" style="margin-top:10px"><select id="negInt" aria-label="Interesse do novo negócio">${ints.map(([k, rot]) => `<option value="${k}">${esc(rot)}</option>`).join('')}</select><button class="b" type="button" data-negnovo="${esc(id)}">+ Abrir negócio em outro funil</button></div><p class="mut peq" style="margin:4px 0 0">Copia nome e telefone; o histórico fica em cada negócio.</p>` : ''}</div>`;
+}
+async function abrirNegocioLigado(id) {
+  const l = S.leads[id]; if (!l) return; const int = val('negInt'); if (!INT_POR[int]) return;
+  const f = FC.funilDoInteresse(int), F = FC.def(f), novoId = 'n-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const et = F.etapas[1] || F.etapas[0];
+  const dados = { nome: l.nome, telefone: digitos(l.telefone), interesse: int, etapa: et, motivo: '', prox_acao: '', data_prox: '', imovel_interesse: '', data_fechamento: '', perfil: { finalidade: FIN_DO_INT[int] || '' },
+    campanha: l.campanha || 'Negócio ligado', entrada: hojeISO(), ligado_a: id, criado_no_painel: true, atualizado_em: agora(), origem: 'painel',
+    historico: [{ em: agora().slice(0, 16), tipo: 'Observação', texto: `Negócio de ${F.rot} aberto a partir do negócio de ${FC.def(funilDe(l)).rot} desta pessoa.` }] };
+  const ok = await gravar(() => db.collection('leads').doc(novoId).set(dados), `Negócio de ${F.rot} aberto.`);
+  if (ok) { fechar(); let n = 0; const t = setInterval(() => { if (S.leads[novoId] || ++n > 15) { clearInterval(t); if (S.leads[novoId]) abrir('lead', novoId); } }, 200); }
+}
 (function () { const st = document.createElement('style'); st.textContent = '.pill.int-tem{background:var(--ok-bg);color:var(--ok-selo);white-space:nowrap}.pill.int-procura{background:var(--soft);color:var(--ink);white-space:nowrap}.pill.int-def{background:transparent;border:1px dashed var(--line);color:var(--muted);white-space:nowrap}.int-chips{margin:0 0 10px}'; document.head.appendChild(st); })();
 let CAPTC = { d: null, ctx: null };
 function ctxCapt() {
@@ -969,7 +1029,7 @@ function interessadosCapt() {
   const k = [S.leads, S.capt, S.vitrine, S.catalogo, S.meus];
   if (INTC.m && INTC.k.every((v, i) => v === k[i])) return INTC.m;
   const m = new Map();
-  Object.entries(S.leads).forEach(([id, l]) => { if (!ABERTAS.has(l.etapa || 'Novo') || ladoDe(l) === 'tem') return; const o = opsDoLead(leadN(id, l)); (o.capt || []).forEach((x) => { const a = m.get(x.it.id) || []; a.push({ id, nome: l.nome || 'Sem nome' }); m.set(x.it.id, a); }); });
+  Object.entries(S.leads).forEach(([id, l]) => { if (!abertaL(l) || ladoDe(l) === 'tem') return; const o = opsDoLead(leadN(id, l)); (o.capt || []).forEach((x) => { const a = m.get(x.it.id) || []; a.push({ id, nome: l.nome || 'Sem nome' }); m.set(x.it.id, a); }); });
   INTC = { k, m }; return m;
 }
 // aluguel em valor cheio (R$ 1.900), venda abreviada (R$ 1,2 mi)
@@ -1045,7 +1105,7 @@ function fichaTem(id, l) {
 }
 const LEG_OP = '<div class="op-leg"><div><b>🔎 Compradores e locatários</b>: cada cliente com os imóveis que combinam com o que ele procura. <b>🏠 Vendedores e locadores</b>: cada imóvel não captado com os clientes que procuram um assim.</div><div><span class="selo-cap">🟢 PAUTA</span> imóvel nosso (site, lançamento ou agenciamento): pode ofertar. <span class="selo-nao">🟠 A CAPTAR</span> proprietário anuncia direto: capte antes de ofertar.</div></div>';
 function ladosOp() {
-  const nProc = Object.values(S.leads).filter((l) => ladoDe(l) !== 'tem' && ABERTAS.has(l.etapa || 'Novo')).length, nTem = ctxCapt().itens.length;
+  const nProc = Object.values(S.leads).filter((l) => ladoDe(l) !== 'tem' && abertaL(l)).length, nTem = ctxCapt().itens.length;
   return `<div class="chips op-lados" role="group" aria-label="Lado"><button type="button" data-oplado="procura" aria-pressed="${S.opLado !== 'tem'}">🔎 Compradores e locatários<span class="op-l2">&nbsp;→ imóveis para oferecer</span>&nbsp;(${nProc})</button><button type="button" data-oplado="tem" aria-pressed="${S.opLado === 'tem'}">🏠 Vendedores e locadores<span class="op-l2">&nbsp;→ clientes interessados</span>&nbsp;(${nTem})</button></div>`;
 }
 // subaba "Para quem tem": imóveis captados com os clientes deste corretor que procuram um imóvel assim (a ★ sobe)
@@ -1848,7 +1908,7 @@ function gResumo(slug) {
     const sts = Object.entries(S.sol).map(([id, s]) => statusDe(id, s));
     const ult = L.map(ultimoReg).concat(Object.values(S.eventos).map((e) => e && e.em)).filter(Boolean).sort().pop() || '';
     return {
-      leads: L.length, abertos: L.filter((l) => ABERTAS.has(l.etapa || 'Novo')).length, fechados: L.filter((l) => l.etapa === 'Fechado').length,
+      leads: L.length, abertos: L.filter(abertaL).length, fechados: L.filter(ganhoL).length,
       atrasados: av.filter((a) => a.t === 'Próxima ação vencida' || a.t === 'Primeiro contato atrasado').length,
       hoje: av.filter((a) => a.t === 'Ação para hoje').length,
       ativos: M.filter((m) => m.ativo).length, imoveis: M.length,
@@ -1905,7 +1965,7 @@ function vInicio() {
   const fAv = BA.filtra(av0, qDe(), (a) => { const l = S.leads[a.id] || {}, m = a.imv ? S.meus[a.imv] || {} : null; if (m) { const x = baImv({ ...m, descricao: '' }); return { ...x, txt: [a.t, a.o, x.txt].join(' · ') }; } return { ...baLead(l), txt: [a.t, a.o, baLead(l).txt].join(' · ') }; });
   const av = fAv.lista; qInfo(fAv, 'avisos');
   const nOp = leadsComOfertas().length;
-  const abertos = L.filter((l) => ABERTAS.has(l.etapa || 'Novo')).length;
+  const abertos = L.filter(abertaL).length;
   const venc = av.filter((a) => a.t === 'Próxima ação vencida' || a.t === 'Primeiro contato atrasado').length;
   const hoje = av.filter((a) => a.t === 'Ação para hoje').length;
   const M = Object.values(S.meus), ativos = M.filter((m) => m.ativo).length;
@@ -1937,59 +1997,76 @@ function vInicio() {
 // ---------- Meus leads ----------
 function vLeads() {
   let L = Object.entries(S.leads).map(([id, l]) => ({ id, ...l, _ult: ultimoReg(l), _av: avisosDe(id, l), _int: interesseDe(l) }));
+  L.forEach((l) => { l._f = FC.funilDoInteresse(l._int); l._et = FC.etapaNoFunil(l.etapa, l._f); l._ab = FC.aberta(l.etapa, l._f); });
+  // 16/11/2026 (fatia 1 da ampliação do CRM): um funil por vez no topo; "Todos" só para Lista e Agenda
+  const contF = {}; L.forEach((l) => { contF[l._f] = (contF[l._f] || 0) + 1; });
+  if (!S.funil) { try { S.funil = localStorage.getItem('painel.funil') || ''; } catch (e) {} }
+  if (S.funil !== 'todos' && !FC.FUNIS[S.funil]) S.funil = FC.ORDEM.find((f) => contF[f]) || 'locacao';
+  const FU = S.funil === 'todos' ? null : FC.def(S.funil);
+  const chipsFunil = `<div class="chips funil-chips" role="group" aria-label="Escolher o funil">${FC.ORDEM.filter((f) => f !== 'definir' || contF.definir || S.funil === 'definir').map((f) => `<button type="button" data-funil="${f}" aria-pressed="${S.funil === f}">${FC.FUNIS[f].icone} ${esc(FC.FUNIS[f].rot)} (${contF[f] || 0})</button>`).join('')}<button type="button" data-funil="todos" aria-pressed="${S.funil === 'todos'}">Todos (${L.length})</button></div>`;
+  const Ltodos = L;
+  if (FU) L = L.filter((l) => l._f === S.funil);
   const contInt = {}; L.forEach((l) => { contInt[l._int] = (contInt[l._int] || 0) + 1; });
-  if (S.filtroInt && !INT_POR[S.filtroInt]) S.filtroInt = '';
+  if (S.filtroInt && !(INT_POR[S.filtroInt] && contInt[S.filtroInt])) S.filtroInt = '';
   if (S.filtroInt) L = L.filter((l) => l._int === S.filtroInt);   // 07/11/2026: o interesse filtra a lista e as outras visões
-  const chipsInt = `<div class="chips int-chips" role="group" aria-label="Filtrar por interesse"><button type="button" data-int="" aria-pressed="${!S.filtroInt}">Todos os interesses</button>${INTERESSES.filter(([k]) => contInt[k] || S.filtroInt === k).map(([k, , curto]) => `<button type="button" data-int="${k}" aria-pressed="${S.filtroInt === k}">${esc(curto)} (${contInt[k] || 0})</button>`).join('')}</div>`;
+  const intsVis = INTERESSES.filter(([k]) => contInt[k] || S.filtroInt === k);
+  const chipsInt = intsVis.length > 1 ? `<div class="chips int-chips" role="group" aria-label="Filtrar por interesse"><button type="button" data-int="" aria-pressed="${!S.filtroInt}">Todos os interesses</button>${intsVis.map(([k, , curto]) => `<button type="button" data-int="${k}" aria-pressed="${S.filtroInt === k}">${esc(curto)} (${contInt[k] || 0})</button>`).join('')}</div>` : '';
   const busca = !!qDe();
+  if (busca) L = Ltodos;   // a busca procura em todos os funis e etapas
   const L0 = BA.filtra(L, qDe(), baLead).lista;   // visões (30/10/2026): kanban, pipeline, funil e agenda veem todas as etapas
-  if (!busca && S.filtroEtapa === 'abertos') L = L.filter((l) => ABERTAS.has(l.etapa || 'Novo'));
-  else if (!busca && S.filtroEtapa !== 'todos') L = L.filter((l) => (l.etapa || 'Novo') === S.filtroEtapa);
+  const Lf = L;
+  if (S.filtroEtapa !== 'abertos' && S.filtroEtapa !== 'todos' && S.filtroEtapa !== 'semprox' && !(FU && FU.etapas.includes(S.filtroEtapa))) S.filtroEtapa = 'abertos';
+  if (!busca && S.filtroEtapa === 'abertos') L = L.filter((l) => l._ab);
+  else if (!busca && S.filtroEtapa === 'semprox') L = L.filter((l) => l._ab && !l.prox_acao && !l.data_prox);
+  else if (!busca && S.filtroEtapa !== 'todos') L = L.filter((l) => l._et === S.filtroEtapa);
   const fL = BA.filtra(L, qDe(), baLead); L = fL.lista; qInfo(fL, 'leads');
-  const cont = (f) => Object.values(S.leads).filter(f).length;
-  const chips = [['abertos', `Em aberto (${cont((l) => ABERTAS.has(l.etapa || 'Novo'))})`], ['todos', `Todos (${cont(() => true)})`], ...ETAPAS.map((e) => [e, `${e} (${cont((l) => (l.etapa || 'Novo') === e)})`])].filter(([k, t]) => !/\(0\)$/.test(t) || k === 'abertos' || k === 'todos');
+  const cont = (f) => Lf.filter(f).length;
+  const chips = [['abertos', `Em aberto (${cont((l) => l._ab)})`], ['semprox', `Sem próxima ação (${cont((l) => l._ab && !l.prox_acao && !l.data_prox)})`], ['todos', `Todos (${cont(() => true)})`], ...(FU ? FU.etapas.map((e) => [e, `${e} (${cont((l) => l._et === e)})`]) : [])].filter(([k, t]) => !/\(0\)$/.test(t) || k === 'abertos' || k === 'todos');
   const cols = [
     { k: 'nome', l: 'Nome', h: (r) => `<b>${esc(r.nome)}</b>${dupDe(r.id) ? ' ' + dupDe(r.id) : ''}${r._av.some((a) => a.p === 'alta') ? ' <span class="pill alta">atrasado</span>' : ''}${pillLado(r) ? ' ' + pillLado(r) : ''}${hitBA(r)}${autorLin(r)}` },
     { k: 'telefone', l: 'Telefone', v: (r) => digitos(r.telefone), h: (r) => esc(fone(r.telefone)) },
+    ...(FU && !busca ? [] : [{ k: '_f', l: 'Funil', v: (r) => FC.ORDEM.indexOf(r._f), h: (r) => pillFunil(r) }]),
     { k: 'interesse', l: 'Interesse', v: (r) => INT_POR[r._int].i, h: (r) => pillInt(r) },
-    { k: 'etapa', l: 'Etapa', v: (r) => ETAPAS.indexOf(r.etapa || 'Novo'), h: (r) => `<span class="pill ${r.etapa === 'Fechado' ? 'ok' : r.etapa === 'Perdido' ? 'perdido' : ''}">${esc(r.etapa || 'Novo')}</span>` },
-    { k: 'data_prox', l: 'Próxima ação', h: (r) => r.prox_acao || r.data_prox ? `${esc(r.prox_acao || 'Ação')}<div class="mut peq">${dt(r.data_prox)}</div>` : '<span class="mut">—</span>' },
+    { k: 'etapa', l: 'Etapa', v: (r) => FC.ORDEM.indexOf(r._f) * 100 + FC.ordem(r.etapa, r._f), h: (r) => pillEtapa(r) },
+    { k: 'data_prox', l: 'Próxima ação', h: (r) => r.prox_acao || r.data_prox ? `${esc(r.prox_acao || 'Ação')}<div class="mut peq">${dt(r.data_prox)}</div>` : r._ab ? '<span class="pill sem-prox">sem próxima ação</span>' : '<span class="mut">—</span>' },
     { k: '_ult', l: 'Último registro', h: (r) => dt(r._ult) },
     { k: 'entrada', l: 'Entrada', h: (r) => dt(r.entrada) },
     { k: 'campanha', l: 'Origem', h: (r) => `<span class="peq">${esc(r.campanha || '—')}</span>` },
   ];
   return `<section class="sec">
     <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha"><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
-    ${chipsInt}
-    ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
+    ${chipsFunil}${chipsInt}
+    ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
     ${tabela('leads', cols, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: 'Nenhum lead neste filtro.', cartao: (r) => `
-      <div class="cm-l1"><span class="cm-nome">${esc(r.nome)}</span>${dupDe(r.id)}${pillLado(r)}${pillInt(r)}${r._av.some((a) => a.p === 'alta') ? '<span class="pill alta">atrasado</span>' : ''}${hitBA(r)}<span class="cm-v"><span class="pill ${r.etapa === 'Fechado' ? 'ok' : r.etapa === 'Perdido' ? 'perdido' : ''}">${esc(r.etapa || 'Novo')}</span></span></div>
+      <div class="cm-l1"><span class="cm-nome">${esc(r.nome)}</span>${dupDe(r.id)}${pillLado(r)}${pillInt(r)}${r._av.some((a) => a.p === 'alta') ? '<span class="pill alta">atrasado</span>' : ''}${hitBA(r)}<span class="cm-v">${FU ? '' : pillFunil(r)}${pillEtapa(r)}</span></div>
       <div class="cm-lin"><b>${esc(fone(r.telefone))}</b> · ${esc(r.campanha || 'sem origem')}</div>
-      <div class="cm-lin">${r.prox_acao || r.data_prox ? `Próxima: <b>${esc(r.prox_acao || 'ação')}</b> ${dt(r.data_prox)}` : '<span class="falta">Sem próxima ação</span>'} · último ${r._ult ? dt(r._ult).slice(0, 10) : '—'} · entrada ${r.entrada ? dt(r.entrada).slice(0, 10) : '—'}</div>${autorLin(r, 'cm-lin mut peq')}` })}`, ...visoesLeads(L0) })}
+      <div class="cm-lin">${r.prox_acao || r.data_prox ? `Próxima: <b>${esc(r.prox_acao || 'ação')}</b> ${dt(r.data_prox)}` : '<span class="falta">Sem próxima ação</span>'} · último ${r._ult ? dt(r._ult).slice(0, 10) : '—'} · entrada ${r.entrada ? dt(r.entrada).slice(0, 10) : '—'}</div>${autorLin(r, 'cm-lin mut peq')}` })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
   </section>`;
 }
 // ---------- Visões dos leads (30/10/2026): Kanban, Pipeline, Funil e Agenda ----------
 function itemVisao(r) {
   const alta = r._av.some((a) => a.p === 'alta');
-  return { id: r.id, nome: r.nome, etapa: r.etapa || 'Novo', prox: r.prox_acao, data_prox: r.data_prox, alerta: alta, abre: `data-abre="lead:${esc(r.id)}"`,
-    pills: pillInt(r) + (alta ? '<span class="pill alta">atrasado</span>' : ''), sub: esc([r.campanha, r.imovel_interesse].filter(Boolean).join(' · ')),
+  return { id: r.id, nome: r.nome, etapa: etapaDe(r), aberta: abertaL(r), prox: r.prox_acao, data_prox: r.data_prox, alerta: alta, abre: `data-abre="lead:${esc(r.id)}"`,
+    pills: pillInt(r) + (alta ? `<span class="pill alta">${esc((r._av.find((a) => a.parado && a.p === 'alta') || {}).t || 'atrasado')}</span>` : r._av.some((a) => a.parado) ? `<span class="pill media">${esc(r._av.find((a) => a.parado).t)}</span>` : '') + (semProx(r) ? '<span class="pill sem-prox">sem próxima ação</span>' : ''), sub: esc([r.campanha, r.imovel_interesse].filter(Boolean).join(' · ')),
     dias: r._ult ? dias(r._ult, hojeISO()) : (r.entrada ? dias(r.entrada, hojeISO()) : null), marca: [r.etapa_por === 'diretoria' ? 'movido pela diretoria' : '', autorTxt(r)].filter(Boolean).join(' · ') };
 }
-function visoesLeads(L0) {
+function visoesLeads(L0, FU) {
   const I = L0.map(itemVisao);
+  const pede = `<div class="linha" style="margin:6px 0"><p class="mut" style="margin:0">Kanban, Pipeline e Funil mostram um funil por vez. Escolha:</p>${FC.ORDEM.filter((f) => f !== 'definir').map((f) => `<button class="b" type="button" data-funil="${f}">${FC.FUNIS[f].icone} ${esc(FC.FUNIS[f].rot)}</button>`).join('')}<button class="b" type="button" data-vcrm-tog="leads|lista">ou ver a Lista</button></div>`;
+  const notaPz = FU ? ' Prazo de parado por etapa: ' + FU.etapas.filter((e) => FC.paradoDias(e, S.funil, PZ().parado_etapa) != null).map((e) => `${e} ${FC.paradoDias(e, S.funil, PZ().parado_etapa)} d`).join(' · ') + '.' : '';
   return {
-    kanban: () => VisoesCRM.kanban('leads', I, { etapas: ETAPAS, podeMover: true, notaMover: 'Perdido pede o motivo; a mudança entra no histórico do lead.' }),
-    pipeline: () => VisoesCRM.pipeline('leads', I, { etapas: ETAPAS }),
-    funil: () => VisoesCRM.funil('leads', VisoesCRM.degrausEtapas(I, ETAPAS, ['Perdido']), { nota: 'Cada degrau conta quem chegou àquela etapa ou passou dela. Perdidos saem do funil.' }),
-    agenda: () => VisoesCRM.agenda('leads', I, { so: (x) => ABERTAS.has(x.etapa), vazio: 'Nenhum lead em aberto.' }),
+    kanban: () => FU ? VisoesCRM.kanban('leads', I, { etapas: FU.etapas, podeMover: true, notaMover: 'Perdido pede o motivo; a mudança entra no histórico do lead.' + notaPz }) : pede,
+    pipeline: () => FU ? VisoesCRM.pipeline('leads', I, { etapas: FU.etapas }) : pede,
+    funil: () => FU ? VisoesCRM.funil('leads', VisoesCRM.degrausEtapas(I, FU.etapas, ['Perdido']), { nota: 'Cada degrau conta quem chegou àquela etapa ou passou dela. Perdidos saem do funil.' }) : pede,
+    agenda: () => VisoesCRM.agenda('leads', I, { so: (x) => x.aberta, vazio: 'Nenhum lead em aberto.' }),
   };
 }
 async function moverLead(id, etapa) {
-  const l = S.leads[id]; if (!l || !ETAPAS.includes(etapa)) return; const de = l.etapa || 'Novo'; if (de === etapa) return;
+  const l = S.leads[id], f = l ? funilDe(l) : ''; if (!l || !FC.def(f).etapas.includes(etapa)) return; const de = etapaDe(l); if (de === etapa && l.etapa === etapa) return;
   let motivo = '';
-  if (etapa === 'Perdido') { motivo = await VisoesCRM.pedeMotivo(MOTIVOS); if (!motivo) return; }
+  if (etapa === 'Perdido') { motivo = await VisoesCRM.pedeMotivo(FC.def(f).motivos); if (!motivo) return; }
   const h = [...histDe(l), { em: agora().slice(0, 16), tipo: 'Observação', texto: `Etapa: ${de} → ${etapa}${motivo ? ' (' + motivo + ')' : ''}.` }];
-  const dados = { etapa, motivo: etapa === 'Perdido' ? motivo : '', data_fechamento: etapa === 'Fechado' ? (l.data_fechamento || hojeISO()) : '', historico: h, etapa_em: agora(), etapa_por: 'corretor', atualizado_em: agora(), origem: 'painel' };
+  const dados = { etapa, motivo: etapa === 'Perdido' ? motivo : '', data_fechamento: FC.ganho(etapa, f) ? (l.data_fechamento || hojeISO()) : '', historico: h, etapa_em: agora(), etapa_por: 'corretor', atualizado_em: agora(), origem: 'painel' };
   await gravar(() => db.collection('leads').doc(id).update(dados), `${l.nome}: ${etapa}.`);
 }
 function mudouVisoes(chave, v) {
@@ -2011,17 +2088,18 @@ function gavetaLead(id) {
   const op = novo ? null : opsDoLead(leadN(id, l));
   const refs = S.vitrine.map((v) => v.ref).filter(Boolean);
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead">
-    <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>${autorLin(l, 'mut peq', 1)}`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
+    <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillFunil(l) + pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>${autorLin(l, 'mut peq', 1)}`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoCorAnun(id, l)}`}
     <form id="fLead" class="form" data-id="${esc(id || '')}">
       ${novo ? `<label class="c inteiro">Nome<input id="lNome" required></label><label class="c">Telefone<input id="lTel" inputmode="tel" required></label><label class="c">Origem<select id="lOrig">${['Indicação', 'Plantão', 'Portal', 'Instagram', 'Site', 'Outro'].map((o) => `<option>${o}</option>`).join('')}</select></label>` : ''}
       <label class="c">Interesse<select id="lInt">${optInt(novo ? 'a_definir' : interesseDe(l))}</select></label>
-      <label class="c">Etapa<select id="lEtapa">${ETAPAS.map((e) => `<option ${e === (l.etapa || 'Novo') ? 'selected' : ''}>${e}</option>`).join('')}</select></label>
-      <label class="c" id="wMotivo" ${l.etapa === 'Perdido' ? '' : 'hidden'}>Motivo da perda<select id="lMotivo"><option value="">Escolha</option>${MOTIVOS.map((m) => `<option ${m === l.motivo ? 'selected' : ''}>${m}</option>`).join('')}</select></label>
+      <label class="c">Etapa<select id="lEtapa">${optEtapas(novo ? 'definir' : funilDe(l), novo ? 'Novo' : etapaDe(l))}</select></label>
+      <label class="c" id="wMotivo" ${etapaDe(l) === 'Perdido' ? '' : 'hidden'}>Motivo da perda<select id="lMotivo"><option value="">Escolha</option>${optMotivos(novo ? 'definir' : funilDe(l), l.motivo)}</select></label>
       <label class="c">Próxima ação<input id="lProx" value="${esc(l.prox_acao || '')}" placeholder="Ex.: ligar, enviar opções"></label>
       <label class="c">Data da próxima ação<input id="lData" type="date" value="${esc(l.data_prox || '')}"></label>
       <label class="c">Imóvel de interesse (ref.)<input id="lImovel" list="refsVit" value="${esc(l.imovel_interesse || '')}"></label>
-      <label class="c" id="wFech" ${l.etapa === 'Fechado' ? '' : 'hidden'}>Data do fechamento<input id="lFech" type="date" value="${esc(l.data_fechamento || '')}"></label>
+      <label class="c" id="wFech" ${!novo && ganhoL(l) ? '' : 'hidden'}>Data do fechamento<input id="lFech" type="date" value="${esc(l.data_fechamento || '')}"></label>
+      <div class="camp-funil" id="campFunil">${camposFunilHTML(novo ? 'definir' : funilDe(l), l.campos)}</div>
       <div class="inteiro"><h2 style="margin:6px 0 0" id="pTit">Perfil do cliente</h2><p class="peq mut" id="pFinAuto" style="margin:2px 0 0" hidden></p></div>
       <label class="c" id="pFinBox">Finalidade<select id="pFin">${['', 'Venda', 'Locação', 'Temporada'].map((o) => `<option ${o === (p.finalidade || '') ? 'selected' : ''} value="${o}">${o || 'Escolha'}</option>`).join('')}</select></label>
       <label class="c">Tipo<input id="pTipo" value="${esc(p.tipo || '')}" placeholder="Apartamento, casa…"></label>
@@ -2040,6 +2118,7 @@ function gavetaLead(id) {
       <label class="c inteiro">O que aconteceu<textarea id="hTexto" required placeholder="Digite ou toque no microfone do teclado para ditar. Ex.: liguei, pediu opções no Itacorubi até R$ 1,2 mi"></textarea></label>
       <div class="inteiro"><button class="b p" type="submit">Registrar</button></div></form>
       <div class="hist" id="histLista" style="margin-top:14px">${htmlHist(l)}</div></div>
+    ${blocoNegocios(id, l)}
     <div class="painel"><div class="linha" style="justify-content:space-between"><h2>${ladoDe(l) === 'tem' ? '🏠 Imóvel que tem' : 'Ofertas para este lead'}</h2>${ladoDe(l) === 'tem' ? '' : `<button class="b" type="button" data-opver="${esc(id)}">Abrir em Ofertas</button>`}</div>${ladoDe(l) === 'tem' ? fichaTem(id, l) : !op.p ? '<p class="mut">Sem perfil ainda. Preencha o perfil acima ou use "Pedir à IA" na aba Ofertas.</p>' : `<p class="peq mut" style="margin:6px 0 0">Perfil usado: ${esc(OP.descrevePerfil(op.p))}</p>${op.capt.length ? `<div class="op-ofs" style="margin-top:10px">${op.capt.slice(0, 3).map((x) => htmlCapt(id, x)).join('')}</div>` : ''}${op.novas.length ? `<div class="op-ofs" style="margin-top:10px">${op.novas.slice(0, 4).map((x) => htmlOferta(id, x)).join('')}</div>` : op.capt.length ? '' : '<p class="mut">Nenhum imóvel combina com o perfil agora.</p>'}`}</div>`}
   </div>`;
 }
@@ -2153,7 +2232,7 @@ function vOport() {
   if (S.opLado === 'tem') return vOportTem();
   const base = Object.entries(S.leads).filter(([, l]) => ladoDe(l) !== 'tem').map(([id, l]) => ({ id, l, o: opsDoLead(leadN(id, l)) }));
   const busca = !!qDe();
-  const F = { ofertas: (x) => ABERTAS.has(x.l.etapa || 'Novo') && (x.o.novas.length || nCaptAcao(x.o)), abertos: (x) => ABERTAS.has(x.l.etapa || 'Novo'), sem_perfil: (x) => ABERTAS.has(x.l.etapa || 'Novo') && !x.o.p, todos: () => true };
+  const F = { ofertas: (x) => abertaL(x.l) && (x.o.novas.length || nCaptAcao(x.o)), abertos: (x) => abertaL(x.l), sem_perfil: (x) => abertaL(x.l) && !x.o.p, todos: () => true };
   const cont = (k) => base.filter(F[k]).length;
   let L = busca ? base : base.filter(F[S.opFiltro] || F.ofertas);
   const fO = BA.filtra(L, qDe(), (x) => { const b = baLead(x.l); return { txt: [b.txt, ...x.o.novas.map((n) => baImv(n.it).txt)].join(' · '), docs: b.docs, valores: [...b.valores, ...x.o.novas.map((n) => n.it.valor)], nums: {} }; });
@@ -2170,7 +2249,7 @@ function vOport() {
   const cardOp = (xL) => { const { id, l, o } = xL; let h = '';
     const og = o.p ? (o.p.origem === 'confirmado' && (l.perfil || {}).por === 'diretoria' ? ['Perfil confirmado pela diretoria', 'ok'] : ORIG[o.p.origem]) : null, st = S.opStatus[id] || '', mais = S.opMais[id];
     const vis = mais ? o.novas : o.novas.slice(0, 4);
-    h += `<article class="painel op-lead"><div class="cab"><h3>${esc(l.nome)}</h3>${pillInt(l, o.p)}<span class="pill ${l.etapa === 'Fechado' ? 'ok' : l.etapa === 'Perdido' ? 'perdido' : ''}">${esc(l.etapa || 'Novo')}</span>${pillLado(l)}${hitBA(xL)}<span class="mut peq">${esc(l.campanha || 'sem origem')} · entrada ${dt(l.entrada)}</span><button class="b" type="button" data-lead="${esc(id)}" style="margin-left:auto">Abrir lead</button></div>
+    h += `<article class="painel op-lead"><div class="cab"><h3>${esc(l.nome)}</h3>${pillInt(l, o.p)}${pillEtapa(l)}${pillLado(l)}${hitBA(xL)}<span class="mut peq">${esc(l.campanha || 'sem origem')} · entrada ${dt(l.entrada)}</span><button class="b" type="button" data-lead="${esc(id)}" style="margin-left:auto">Abrir lead</button></div>
       <div class="op-perfil"><div class="linha" style="justify-content:space-between"><span class="t">Perfil</span>${og ? `<span class="pill ${og[1]}">${og[0]}</span>` : ''}</div>
         <div>${o.p ? esc(OP.descrevePerfil(o.p, 1)) || '—' : '<span class="falta">Sem perfil: preencha no lead ou peça à IA.</span>'}</div>
         ${o.p && o.p.fontes && o.p.fontes.length && o.p.origem === 'auto' ? `<div class="mut peq">De onde veio: ${esc(o.p.fontes.join(' · '))}</div>` : ''}
@@ -2960,11 +3039,23 @@ function painelPrazos() {
   const p = PZ();
   return `<div class="painel"><h2>Prazos da Vivere</h2>
     <div class="fatos" style="margin-top:10px">${PRAZOS_ROT.map(([k, l, u]) => `<div><span>${esc(l)}</span>${S.ehDono ? `<input id="pz_${k}" type="number" min="0" inputmode="numeric" value="${esc(p[k])}" style="max-width:110px" aria-label="${esc(l)} (${u})"> <span class="mut peq">${u}</span>` : `<b>${esc(p[k])} ${u}</b>`}</div>`).join('')}</div>
+    ${blocoParadoEtapas(p)}
     ${S.ehDono ? '<div class="linha" style="margin-top:10px"><button class="b p" type="button" id="salvarPrazos">Salvar prazos</button><span class="mut peq">Valem para os avisos de todos os corretores deste painel.</span></div>' : '<p class="status" style="margin:8px 0 0">Os avisos do painel seguem estes prazos. A contagem dos agenciamentos começa em ' + dt(p.agenc_inicio) + '.</p>'}</div>`;
+}
+// 16/11/2026 (ampliação do CRM, fatia 1): alerta de parado etapa a etapa, por funil (padrão em funis-crm.js; o dono ajusta aqui)
+function blocoParadoEtapas(p) {
+  const pe = p.parado_etapa || {};
+  return `<details class="pz-etapas"><summary><b>Alerta de parado por etapa</b> <span class="mut peq">(dias sem registro até o lead ficar parado)</span></summary>${FC.ORDEM.map((f) => { const F = FC.FUNIS[f];
+    const linhas = F.etapas.filter((e) => e !== 'Perdido' && e !== F.final).map((e, i) => { const v = FC.paradoDias(e, f, pe);
+      return `<tr><td>${esc(e)}</td><td class="n">${S.ehDono ? `<input id="pze_${f}_${i}" data-pze="${f}|${esc(e)}" type="number" min="0" inputmode="numeric" value="${v == null ? '' : esc(v)}" placeholder="sem alerta" style="max-width:110px" aria-label="${esc(F.rot + ' · ' + e)} (dias)">` : v == null ? '<span class="mut">sem alerta</span>' : `<b>${esc(v)} dia${v === 1 ? '' : 's'}</b>`}</td></tr>`; }).join('');
+    return `<div><b>${esc(F.rot)}</b><table>${linhas}</table></div>`; }).join('')}</details>`;
 }
 async function salvarPrazos() {
   const novo = { ...PZ() };
   for (const [k] of PRAZOS_ROT) { const v = val('pz_' + k); if (v !== '') novo[k] = Number(v); }
+  const pe = {}; document.querySelectorAll('[data-pze]').forEach((i) => { const [f, e] = i.dataset.pze.split('|'); const v = i.value.trim(); const pad = (FC.FUNIS[f].parado || {})[e];
+    if (v === '' ? pad != null : Number(v) !== pad) (pe[f] = pe[f] || {})[e] = v === '' ? null : Number(v); });
+  if (document.querySelector('[data-pze]')) novo.parado_etapa = pe;
   novo.atualizado_em = agora();
   await gravar(() => db.doc('controle/prazos').set(novo), 'Prazos salvos.');
 }
@@ -3029,13 +3120,13 @@ function gavetaConversa(alvo) {
 }
 function promptConversa(texto, alvo) {
   const p = PZ(), hoje = hojeISO();
-  const leads = Object.entries(S.leads).map(([id, l]) => ({ id, nome: l.nome, fone_final: digitos(l.telefone).slice(-4), etapa: l.etapa || 'Novo', entrada: l.entrada }));
+  const leads = Object.entries(S.leads).map(([id, l]) => ({ id, nome: l.nome, fone_final: digitos(l.telefone).slice(-4), funil: FC.def(funilDe(l)).rot, etapa: etapaDe(l), entrada: l.entrada }));
   const imoveis = Object.entries(S.meus).map(([id, m]) => ({ id, ref: m.ref, endereco: [m.logradouro || m.end, m.numero, m.complemento].filter(Boolean).join(', '), bairro: m.bairro, proprietario: (m.proprietario || {}).nome, valor: m.valor ?? null, cond: m.cond ?? null, iptu: m.iptu ?? null, situacao: m.ativo ? 'Ativo' : 'Inativo' }));
   return `Você organiza registros do CRM de uma corretora de imóveis da Vivere (Florianópolis). Hoje é ${hoje}.
 A corretora contou, ditou ou colou uma conversa (pode haver prints anexos). Descubra a quem se refere e o que mudou.
 - Se for sobre um cliente (lead), use um id da lista de leads; se for sobre um imóvel que ela agenciou (conversa com proprietário, visita, fotos, valor), use um id da lista de imóveis; se for um cliente que não está na lista, use alvo "novo_lead".
 ${alvo ? `- A corretora já indicou o alvo: ${alvo}.` : ''}
-- Etapas possíveis do lead: ${ETAPAS.join(', ')}. Motivos de perda: ${MOTIVOS.join(', ')}.
+- Cada lead está num funil (campo funil da lista). Etapas possíveis por funil: ${FC.ORDEM.map((f) => FC.FUNIS[f].rot + ': ' + FC.FUNIS[f].etapas.join(', ')).join(' | ')}. Use só etapas do funil do lead (se o interesse mudar, use as do funil novo). Motivos de perda: ${FC.todosMotivos().join(', ')}.
 - Tipos de registro do lead: ${TIPOS_HIST.join(', ')}. Tipos de registro do imóvel: ${TIPOS_AGENC.join(', ')}.
 - Defina sempre a próxima ação e a data (AAAA-MM-DD). Se a conversa já marcou data, use-a. Se o cliente pediu informações, a data é hoje + ${p.info_cliente_dias} dias. Em proposta ou negociação, no máximo hoje + ${p.proposta_retorno_dias} dias. Sem nada combinado, hoje + 7 dias.
 - "interesse" do lead, só se a conversa deixar claro: ${INTERESSES.filter(([k]) => k !== 'a_definir').map(([k, rot]) => k + ' (' + rot + ')').join(', ')}. No aluguel, diga se é anual ou temporada; na dúvida, null.
@@ -3079,7 +3170,7 @@ async function analisarConversa() {
   } finally { const b = document.getElementById('cvAnalisar'); if (b) b.disabled = false; }
 }
 function htmlProposta(r) {
-  const leadsOpt = Object.entries(S.leads).map(([id, l]) => `<option value="lead:${esc(id)}" ${r.alvo === 'lead' && r.lead_id === id ? 'selected' : ''}>${esc(l.nome)} · ${esc(l.etapa || 'Novo')}</option>`).join('');
+  const leadsOpt = Object.entries(S.leads).map(([id, l]) => `<option value="lead:${esc(id)}" ${r.alvo === 'lead' && r.lead_id === id ? 'selected' : ''}>${esc(l.nome)} · ${esc(FC.def(funilDe(l)).rot)} · ${esc(etapaDe(l))}</option>`).join('');
   const imvOpt = Object.entries(S.meus).map(([id, m]) => `<option value="imv:${esc(id)}" ${r.alvo === 'imovel' && r.imovel_id === id ? 'selected' : ''}>${esc(m.ref)} · ${esc(m.bairro || '')}</option>`).join('');
   const pf = r.perfil || {};
   return `<div class="painel sec" style="gap:12px"><h2>Confira e salve</h2>${r.duvida ? `<p class="falta" style="margin:0">${esc(r.duvida)}</p>` : ''}
@@ -3089,8 +3180,8 @@ function htmlProposta(r) {
       <label class="c" data-pp="novo">Telefone<input id="ppTel" inputmode="tel" value="${esc((r.novo_lead || {}).telefone || '')}"></label>
       <label class="c">Tipo<select id="ppTipo">${[...new Set([...TIPOS_HIST, ...TIPOS_AGENC])].map((t) => `<option ${t === r.tipo ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <label class="c inteiro">Resumo para o histórico<textarea id="ppResumo" rows="3">${esc(r.resumo || '')}</textarea></label>
-      <label class="c" data-pp="lead">Etapa<select id="ppEtapa"><option value="">Manter</option>${ETAPAS.map((e) => `<option ${e === r.etapa ? 'selected' : ''}>${e}</option>`).join('')}</select></label>
-      <label class="c" data-pp="lead">Motivo da perda<select id="ppMotivo"><option value="">—</option>${MOTIVOS.map((m) => `<option ${m === r.motivo ? 'selected' : ''}>${m}</option>`).join('')}</select></label>
+      <label class="c" data-pp="lead">Etapa<select id="ppEtapa"><option value="">Manter</option>${FC.ORDEM.map((f) => `<optgroup label="${esc(FC.FUNIS[f].rot)}">${FC.FUNIS[f].etapas.map((e) => `<option value="${esc(e)}" ${e === r.etapa ? 'selected' : ''}>${esc(e)}</option>`).join('')}</optgroup>`).join('')}</select></label>
+      <label class="c" data-pp="lead">Motivo da perda<select id="ppMotivo"><option value="">—</option>${FC.todosMotivos().map((m) => `<option ${m === r.motivo ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></label>
       <label class="c" data-pp="lead">Próxima ação<input id="ppProx" value="${esc(r.proxima_acao || '')}"></label>
       <label class="c" data-pp="lead">Data da próxima ação<input id="ppData" type="date" value="${esc(r.data_proxima_acao || '')}"></label>
       <label class="c" data-pp="lead">Imóvel de interesse (ref.)<input id="ppImovel" value="${esc(r.imovel_interesse || '')}"></label>
@@ -3159,6 +3250,7 @@ async function salvarProposta() {
   if (val('ppData')) dados.data_prox = val('ppData');
   if (val('ppImovel')) dados.imovel_interesse = val('ppImovel').toUpperCase();
   if (INT_POR[val('ppInt')]) dados.interesse = val('ppInt');
+  if (dados.etapa) dados.etapa = FC.etapaNoFunil(dados.etapa, FC.funilDoInteresse(dados.interesse || interesseDe(base)));   // 16/11/2026: etapa sempre do funil do lead
   if (tp === 'lead') { const ok = await gravar(() => db.collection('leads').doc(id).update(dados), 'Lead atualizado.'); if (ok) fechar(); return; }
   if (!val('ppNome') || digitos(val('ppTel')).length < 10) { toast('Para lead novo, informe nome e telefone com DDD.'); return; }
   const novoId = 'n-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -3554,12 +3646,12 @@ document.addEventListener('change', (e) => { if (e.target && e.target.id === 'lI
 new MutationObserver(() => { const si = document.getElementById('lInt'); if (si && si.dataset.finOk !== si.value) ajustaFinInt(); }).observe(document.documentElement, { childList: true, subtree: true });
 const val = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
 async function salvarLead(form) {
-  const id = form.dataset.id, novo = !id, etapa = val('lEtapa');
+  const id = form.dataset.id, novo = !id, fSel = FC.funilDoInteresse(val('lInt')), etapa = FC.etapaNoFunil(val('lEtapa'), fSel);
   const err = document.getElementById('eLead'); err.textContent = '';
   if (etapa === 'Perdido' && !val('lMotivo')) { err.textContent = 'Informe o motivo da perda.'; return; }
   const perfil = { finalidade: FIN_DO_INT[val('lInt')] || '', tipo: val('pTipo'), bairros: val('pBairros'), vmin: numVlr(val('pMin')), vmax: numVlr(val('pMax')), dorm: val('pDorm') ? Number(val('pDorm')) : null, vagas: val('pVagas') ? Number(val('pVagas')) : null, obs: val('pObs'), em: agora().slice(0, 16), por: 'corretor' };
   const intSel = val('lInt');
-  const dados = { ...(INT_POR[intSel] ? { interesse: intSel } : {}), etapa, motivo: etapa === 'Perdido' ? val('lMotivo') : '', prox_acao: val('lProx'), data_prox: val('lData'), imovel_interesse: val('lImovel').toUpperCase(), data_fechamento: etapa === 'Fechado' ? val('lFech') : '', perfil, atualizado_em: agora(), origem: 'painel' };
+  const dados = { ...(INT_POR[intSel] ? { interesse: intSel } : {}), etapa, motivo: etapa === 'Perdido' ? val('lMotivo') : '', prox_acao: val('lProx'), data_prox: val('lData'), imovel_interesse: val('lImovel').toUpperCase(), data_fechamento: FC.ganho(etapa, fSel) ? (val('lFech') || hojeISO()) : '', perfil, ...(FC.def(fSel).campos.length ? { campos: { ...((!novo && S.leads[id] && S.leads[id].campos) || {}), ...lerCamposFunil(fSel) } } : {}), atualizado_em: agora(), origem: 'painel' };
   if (novo) {
     if (!val('lNome') || digitos(val('lTel')).length < 10) { err.textContent = 'Informe o nome e um telefone com DDD.'; return; }
     const hist = val('lObsNovo') ? [{ em: agora().slice(0, 16), tipo: 'Observação', texto: val('lObsNovo') }] : [];
@@ -3567,7 +3659,7 @@ async function salvarLead(form) {
     const ok = await gravar(() => db.collection('leads').doc(novoId).set({ ...dados, nome: val('lNome'), telefone: digitos(val('lTel')), campanha: val('lOrig'), entrada: hojeISO(), historico: hist, criado_no_painel: true }), 'Lead cadastrado.');
     if (ok) { fechar(); S.aba = 'leads'; render(); }
   } else {
-    if (etapa !== ((S.leads[id] || {}).etapa || 'Novo')) { dados.etapa_em = agora(); dados.etapa_por = 'corretor'; }
+    if (etapa !== ((S.leads[id] || {}).etapa || 'Novo')) { dados.etapa_em = agora(); dados.etapa_por = 'corretor'; const de = etapaDe(S.leads[id] || {}); if (de !== etapa) dados.historico = [...histDe(S.leads[id] || {}), { em: agora().slice(0, 16), tipo: 'Observação', texto: `Etapa: ${de} → ${etapa}${etapa === 'Perdido' && val('lMotivo') ? ' (' + val('lMotivo') + ')' : ''}.` }]; }
     const ok = await gravar(() => db.collection('leads').doc(id).update(dados), 'Alterações salvas.');
     if (ok) fechar();
   }
@@ -3601,6 +3693,8 @@ document.addEventListener('click', async (ev) => {
   if (d.pagtam) { try { localStorage.setItem('painel.pagTam', d.pagtam); } catch (e) {} S.pagVit = 0; S.pagM2 = {}; S.pagGen = {}; S.opPg = 0; return render(); }
   if (d.pag) { const [k, s] = d.pag.split('|'); if (/^m2[VA]/.test(k)) { S.pagM2 = S.pagM2 || {}; S.pagM2[k] = Math.max(0, (S.pagM2[k] || 0) + Number(s)); return render(); } if (k === 'vit') { S.pagVit = Math.max(0, S.pagVit + Number(s)); render(); document.querySelector('.tabela')?.scrollIntoView({ block: 'start' }); } else { S.pagGen = S.pagGen || {}; S.pagGen[k] = Math.max(0, (S.pagGen[k] || 0) + Number(s)); render(); } return; }
   if (d.int !== undefined) { S.filtroInt = S.filtroInt === d.int ? '' : d.int; return render(); }
+  if (d.funil) { S.funil = d.funil; S.filtroInt = ''; S.filtroEtapa = 'abertos'; try { localStorage.setItem('painel.funil', d.funil); } catch (e) {} return render(); }
+  if (d.negnovo) return abrirNegocioLigado(d.negnovo);
   if (d.etapa) { S.filtroEtapa = d.etapa; return render(); }
   if (d.pmfiltro != null) { S.pmFiltro = !S.pmFiltro; return render(); }
   if (d.pvfiltro != null) { S.pvFiltro = !S.pvFiltro; return render(); }   // filtros da Pesquisa recolhidos no celular (02/11/2026)
@@ -3699,7 +3793,14 @@ document.addEventListener('ms-change', (ev) => {   // vários bairros (26/10/202
 });
 document.addEventListener('change', (ev) => {
   const id = ev.target.id;
-  if (id === 'lEtapa') { document.getElementById('wMotivo').hidden = ev.target.value !== 'Perdido'; document.getElementById('wFech').hidden = ev.target.value !== 'Fechado'; }
+  if (id === 'lEtapa') { const fz = FC.funilDoInteresse(val('lInt')); document.getElementById('wMotivo').hidden = ev.target.value !== 'Perdido'; document.getElementById('wFech').hidden = !FC.ganho(ev.target.value, fz); }
+  if (id === 'lInt') { // 16/11/2026: trocar o interesse leva o lead ao funil novo (etapa equivalente, motivos e campos do funil)
+    const fz = FC.funilDoInteresse(ev.target.value), se = document.getElementById('lEtapa'), sm = document.getElementById('lMotivo'), cf = document.getElementById('campFunil');
+    const fid = (document.getElementById('fLead') || {}).dataset || {}, l0 = S.leads[fid.id] || {};
+    if (se) { const e = FC.etapaNoFunil(se.value, fz); se.innerHTML = optEtapas(fz, e); document.getElementById('wMotivo').hidden = e !== 'Perdido'; document.getElementById('wFech').hidden = !FC.ganho(e, fz); }
+    if (sm) sm.innerHTML = '<option value="">Escolha</option>' + optMotivos(fz, sm.value);
+    if (cf) cf.innerHTML = camposFunilHTML(fz, l0.campos);
+  }
   const el = ev.target;
   if (S.novo && el.dataset && el.dataset.campo) { S.novo.dados[el.dataset.campo] = el.dataset.vlr != null ? (numVlr(el.value) ?? '') : el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value.trim(); S.novo.sujo = true; agendarRascunho(); if (el.tagName === 'SELECT') return redesenharGaveta(); return atualizarArquivos(); }
   if (S.novo && el.dataset && el.dataset.multi) { const k = el.dataset.multi; S.novo.dados[k] = [...document.querySelectorAll(`[data-multi="${k}"]:checked`)].map((x) => x.value); S.novo.sujo = true; agendarRascunho(); return atualizarArquivos(); }
