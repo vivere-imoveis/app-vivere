@@ -135,6 +135,7 @@ html.pend-aberta,html.pend-aberta body{overflow:hidden}
 .pend-form input[aria-invalid="true"]{border-color:var(--bad)}
 .pend-fora{margin:0;padding-left:18px;font-size:12.5px;color:var(--muted)}
 .pend-aviso{margin:0}
+.pend-div [hidden]{display:none!important} /* P2: placa e lazer (campos que só aparecem conforme a escolha) */
 .pend-msg{margin:0;font-size:13px;color:var(--bad);min-height:0}
 .pend-msg:empty{display:none}
 .pend-pag{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}

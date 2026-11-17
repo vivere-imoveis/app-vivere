@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-16.2'; // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-16.3'; // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1 };
@@ -583,5 +583,13 @@
     if (r.error) throw r.error;
     return r.data;
   }
-  window.VIVERE_PONTE = { versao: VERSAO, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
+  // 16/11/2026 (P2 de vis-vivian-cadastro-imovel-ia): placa e áreas de lazer dos imóveis já cadastrados (imoveis_divulgacao);
+  // a checagem de dono é do banco (divulg_gravar_painel); as fotos vão pela Vivian.
+  async function divulgacao(imovel, placa, lazer) {
+    await entrou;
+    var r = await sb.rpc('divulg_gravar_painel', { p_imovel: String(imovel), p_placa: placa || null, p_lazer: lazer || null });
+    if (r.error) throw r.error;
+    return r.data;
+  }
+  window.VIVERE_PONTE = { versao: VERSAO, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, divulgacao: divulgacao, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
 })();

@@ -7,8 +7,12 @@
    O banco só devolve a lista do que falta (nenhum dado do imóvel ou do proprietário). O painel.js do modelo não muda. */
 (function () {
   'use strict';
-  var GRUPOS = { endereco: 'Endereço', caracteristicas: 'Características', valores: 'Valores', anuncio: 'Anúncio', proprietario: 'Proprietário' };
-  var ORDEM_G = ['endereco', 'caracteristicas', 'valores', 'proprietario', 'anuncio'];
+  var GRUPOS = { endereco: 'Endereço', caracteristicas: 'Características', valores: 'Valores', anuncio: 'Anúncio', proprietario: 'Proprietário', divulgacao: 'Placa e lazer' };
+  var ORDEM_G = ['endereco', 'caracteristicas', 'valores', 'proprietario', 'divulgacao', 'anuncio'];
+  // P2 (16/11/2026, vis-vivian-cadastro-imovel-ia): placa da Vivere em todo imóvel e áreas de lazer em condomínio, prédio e
+  // loteamento, também nos já cadastrados. As fotos vão pela Vivian (o envio de arquivos pelo app não está ligado).
+  var PLACA = [['sim', 'Sim, já colocada'], ['ainda_nao', 'Ainda não'], ['nao_permitido', 'Não é permitido']];
+  var LAZER = [['tem', 'Tem área de lazer'], ['nao_tem', 'Não tem área de lazer'], ['ja_no_anuncio', 'As fotos do lazer já estão no anúncio'], ['nao_e_cond', 'Não é condomínio, prédio nem loteamento']];
   // campos que o corretor informa aqui: rótulo, tipo de entrada e dica
   var CAMPOS = {
     cep: { t: 'CEP', tipo: 'cep', ph: '88000-000' },
@@ -147,8 +151,11 @@
     return h + '</article>';
   }
   function formulario(x) {
-    var campos = [], foras = [];
-    (x.faltam || []).forEach(function (f) { if (CAMPOS[f.campo]) campos.push(f.campo); else if (FORA[f.campo]) foras.push(FORA[f.campo]); });
+    var campos = [], foras = [], fPlaca = null, fLazer = null;
+    (x.faltam || []).forEach(function (f) {
+      if (f.grupo === 'divulgacao' && f.campo === 'placa') fPlaca = f; else if (f.grupo === 'divulgacao' && f.campo === 'lazer') fLazer = f;
+      else if (CAMPOS[f.campo]) campos.push(f.campo); else if (FORA[f.campo]) foras.push(FORA[f.campo]);
+    });
     var h = '<form class="pend-form" data-id="' + esc(x.id) + '" novalidate><div class="form">';
     campos.forEach(function (k) {
       var c = CAMPOS[k], tipo = c.tipo === 'int' ? 'number' : c.tipo === 'email' ? 'email' : c.tipo === 'tel' ? 'tel' : 'text';
@@ -158,10 +165,23 @@
         ' autocomplete="off" maxlength="' + (c.tipo === 'txt' ? 120 : 40) + '"></label>';
     });
     h += '</div>';
+    if (fPlaca || fLazer) h += blocoDivulg(fPlaca, fLazer);
     if (foras.length) h += '<ul class="pend-fora">' + foras.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
     h += '<p class="mut pend-aviso">Preencha só o que você sabe; o que ficar em branco continua pendente. Dados do proprietário vão só para a diretoria.</p>';
-    h += '<div class="pend-acao"><button type="button" class="b" data-pend="cancelar">Cancelar</button>' + (campos.length ? '<button type="submit" class="b p">Salvar</button>' : '') + '</div><p class="pend-msg" role="status" aria-live="polite"></p></form>';
+    h += '<div class="pend-acao"><button type="button" class="b" data-pend="cancelar">Cancelar</button>' + (campos.length || fPlaca || fLazer ? '<button type="submit" class="b p">Salvar</button>' : '') + '</div><p class="pend-msg" role="status" aria-live="polite"></p></form>';
     return h;
+  }
+  function opcoes(lista) { return '<option value="">Escolha…</option>' + lista.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join(''); }
+  function hoje() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function blocoDivulg(fPlaca, fLazer) {
+    var h = '<div class="form pend-div">';
+    if (fPlaca) h += '<label class="c pend-largo">Placa da Vivere' + (fPlaca.rotulo !== 'Placa da Vivere' ? ' <span class="mut">(' + esc(fPlaca.rotulo) + ')</span>' : '') + '<select name="placa_sit">' + opcoes(PLACA) + '</select></label>' +
+      '<label class="c" data-se="sim" hidden>Data em que foi colocada<input name="placa_data" type="date" max="' + hoje() + '" min="2015-01-01"></label>' +
+      '<label class="c pend-largo" data-se="nao_permitido" hidden>Motivo (quem não deixa e por quê)<input name="placa_motivo" type="text" maxlength="300" placeholder="Ex.: o condomínio não deixa placa na fachada" autocomplete="off"></label>' +
+      '<p class="mut pend-largo" data-se="sim" hidden>A foto da placa vai pela Vivian: mande no WhatsApp dela dizendo a ref do imóvel.</p>';
+    if (fLazer) h += '<label class="c pend-largo">Áreas de lazer' + (fLazer.rotulo !== 'Fotos das áreas de lazer' ? ' <span class="mut">(' + esc(fLazer.rotulo) + ')</span>' : '') + '<select name="lazer_sit">' + opcoes(LAZER) + '</select></label>' +
+      '<p class="mut pend-largo" data-se-lazer="tem" hidden>Mande pelo menos 3 fotos das áreas de lazer e de uso comum (piscina, salão, academia, playground, fachada, hall) no WhatsApp da Vivian, dizendo a ref do imóvel.</p>';
+    return h + '</div>';
   }
   function listaLeads(ld) {
     if (!ld.length) return '<div class="vazio">Nenhum lead parado. 👏</div>';
@@ -188,7 +208,14 @@
     if (acao === 'informar' && card) { aberto = card.getAttribute('data-id'); desenha(); var f = tela().querySelector('.pend-form input'); if (f) f.focus(); return; }
     if (acao === 'cancelar') { aberto = null; return desenha(); }
   }
-  function muda(e) { if (e.target.getAttribute('data-pend') === 'porpag') { porPag = +e.target.value === 100 ? 100 : 50; pag = 0; try { localStorage.setItem('pend.porPag', String(porPag)); } catch (x) { } desenha(); } }
+  function muda(e) {
+    var nm = e.target.name;
+    if (nm === 'placa_sit' || nm === 'lazer_sit') {
+      var f = e.target.closest('.pend-form'), at = nm === 'placa_sit' ? 'data-se' : 'data-se-lazer';
+      if (f) [].forEach.call(f.querySelectorAll('[' + at + ']'), function (el) { el.hidden = el.getAttribute(at) !== e.target.value; });
+      return;
+    }
+    if (e.target.getAttribute('data-pend') === 'porpag') { porPag = +e.target.value === 100 ? 100 : 50; pag = 0; try { localStorage.setItem('pend.porPag', String(porPag)); } catch (x) { } desenha(); } }
 
   function numBR(v) { // "85.5" / "85,5" / "1.200" → "85,50" / "1.200,00"
     var s = String(v).trim().replace(/\s|R\$/g, ''); if (!s) return '';
@@ -209,8 +236,20 @@
   function salvar(e) {
     var f = e.target; if (!f.classList.contains('pend-form')) return; e.preventDefault();
     var id = f.getAttribute('data-id'), campos = {}, dono = {}, ruins = [], n = 0, msg = f.querySelector('.pend-msg');
+    var placa = {}, lazer = {};
+    [].forEach.call(f.querySelectorAll('[name="placa_data"],[name="placa_motivo"]'), function (i) { i.removeAttribute('aria-invalid'); });
+    var sp = f.querySelector('select[name="placa_sit"]'), sl = f.querySelector('select[name="lazer_sit"]');
+    if (sp && sp.value) {
+      placa.situacao = sp.value;
+      var dt = f.querySelector('input[name="placa_data"]'), mo = f.querySelector('input[name="placa_motivo"]');
+      if (sp.value === 'sim' && dt && dt.value) { if (dt.value > hoje() || dt.value < '2015-01-01') { ruins.push('Data da placa'); dt.setAttribute('aria-invalid', 'true'); } else placa.data = dt.value; }
+      if (sp.value === 'nao_permitido') { var m = mo ? mo.value.trim().replace(/\s+/g, ' ') : ''; if (!m) { ruins.push('Motivo de não poder colocar a placa'); if (mo) mo.setAttribute('aria-invalid', 'true'); } else placa.motivo = m; }
+      n++;
+    }
+    if (sl && sl.value) { lazer.situacao = sl.value; n++; }
     [].forEach.call(f.querySelectorAll('input[name]'), function (i) {
-      var k = i.name, v = normaliza(k, i.value);
+      var k = i.name; if (!CAMPOS[k]) return;
+      var v = normaliza(k, i.value);
       i.removeAttribute('aria-invalid');
       if (v === null) { ruins.push(CAMPOS[k].t); i.setAttribute('aria-invalid', 'true'); return; }
       if (!v) return;
@@ -220,13 +259,23 @@
     if (!n) { msg.textContent = 'Preencha pelo menos um campo.'; return; }
     var bt = f.querySelector('button[type="submit"]'); if (bt) { bt.disabled = true; bt.textContent = 'Salvando…'; }
     msg.textContent = '';
-    ponte().corrigir(id, campos, dono).then(function (r) {
+    var temCampos = Object.keys(campos).length || Object.keys(dono).length, temDiv = placa.situacao || lazer.situacao;
+    var passo1 = temCampos ? ponte().corrigir(id, campos, dono) : Promise.resolve({ gravados: [] }), ngFeito = 0;
+    passo1.then(function (r) {
+      var ng = ((r && r.gravados) || []).length; ngFeito = ng;
+      if (!temDiv) return { ng: ng };
+      if (!ponte().divulgacao) throw new Error('atualize a página (versão nova do app)');
+      return ponte().divulgacao(id, placa.situacao ? placa : null, lazer.situacao ? lazer : null).then(function (d) { return { ng: ng, d: d }; });
+    }).then(function (o) {
       aberto = null;
-      toast('Gravado (' + ((r && r.gravados) || []).length + ' campo' + (((r && r.gravados) || []).length === 1 ? '' : 's') + '). O CRM, o HUB, o site e a ficha do Drive já mostram.');
+      var falta = o.d ? [o.d.falta_placa, o.d.falta_lazer].filter(Boolean) : [];
+      toast('Gravado' + (o.ng ? ' (' + o.ng + ' campo' + (o.ng === 1 ? '' : 's') + ')' : '') + (o.d ? (o.ng ? ' + ' : ': ') + [placa.situacao ? 'placa' : '', lazer.situacao ? 'áreas de lazer' : ''].filter(Boolean).join(' e ') : '') + '.' +
+        (falta.length ? ' Ainda falta: ' + falta.join('; ') + (/foto/i.test(falta.join(' ')) ? ' (fotos pela Vivian).' : '.') : ' O CRM e o HUB já mostram.'));
       return carrega();
     }, function (er) {
       if (bt) { bt.disabled = false; bt.textContent = 'Salvar'; }
-      msg.textContent = 'Não gravou: ' + ((er && er.message) || 'tente de novo') + '.';
+      msg.textContent = (ngFeito ? 'Os campos foram gravados, mas a placa e o lazer não: ' : 'Não gravou: ') + ((er && er.message) || 'tente de novo') + '.';
+      if (ngFeito) carrega();
     });
   }
 
