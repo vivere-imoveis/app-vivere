@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -2348,6 +2348,25 @@ function zapProp(m, pr) {
   const msg = `Olá${pr.nome ? ', ' + nomeProprio(pr.nome) : ''}! Aqui é ${eu || 'o corretor'}, da Vivere Imóveis. Estou atualizando o cadastro do seu imóvel ${m.ref || ''}${end ? ' (' + end + ')' : ''}. Ele continua disponível${m.valor ? ' pelo valor de ' + brl(m.valor) : ''}?`;
   return `<span class="zap"><a href="https://wa.me/55${d}" target="_blank" rel="noopener">WhatsApp</a><a href="https://wa.me/55${d}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" title="${esc(msg)}">WhatsApp com mensagem</a></span>`;
 }
+// trocas-p3b (16/11/2026): selo de placa da Vivere e áreas de lazer (imoveis_divulgacao, resumido pelo banco em m.divulgacao)
+const DIV_DT = (s) => { const x = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return x ? `${x[3]}/${x[2]}/${x[1].slice(2)}` : ''; };
+function seloDivulg(m) {
+  const dv = m && m.divulgacao; if (!dv) return '';
+  const p = dv.placa || {}, l = dv.lazer, out = [], dica = 'Resolva em Pendências › Placa e lazer ou mande à Vivian';
+  if (!m.ativo && !p.s && !(l && l.s)) return '';
+  const pl = (cls, txt, tit) => `<span class="pill ${cls}" title="${esc(tit || '')}">${esc(txt)}</span>`;
+  if (p.falta) out.push(pl('media', '🪧 ' + (p.falta === 'Placa da Vivere' ? 'Placa: falta informar' : p.falta), dica));
+  else if (p.s === 'sim') out.push(pl('ok', '🪧 Placa' + (p.data ? ' desde ' + DIV_DT(p.data) : '') + (p.fotos ? ' · ' + p.fotos + ' foto' + (p.fotos > 1 ? 's' : '') : ''), 'Placa da Vivere colocada'));
+  else if (p.s === 'nao_permitido') out.push(pl('', '🪧 Sem placa' + (p.motivo ? ': ' + p.motivo : ''), 'Placa não permitida (falta sanada)'));
+  if (l) {
+    if (l.falta) out.push(pl('media', '🏊 ' + (l.falta === 'Fotos das áreas de lazer' ? 'Lazer: falta informar' : l.falta), dica));
+    else if (l.s === 'tem') out.push(pl('ok', '🏊 Lazer · ' + (l.fotos || 0) + ' foto' + (l.fotos === 1 ? '' : 's'), 'Fotos das áreas de lazer'));
+    else if (l.s === 'nao_tem') out.push(pl('', '🏊 Sem área de lazer', 'Declarado: o condomínio não tem área de lazer'));
+    else if (l.s === 'ja_no_anuncio') out.push(pl('ok', '🏊 Lazer já no anúncio', 'Fotos do lazer já estão no anúncio'));
+    else if (l.s === 'nao_e_cond') out.push(pl('', '🏊 Não é condomínio', 'Declarado: não é condomínio, prédio nem loteamento'));
+  }
+  return out.join('');
+}
 function vImoveis() {
   const st = S.sort.meus || { c: 'atu', d: -1 }; S.sort.meus = st;
   const cols = [['ref', 'Ref.'], ['_end', 'Endereço'], ['bairro', 'Bairro'], ['valor', 'Valor'], ['_m2', 'R$/m²'], ['atu', 'Atualizado'], ['_dag', 'Dias sem atualizar'], ['ativo', 'No site (ativo/inativo)']];
@@ -2367,7 +2386,7 @@ function vImoveis() {
   for (const m of M) {
     const pr = m.proprietario || {}, pd = pendDe(m.id);
     h += `<article class="painel imv">
-      <div class="com-capa abre-meu" data-abre="meu:${esc(m.id)}" title="Abrir a ficha completa">${capaHtml(m.id, m)}<div class="txt"><div class="cab"><button class="ref ref-abre" type="button" data-abre="meu:${esc(m.id)}" style="font-size:18px" aria-label="Abrir a ficha de ${esc(m.ref)}">${esc(m.ref)}</button><span>${esc(m.tipo || '')} · ${esc(m.fin || '')}</span><span class="pill ${m.ativo ? 'ok' : ''}">${m.ativo ? 'Ativo no site' : 'Inativo'}</span>${hitBA(m)}${pd ? `<span class="pill media">${pd} pedido${pd > 1 ? 's' : ''} aguardando</span>` : ''}${m.ativo ? seloAgenc(m.id) : ''}</div>
+      <div class="com-capa abre-meu" data-abre="meu:${esc(m.id)}" title="Abrir a ficha completa">${capaHtml(m.id, m)}<div class="txt"><div class="cab"><button class="ref ref-abre" type="button" data-abre="meu:${esc(m.id)}" style="font-size:18px" aria-label="Abrir a ficha de ${esc(m.ref)}">${esc(m.ref)}</button><span>${esc(m.tipo || '')} · ${esc(m.fin || '')}</span><span class="pill ${m.ativo ? 'ok' : ''}">${m.ativo ? 'Ativo no site' : 'Inativo'}</span>${hitBA(m)}${pd ? `<span class="pill media">${pd} pedido${pd > 1 ? 's' : ''} aguardando</span>` : ''}${m.ativo ? seloAgenc(m.id) : ''}${seloDivulg(m)}</div>
       <div class="cm-lin" style="white-space:normal"><span data-sens>${esc(m._end)}</span> · ${esc(m.bairro || '')}, ${esc(m.cidade || '')}${m.cep ? ' · ' + esc(m.cep) : ''}</div>
       <div class="cm-fat">${valoresCurtos(m)}</div>
       <div class="cm-fat">${fatosCurtos(m)}</div></div></div>
@@ -2576,7 +2595,7 @@ function gavetaMeu(id) {
   const h = gavetaVitrine(id, v), k = h.lastIndexOf('</div>'); if (k < 0) return h;
   const u = ultimoAgenc(id), ev = eventosDe(id), pd = Object.entries(S.sol).filter(([sid, s]) => s.imovel_id === id && statusDe(sid, s) === 'pendente').length;
   const card = `<div class="linha acoes-imv" style="margin-top:4px"><button class="b" type="button" data-fotosimv="${esc(id)}">Adicionar fotos</button><span class="mut peq">${m.ativo ? 'Ativo no site' : 'Inativo no site'}${u && u.dias != null ? ' · agenciamento atualizado há ' + u.dias + ' dia' + (u.dias === 1 ? '' : 's') : ''}${pd ? ` · <b>${pd} pedido${pd > 1 ? 's' : ''} aguardando a diretoria</b>` : ''}</span></div>
-    <div class="painel sec" id="secAgenc" style="gap:10px"><h2>Atualizar agenciamento</h2><p style="margin:0">${seloAgenc(id)}</p>
+    <div class="painel sec" id="secAgenc" style="gap:10px"><h2>Atualizar agenciamento</h2><p style="margin:0">${seloAgenc(id)}${seloDivulg(m)}</p>
       <form id="fMeu" class="form" data-id="${esc(id)}">
         <label class="c inteiro">O que foi feito<select id="agTipo">${TIPOS_AGENC.map((t) => `<option>${t}</option>`).join('')}</select></label>
         <label class="c inteiro">Resumo<textarea id="agTexto" placeholder="Digite ou toque no microfone do teclado para ditar. Ex.: falei com o proprietário, mantém o valor e libera visitas aos sábados"></textarea></label>
