@@ -437,7 +437,7 @@
   function diaMes(iso) { var t = Date.parse(iso || ''); if (!t) return ''; var d = new Date(t - 3 * 3600000); return ('0' + d.getUTCDate()).slice(-2) + '/' + ('0' + (d.getUTCMonth() + 1)).slice(-2); }
   async function lerVersoes() {
     var r;
-    try { r = await sb.rpc('material_versoes_app'); } catch (e) { return; }
+    try { r = await Promise.race([sb.rpc('material_versoes_app'), new Promise(function (ok) { setTimeout(function () { ok(null); }, 5000); })]); } catch (e) { return; } // travou 5 s: segue sem esperar (crítico 18/11)
     if (!r || r.error || !Array.isArray(r.data)) return;
     var lista = r.data.filter(function (v) { return v && v.emp_slug && /^[0-9a-f]{32}$/.test(String(v.a || '')); });
     var chave = JSON.stringify(lista.map(function (v) { return [v.id, v.a, v.ativado_em, v.titulo, v.grupo]; }));
