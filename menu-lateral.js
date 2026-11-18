@@ -4,11 +4,13 @@
    (escolha igual ao automático volta ao automático). Abaixo de 900 px vale sempre o topo. A lateral só espelha o menu:
    os botões levam data-aba e o painel.js navega como sempre.
    13/11/2026 (2): ícones de traço da biblioteca icones.js no lugar das iniciais; vale também no index.html do app (Início,
-   A CAPTAR, Acessos), que pede o encaminhamento do clique ao botão original pelo atributo data-encaminha no <script>. */
+   A CAPTAR, Acessos), que pede o encaminhamento do clique ao botão original pelo atributo data-encaminha no <script>.
+   18/11/2026 (pedido do Cleiton: símbolo ao lado de toda aba e menu, sem emoji): o mesmo ícone também no menu do topo e nas sub-abas. */
 (function () {
   const ENCAMINHA = !!(document.currentScript && document.currentScript.hasAttribute('data-encaminha'));
   const ICONE = { inicio: 'casa', acaptar: 'alvo', tarefas: 'prancheta', leads: 'pessoas', pesquisa: 'lupa', imoveis: 'predio', empreendimentos: 'obra',
-    mapa: 'mapa', oportunidades: 'etiqueta', demandas: 'lista', solicitacoes: 'balao', painel: 'blocos', senha: 'cadeado', acessos: 'escudo' };
+    mapa: 'mapa', oportunidades: 'etiqueta', demandas: 'lista', solicitacoes: 'balao', painel: 'blocos', senha: 'cadeado', acessos: 'escudo',
+    destaques: 'estrela' };
   const icone = (aba, t) => window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(ICONE[aba] || 'blocos') : esc(t.slice(0, 2));
   const LS = 'painel.menuModo', LSM = 'painel.menuMin';
   const ler = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -31,7 +33,15 @@
   const visivel = (b) => getComputedStyle(b).display !== 'none';
   const txt = (b) => { const c = b.cloneNode(true); c.querySelectorAll('.n,svg,.ic').forEach((x) => x.remove()); return c.textContent.replace(/\s*\(\d+\)\s*$/, '').trim(); };
   const selo = (b) => { const n = b.querySelector('.n'); const m = !n && /\((\d+)\)\s*$/.exec(b.textContent); return n ? `<span class="ml-n">${esc(n.textContent.trim())}</span>` : m ? `<span class="ml-n">${m[1]}</span>` : ''; };
+  function decora() {
+    if (!window.VIVERE_ICONES) return;
+    document.querySelectorAll('#abas button[data-aba], .sub-op button[data-aba]').forEach((b) => {
+      if (b.closest('#ml') || (b.firstElementChild && b.firstElementChild.classList.contains('ic'))) return;
+      const i = document.createElement('i'); i.className = 'ic ic-' + (ICONE[b.dataset.aba] || 'blocos'); i.setAttribute('aria-hidden', 'true'); b.insertBefore(i, b.firstChild);
+    });
+  }
   function monta() {
+    decora();
     const nav = document.getElementById('abas');
     const on = modo() === 'lateral' && !(nav && nav.hidden), mudou = document.body.classList.contains('ml-on') !== on;
     document.body.classList.toggle('ml-on', on); document.body.classList.toggle('ml-min', on && ler(LSM) === '1'); titulo();
@@ -48,7 +58,7 @@
     aside.innerHTML = `<div class="ml-topo"><span class="ml-tit">Menu</span><button type="button" class="ml-x" data-ml-min title="${min ? 'Abrir o menu' : 'Recolher o menu'}" aria-label="${min ? 'Abrir o menu' : 'Recolher o menu'}">${min ? '»' : '«'}</button></div>` +
       gs.map((b) => { const sel = b.getAttribute('aria-selected') === 'true', t = txt(b);
         return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>` +
-          (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}"><span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : ''); }).join('') +
+          (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}">${icone(s.dataset.aba, txt(s)).replace(' fim', '')}<span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : ''); }).join('') +
       (ex.length ? `<div class="ml-sep">No app</div>` + ex.map((x) => `<button type="button" class="ml-g ml-app" data-ml-href="${esc(x.href)}" title="${esc(x.t)} · abre outra página do app"><span class="ml-ic">${window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(x.ic) : esc(x.t.slice(0, 2))}</span><span class="ml-tx">${esc(x.t)}</span>${x.n ? `<span class="ml-n ml-n-ok">${esc(x.n)}</span>` : ''}</button>`).join('') : '');
     mede();
   }
