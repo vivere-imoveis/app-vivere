@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-17.4'; // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-17.5'; // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1, metas_equipes: 1 };   // metas_equipes: fatia 7 do CRM (placar das equipes, sem nomes)
@@ -734,6 +734,14 @@
     if (!r.ok || !j.ok) { var e2 = erro(j.erro || ('erro ' + r.status), j.codigo || (r.status === 429 ? 'rate_limited' : r.status === 401 || r.status === 403 ? 'not_granted' : 'unavailable')); e2.limite = j.limite; throw e2; }
     return j;
   }
+  // 17/11/2026 (F1b da vistoria pelo celular): locações administradas da carteira para a vistoria simples (código, endereço e
+  // bairro; nada do inquilino nem do proprietário). Qualquer pessoa com acesso ativo lê (decisão do Cleiton: qualquer corretor).
+  async function carteiraVistoria() {
+    await entrou;
+    var r = await sb.rpc('vist_carteira');
+    if (r.error) throw r.error;
+    return r.data || [];
+  }
   var ia = {
     json: async function (prompt, op) {
       op = op || {};
@@ -745,5 +753,5 @@
     },
     limits: async function () { var j = await chamarIA({ tipo: 'limites' }); return { images: j.imagens, limite: j.limite, usados: j.usados }; }
   };
-  window.VIVERE_PONTE = { versao: VERSAO, ia: ia, perfil: perfil, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, divulgacao: divulgacao, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, enviarArquivo: enviarArquivo, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
+  window.VIVERE_PONTE = { versao: VERSAO, ia: ia, perfil: perfil, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, divulgacao: divulgacao, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, enviarArquivo: enviarArquivo, carteiraVistoria: carteiraVistoria, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
 })();
