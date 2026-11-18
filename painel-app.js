@@ -19,6 +19,14 @@
       b.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); volta(); location.href = URL_ACAP; });
       tema.parentNode.insertBefore(b, tema);
     }
+    /* 18/11/2026 (ACM): botão do Estudo de Mercado ao lado do A CAPTAR, também fora das abas (abre a página do app) */
+    if (!document.getElementById('btnAcmApp')) {
+      var m = document.createElement('a');
+      m.id = 'btnAcmApp'; m.className = 'btn-tema btn-acap'; m.href = 'index.html?aba=acm'; m.title = 'Abrir o Estudo de Mercado (ACM). Abre outra página do app.'; m.setAttribute('aria-label', m.title);
+      m.innerHTML = (window.VIVERE_ICONES && VIVERE_ICONES.html ? '<span class="ba-ic" aria-hidden="true">' + VIVERE_ICONES.html('grafico') + '</span>' : '') + '<span class="ba-t">ACM</span>';
+      m.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); volta(); location.href = m.href; });
+      tema.parentNode.insertBefore(m, tema);
+    }
     var sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
     var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
     var h = '<span class="ba-ic" aria-hidden="true">🎯</span><span class="ba-t">A CAPTAR</span>' + (n ? '<span class="ba-n"><b>' + n + '</b> livre' + (n === '1' ? '' : 's') + '</span>' : '');
@@ -31,7 +39,7 @@
     itens: function () {
       var P = window.VIVERE_PONTE, est = P && P.estado ? P.estado() : {}, sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
       var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
-      return [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha' },
+      return [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n }, { id: 'acm', t: 'Estudo de Mercado', ic: 'grafico', href: 'index.html?aba=acm' }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha' },
         est.papel === 'gestor' ? { id: 'acessos', t: 'Acessos', ic: 'escudo', href: 'index.html?aba=acessos' } : null];
     },
     abre: function (href) { volta(); location.href = href; }

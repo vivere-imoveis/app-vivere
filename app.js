@@ -6,7 +6,7 @@
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj';
   var APP_URL = location.origin + location.pathname;
-  var VERSAO = 'app-vivere 2026-11-18.1'; // aba Destaques do site (Cleiton, Nícollas e William; tarefa vis-site-23)
+  var VERSAO = 'app-vivere 2026-11-18.2'; // aba Estudo de Mercado (ACM, tarefa vivere-parecer-preco-comparaveis)
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -38,15 +38,17 @@
   try { codParam = codParam || sessionStorage.getItem('acaptar-cod') || ''; } catch (e) { }
 
   var abaParam = (new URLSearchParams(location.search).get('aba') || '').trim();
+  /* 18/11/2026 (ACM): ?aba=acm&ref=AP146 abre um estudo novo para o anúncio; ?aba=acm&estudo=ACM-2026-0001 abre o estudo */
+  var acmParams = abaParam === 'acm' ? { ref: (new URLSearchParams(location.search).get('ref') || '').trim().slice(0, 30), estudo: (new URLSearchParams(location.search).get('estudo') || '').trim().slice(0, 40) } : null;
   if (abaParam) history.replaceState(null, '', APP_URL + location.hash);
 
-  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'acessos' || abaParam === 'destaques') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
+  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'acessos' || abaParam === 'destaques' || abaParam === 'acm') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
 
   sb.auth.onAuthStateChange(function (evento, sessao) {
     if (evento === 'PASSWORD_RECOVERY') modoSenha = true;
     var mudou = (!!sessao) !== (!!estado.sessao) || evento === 'PASSWORD_RECOVERY';
     estado.sessao = sessao;
-    if (evento === 'SIGNED_OUT') { estado.eu = null; estado.aba = 'inicio'; if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); }
+    if (evento === 'SIGNED_OUT') { estado.eu = null; estado.aba = 'inicio'; if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); if (window.ACM) window.ACM.sair(); }
     if (mudou) setTimeout(iniciar, 0);
   });
 
@@ -85,7 +87,7 @@
       main.innerHTML = '<div class="form cartao"><h2>Acesso não liberado</h2><div class="msg erro">Este login não tem acesso ativo ao app da Vivere. Fale com a diretoria.</div><button class="btn" id="sair">Sair</button></div>';
       $('#sair').onclick = sair; return;
     }
-    var lista = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['senha', 'Minha senha']];
+    var lista = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['acm', 'Estudo de Mercado'], ['senha', 'Minha senha']];
     /* quem veio do painel (aba A CAPTAR ou botão Captar) ganha a aba de volta para ele */
     var volta = ''; try { volta = sessionStorage.getItem('painel.volta') || ''; } catch (e) { }
     if (!/^painel\.html(\?ver=[a-z0-9_-]{1,40})?$/.test(volta)) volta = '';
@@ -102,6 +104,7 @@
     if (estado.aba === 'senha') return telaSenha(main, false);
     if (estado.aba === 'acessos' && estado.eu.papel === 'gestor') return telaAcessos(main);
     if (estado.aba === 'destaques' && dst) return window.DESTAQUES.tela(main, contexto());
+    if (estado.aba === 'acm' && window.ACM) { var ap = acmParams; acmParams = null; return window.ACM.tela(main, contexto(), ap); }
     if (estado.aba === 'acaptar' && window.ACAPTAR) { var cod = codParam; codParam = ''; try { sessionStorage.removeItem('acaptar-cod'); } catch (e) { } return window.ACAPTAR.tela(main, contexto(), cod); }
     telaInicio(main);
   }
@@ -190,6 +193,7 @@
     main.innerHTML = '<div class="grade">' +
       cartaoPainel() +
       '<div class="cartao"><h3>A CAPTAR</h3><p id="acResumo">Imóveis a captar: os livres e os seus.</p><button class="btn pri" id="irAcaptar">Abrir o A CAPTAR</button></div>' +
+      (window.ACM ? '<div class="cartao"><h3>Estudo de Mercado</h3><p id="acmResumo">Comparativo de preço do imóvel com 3 faixas, para vendedor ou comprador.</p><button class="btn pri" id="irAcm">Abrir os estudos</button></div>' : '') +
       (window.DESTAQUES && window.DESTAQUES.pode(estado.eu) ? '<div class="cartao"><h3>Destaques do site</h3><p>Escolha até 8 anúncios para a vitrine da home do site.</p><button class="btn pri" id="irDestaques">Abrir os destaques</button></div>' : '') +
       '<div class="cartao"><h3>Minha conta</h3><p data-sens>' + esc(estado.eu.email) + '</p><div class="linha-acoes"><button class="btn" id="irSenha">Trocar senha</button><button class="btn" id="sair">Sair</button></div></div>' +
       '</div><p class="s" style="margin-top:24px">' + VERSAO + '</p>';
@@ -197,12 +201,14 @@
     $('#irSenha').onclick = function () { estado.aba = 'senha'; desenhar(); };
     $('#irAcaptar').onclick = function () { estado.aba = 'acaptar'; desenhar(); };
     if ($('#irDestaques')) $('#irDestaques').onclick = function () { estado.aba = 'destaques'; desenhar(); };
+    if ($('#irAcm')) $('#irAcm').onclick = function () { estado.aba = 'acm'; desenhar(); };
+    if (window.ACM) window.ACM.resumo(contexto()).then(function (r) { var p = $('#acmResumo'); if (p && r.total) p.textContent = r.total + ' estudo' + (r.total === 1 ? '' : 's') + (r.analise ? ' · ' + r.analise + ' em análise' : '') + '.'; }).catch(function () { });
     if (window.ACAPTAR) window.ACAPTAR.resumo(contexto()).then(function (r) { var p = $('#acResumo'); if (p) p.textContent = r.livres + ' livres para captar · ' + r.minhas + ' em captação por você.'; }).catch(function () { });
   }
 
   function contexto() { return { sb: sb, eu: estado.eu, sessaoUid: estado.sessao.user.id, esc: esc, toast: toast, titulo: titulo }; }
 
-  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
+  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); if (window.ACM) window.ACM.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
 
   /* ---------- Acessos (só o gestor) ---------- */
   async function chamar(corpo) {
