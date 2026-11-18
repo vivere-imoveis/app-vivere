@@ -3483,8 +3483,9 @@ function blocoRespLead(id) {
   const r = (S.leadResp || {})[id]; if (!r || !String(r.resposta || '').trim()) return '';
   const c = LR_CLASSE[r.classe] || [r.classe ? String(r.classe) : '', ''];
   const pill = c[0] ? `<span class="pill${c[1] ? ' ' + c[1] : ''}">${esc(c[0])}</span> ` : '';
-  const perg = String(r.pergunta || '').trim();
-  return `<div class="painel" id="lrBox"><div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><h2 style="margin:0">✍️ 1ª resposta pronta</h2><button class="b p" type="button" data-copiar="${esc(r.resposta)}">Copiar resposta</button></div>
+  const perg = String(r.pergunta || '').trim(), l = S.leads[id] || {};
+  const zap = digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}?text=${encodeURIComponent(r.resposta)}" target="_blank" rel="noopener">Abrir no WhatsApp com o texto</a>` : '';
+  return `<div class="painel" id="lrBox"><div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><h2 style="margin:0">✍️ 1ª resposta pronta</h2><span class="linha" style="flex-wrap:wrap;gap:6px"><button class="b p" type="button" data-copiar="${esc(r.resposta)}">Copiar resposta</button>${zap}</span></div>
     ${pill || r.motivo ? `<p class="peq" style="margin:8px 0 0">${pill}${esc(r.motivo || '')}</p>` : ''}
     <div style="margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere">${esc(r.resposta)}</div>
     ${perg ? `<div class="linha" style="margin-top:8px;flex-wrap:wrap;gap:6px"><span class="peq"><b>Pergunta que falta:</b> ${esc(perg)}</span><button class="copiar" type="button" data-copiar="${esc(perg)}">Copiar</button></div>` : ''}
