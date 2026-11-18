@@ -3,7 +3,9 @@
    Troca os emojis que o painel escreve por ícones de traço no desenho da casa (mesma família do olho: traço fino, cantos
    redondos, cor do texto). Vale para tudo o que entra na página: o painel.js continua igual ao modelo.
    Bolinhas de situação (pauta, a captar) viram pontos nas cores do tema. Em dica, rótulo de leitor de tela e lista de opções,
-   o emoji só sai. Sem dado nenhum aqui. */
+   o emoji só sai. Sem dado nenhum aqui.
+   v3 (18/11/2026, pedido do Cleiton: símbolos em vez de emojis em toda a Vivere): ícones novos (estrela, placa, piscina, bússola,
+   ferramenta, telefone, celular, robô, clipe, fogo, floco, refazer, quadrado) e os emojis que ainda ficavam de fora. */
 (function () {
   'use strict';
   if (window.VIVERE_ICONES) return;
@@ -46,14 +48,32 @@
     balao: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 14.5z"/>',
     cadeado: '<rect x="5" y="10.5" width="14" height="10" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
     escudo: '<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5V6z"/>',
-    lista: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>'
+    lista: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+    estrela: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>',
+    placa: '<rect x="3.5" y="4" width="17" height="10" rx="1"/><path d="M8 14v6.5M16 14v6.5"/><path d="M7 9h10"/>',
+    piscina: '<path d="M8 15V5.5a2 2 0 0 1 4 0"/><path d="M14 15V5.5a2 2 0 0 1 4 0"/><path d="M8 8.5h6M8 12h6"/><path d="M3 18.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0"/>',
+    bussola: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
+    ferramenta: '<path d="M14.5 6.2a4.2 4.2 0 0 1 5.6-1.3l-2.7 2.7.6 1.8 1.8.6 2.7-2.7a4.2 4.2 0 0 1-5.5 5.4L9 20.7a2.1 2.1 0 0 1-3-3l7.6-7.6a4.2 4.2 0 0 1 .9-3.9z"/>',
+    telefone: '<path d="M5 4h3.5L10 8l-2 1.5a11 11 0 0 0 6.5 6.5L16 14l4 1.5V19a1.5 1.5 0 0 1-1.5 1.5A15.5 15.5 0 0 1 3.5 5.5 1.5 1.5 0 0 1 5 4z"/>',
+    celular: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 17.5h2"/>',
+    robo: '<rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 5v3"/><circle cx="12" cy="4.2" r="1"/><circle cx="9.5" cy="13" r="1"/><circle cx="14.5" cy="13" r="1"/><path d="M9.5 16.3h5"/>',
+    clipe: '<path d="M20 11.5 12.5 19a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-7.8 7.8a1.7 1.7 0 0 1-2.4-2.4L15 7"/>',
+    fogo: '<path d="M12 21c-3.6 0-6-2.4-6-5.7 0-3.2 2.6-5.1 3.6-8.3 1.8 1.2 2.4 3 2.4 4.5 1-.6 1.7-1.7 1.9-3 2 1.6 4.1 4 4.1 6.8 0 3.3-2.4 5.7-6 5.7z"/>',
+    floco: '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/><path d="m9.5 4.5 2.5 2 2.5-2M9.5 19.5l2.5-2 2.5 2"/>',
+    refazer: '<path d="M4.5 11a7.5 7.5 0 0 1 13-4.6L20 9"/><path d="M20 4.5V9h-4.5"/><path d="M19.5 13a7.5 7.5 0 0 1-13 4.6L4 15"/><path d="M4 19.5V15h4.5"/>',
+    quadrado: '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
+    feito: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    fechar: '<path d="M6 6l12 12M18 6 6 18"/>'
   };
   // emoji → ícone de traço
   var IC = { '🎯': 'alvo', '🏠': 'casa', '🎤': 'microfone', '📍': 'pino', '🗺': 'mapa', '✨': 'brilho', '⚡': 'raio', '🔎': 'lupa', '🔍': 'lupa', '📷': 'camera',
     '🏷': 'etiqueta', '👥': 'pessoas', '❔': 'ajuda', '❓': 'ajuda', '🔔': 'sino', '🧩': 'blocos', '💲': 'cifrao', '💰': 'cifrao', '📐': 'area', '📋': 'prancheta', '📘': 'livro',
     '🖼': 'imagem', '🎬': 'video', '📄': 'documento', '☀': 'sol', '☾': 'lua', '🌙': 'lua', '⏷': 'baixo', '◐': 'tema',
     '🏡': 'casa', '🏢': 'predio', '🔑': 'chave', '📊': 'grafico', '📈': 'grafico', '🧱': 'obra', '📌': 'pino', '✦': 'brilho', '🎉': 'brilho',
-    '📁': 'pasta', '📂': 'pasta', '📤': 'enviar', '👁': 'olho', '⚠': 'alerta', '☁': 'nuvem', '🗄': 'arquivo', '💬': 'balao', '🔒': 'cadeado', '🔐': 'cadeado' };
+    '📁': 'pasta', '📂': 'pasta', '📤': 'enviar', '👁': 'olho', '⚠': 'alerta', '☁': 'nuvem', '🗄': 'arquivo', '💬': 'balao', '🔒': 'cadeado', '🔐': 'cadeado',
+    '⭐': 'estrela', '🌟': 'estrela', '🪧': 'placa', '🏊': 'piscina', '🧭': 'bussola', '🌅': 'sol', '🌤': 'sol', '🏗': 'obra', '📞': 'telefone', '☎': 'telefone',
+    '♻': 'refazer', '🔄': 'refazer', '🤖': 'robo', '🔧': 'ferramenta', '🛠': 'ferramenta', '📱': 'celular', '🚨': 'alerta', '👏': 'brilho', '🚶': 'pessoas',
+    '⏹': 'quadrado', '📎': 'clipe', '🔥': 'fogo', '❄': 'floco', '🏘': 'casa', '📅': 'prancheta', '🗓': 'prancheta', '📝': 'documento', '💼': 'pasta', '✅': 'feito', '✔': 'feito', '❌': 'fechar', '🚫': 'fechar' };
   // emoji de cor → ponto na cor do tema
   var PT = { '🟢': 'ok', '🟠': 'capt', '🔵': 'azul', '🔴': 'ruim', '🟡': 'aviso', '🔶': 'capt los' };
   var chaves = Object.keys(IC).concat(Object.keys(PT));
