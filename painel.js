@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -2390,17 +2390,39 @@ function seloDivulg(m) {
   }
   return out.join('');
 }
+// ---------- Pizza da atualização dos agenciamentos (18/11/2026) ----------
+const PZA = { verde: ['Atualizados', 'até 30 dias', 'var(--ok)'], amarelo: ['Falta atualizar', '31 a 60 dias', 'var(--warn)'], vermelho: ['Desatualizados', 'mais de 60 dias', 'var(--bad)'] };
+const fxAgenc = (m) => !m.ativo || m._dag == null ? '' : m._dag <= 30 ? 'verde' : m._dag <= 60 ? 'amarelo' : 'vermelho';
+function pizzaAgenc(todos, sel) {
+  const ks = ['verde', 'amarelo', 'vermelho'], c = { verde: 0, amarelo: 0, vermelho: 0 };
+  todos.forEach((m) => { const f = fxAgenc(m); if (f) c[f]++; });
+  const tot = c.verde + c.amarelo + c.vermelho; if (!tot) return '';
+  const T = 132, r = T / 2 - 1, cx = T / 2, cy = T / 2, pt = (a) => `${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}`;
+  let a0 = -Math.PI / 2, fat = '';
+  ks.forEach((k) => {
+    const n = c[k]; if (!n) return; const tit = `${PZA[k][0]} (${PZA[k][1]}): ${n} — ${Math.round(n * 100 / tot)}%`, op = sel && sel !== k ? ' opacity="0.35"' : '';
+    if (n === tot) { fat += `<a data-fm="fx|${k}" role="button" aria-label="${tit}"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${PZA[k][2]}"${op}><title>${tit}</title></circle></a>`; return; }
+    const a1 = a0 + 2 * Math.PI * n / tot;
+    fat += `<a data-fm="fx|${k}" role="button" aria-label="${tit}"><path d="M ${cx} ${cy} L ${pt(a0)} A ${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${pt(a1)} Z" fill="${PZA[k][2]}" stroke="var(--panel)" stroke-width="1.5"${op}><title>${tit}</title></path></a>`;
+    a0 = a1;
+  });
+  const leg = ks.map((k) => `<button type="button" data-fm="fx|${k}" aria-pressed="${sel === k}" style="display:flex;justify-content:space-between;gap:8px;align-items:center;width:100%;box-sizing:border-box;text-align:left"><span style="display:flex;gap:6px;align-items:center;min-width:0"><span style="width:11px;height:11px;border-radius:3px;background:${PZA[k][2]};flex:0 0 11px"></span><b>${PZA[k][0]}</b> <span class="mut peq">${PZA[k][1]}</span></span><span><b>${c[k]}</b> · ${Math.round(c[k] * 100 / tot)}%</span></button>`).join('');
+  return `<div class="painel" style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center"><svg width="${T}" height="${T}" viewBox="0 0 ${T} ${T}" role="img" aria-label="Atualização dos agenciamentos" style="flex:0 0 auto;cursor:pointer">${fat}</svg>
+    <div style="flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:6px"><b>Atualização dos agenciamentos</b><div class="chips" style="flex-direction:column;align-items:stretch" role="group" aria-label="Filtrar pela atualização">${leg}</div>
+    <p class="mut peq" style="margin:0">${tot} imóve${tot === 1 ? 'l' : 'is'} ativo${tot === 1 ? '' : 's'} no site. ${sel ? `Mostrando só: <b>${PZA[sel][0].toLowerCase()}</b> · toque de novo na cor para ver todos.` : 'Toque numa cor para ver só esses imóveis.'}</p></div></div>`;
+}
 function vImoveis() {
   const st = S.sort.meus || { c: 'atu', d: -1 }; S.sort.meus = st;
   const cols = [['ref', 'Ref.'], ['_end', 'Endereço'], ['bairro', 'Bairro'], ['valor', 'Valor'], ['_m2', 'R$/m²'], ['atu', 'Atualizado'], ['_dag', 'Dias sem atualizar'], ['ativo', 'No site (ativo/inativo)']];
   const fm = S.fm || (S.fm = { fin: '', sit: '' });
   const todos = Object.entries(S.meus).map(([id, m]) => ({ id, ...m, _m2: m2De({ id, ...m }), _dag: ultimoAgenc(id).dias, _end: [m.logradouro || m.end, m.numero, m.complemento].filter(Boolean).join(', ') }));
-  const M0 = todos.filter((m) => (!fm.fin || m.fin === fm.fin) && (!fm.sit || (fm.sit === 'ativo') === !!m.ativo))
+  const M0 = todos.filter((m) => (!fm.fin || m.fin === fm.fin) && (!fm.sit || (fm.sit === 'ativo') === !!m.ativo) && (!fm.fx || fxAgenc(m) === fm.fx))
     .sort((a, b) => { const x = a[st.c], y = b[st.c]; if (x == null || x === '') return 1; if (y == null || y === '') return -1; return (typeof x === 'number' || typeof x === 'boolean' ? (x - y) : String(x).localeCompare(String(y), 'pt-BR', { numeric: true })) * st.d; });
   const fM = BA.filtra(M0, qDe(), baImv), M = fM.lista; qInfo(fM, 'imóveis');
   const pendDe = (id) => Object.entries(S.sol).filter(([sid, s]) => s.imovel_id === id && statusDe(sid, s) === 'pendente').length;
   const fins = [...new Set(todos.map((m) => m.fin).filter(Boolean))];
   let h = `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>Meus imóveis agenciados</h2><button class="b p" type="button" id="novoImovel">+ Cadastrar imóvel</button></div>
+  ${pizzaAgenc(todos, fm.fx)}
   <div class="chips" role="group" aria-label="Filtrar"><button type="button" data-fm="sit|" aria-pressed="${!fm.sit}">Todos (${todos.length})</button><button type="button" data-fm="sit|ativo" aria-pressed="${fm.sit === 'ativo'}">Ativos no site (${todos.filter((m) => m.ativo).length})</button><button type="button" data-fm="sit|inativo" aria-pressed="${fm.sit === 'inativo'}">Inativos (${todos.filter((m) => !m.ativo).length})</button>${fins.length > 1 ? fins.map((f) => `<button type="button" data-fm="fin|${esc(f)}" aria-pressed="${fm.fin === f}">${esc(f)}</button>`).join('') : ''}</div>
   <div class="chips" role="group" aria-label="Ordenar"><span class="mut peq" style="align-self:center">Ordenar por</span>${cols.map(([k, l]) => `<button type="button" data-ordm="${k}" aria-pressed="${st.c === k}">${l}${st.c === k ? (st.d > 0 ? ' ▲' : ' ▼') : ' ↕'}</button>`).join('')}</div>
   <p class="mut peq" style="margin:0">${M.length} de ${todos.length} imóveis</p>`;
