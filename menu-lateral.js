@@ -10,7 +10,7 @@
   const ENCAMINHA = !!(document.currentScript && document.currentScript.hasAttribute('data-encaminha'));
   const ICONE = { inicio: 'casa', acaptar: 'alvo', tarefas: 'prancheta', leads: 'pessoas', pesquisa: 'lupa', imoveis: 'predio', empreendimentos: 'obra',
     mapa: 'mapa', oportunidades: 'etiqueta', demandas: 'lista', solicitacoes: 'balao', painel: 'blocos', senha: 'cadeado', acessos: 'escudo',
-    destaques: 'estrela' };
+    destaques: 'estrela', acm: 'grafico' };
   const icone = (aba, t) => window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(ICONE[aba] || 'blocos') : esc(t.slice(0, 2));
   const LS = 'painel.menuModo', LSM = 'painel.menuMin';
   const ler = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
