@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-17.3'; // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-17.4'; // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1, metas_equipes: 1 };   // metas_equipes: fatia 7 do CRM (placar das equipes, sem nomes)
@@ -483,6 +483,119 @@
   function arquivoMaterial(a) { return mat.url[String(a || '')] || ''; }
   function miniaturaMaterial(a) { return mat.min[String(a || '')] || ''; }
 
+  /* ---------- Fotos e documentos enviados pelo app (F1a, 17/11/2026, vistoria-celular-corretor) ----------
+     O painel.js é o mesmo do claude.ai: guarda {id, nome, tam} e mostra cada arquivo por '/_blob/<id>'. Aqui o arquivo vai
+     para o bucket privado pedidos-anexos, em painel/<painel>/<id de 32 hex> (regras do banco: cada um grava só no próprio
+     painel; lê o próprio, e a diretoria lê todos), fica registrado em painel_anexos (o robô das fichas leva ao Drive as
+     fotos, o lazer, a placa e os documentos do cadastro enviado) e aparece na tela por link assinado de 6 horas, renovado
+     depois de 5: a ponte troca na hora todo src/href '/_blob/<id>' que o painel desenhar. Arquivo antigo, enviado pelo
+     claude.ai, não existe aqui: a foto mostra o aviso 'foto não disponível no app'. ---------- */
+  var ANX_BALDE = 'pedidos-anexos', ANX_VALE = 6 * 3600, ANX_RENOVA = 5 * 3600 * 1000, ANX_MAX = 16 * 1024 * 1024;
+  var ANX_TIPOS = /^(image\/(jpeg|png|webp|heic)|application\/pdf)$/;
+  var VAZIO = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  var SEM_FOTO = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120"><rect width="160" height="120" fill="#eef1f4"/><text x="80" y="58" font-family="sans-serif" font-size="12" fill="#6b7785" text-anchor="middle">foto não</text><text x="80" y="74" font-family="sans-serif" font-size="12" fill="#6b7785" text-anchor="middle">disponível no app</text></svg>');
+  var anx = { url: {}, em: {}, falta: {}, pedir: {}, timer: null, tent: 0 };
+  function novoIdArquivo() {
+    var b = new Uint8Array(16); crypto.getRandomValues(b);
+    return Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+  }
+  function erroDoEnvio(e) {
+    var m = String((e && (e.message || e.error)) || ''), st = Number(e && (e.statusCode || e.status));
+    if (/mime|type/i.test(m) && /not supported|invalid|allowed/i.test(m)) return erro('Tipo de arquivo não aceito: envie foto (JPG, PNG, WEBP, HEIC) ou PDF.');
+    if (st === 413 || /too large|exceeded|maximum/i.test(m)) return erro('Arquivo acima de 16 MB.');
+    if (st === 403 || /row-level|policy|unauthori|permiss/i.test(m)) return erro('Você não tem permissão para enviar arquivos neste painel.');
+    if (!st || /fetch|network|Failed|timeout/i.test(m)) return erro('Sem conexão agora.');
+    return erro(m || 'erro no envio');
+  }
+  async function enviarArquivo(blob, op) {
+    await entrou;
+    if (ctx.ver) throw erro('Visão de outro painel: só leitura.');
+    if (!blob || !blob.size) throw erro('Arquivo vazio.');
+    // erros sem código de propósito: o painel.js (enviarArquivos) mostra e.code no lugar da mensagem quando há código
+    var tipo = String((op && op.type) || blob.type || '').toLowerCase();
+    if (tipo === 'image/jpg') tipo = 'image/jpeg';
+    if (!ANX_TIPOS.test(tipo)) throw erro('Tipo de arquivo não aceito: envie foto (JPG, PNG, WEBP, HEIC) ou PDF.');
+    if (blob.size > ANX_MAX) throw erro('Arquivo acima de 16 MB.');
+    var id = novoIdArquivo(), caminho = 'painel/' + ctx.painel + '/' + id, r;
+    try { r = await sb.storage.from(ANX_BALDE).upload(caminho, blob, { contentType: tipo, upsert: false, cacheControl: '3600' }); }
+    catch (e) { throw erroDoEnvio(e); }
+    if (r.error) throw erroDoEnvio(r.error);
+    var g;
+    try { g = await sb.rpc('painel_anexo_registrar', { p_id: id }); } catch (e) { g = { error: e }; }
+    if (g.error) throw erro(erroDoBanco(g.error).message); // sem código: o painel mostra a mensagem
+    return { id: id, sizeBytes: blob.size };
+  }
+  function linkVivo(id) { return anx.url[id] && Date.now() - (anx.em[id] || 0) < ANX_RENOVA ? anx.url[id] : ''; }
+  function pintarArquivo(el, id) {
+    var url = linkVivo(id), img = el.tagName === 'IMG';
+    if (url) { if (img) { if (el.getAttribute('src') !== url) el.setAttribute('src', url); } else if (el.getAttribute('href') !== url) el.setAttribute('href', url); return; }
+    if (anx.falta[id]) { if (img) el.setAttribute('src', SEM_FOTO); else { el.removeAttribute('href'); el.title = 'Arquivo não disponível no app'; } return; }
+    if (img) el.setAttribute('src', VAZIO); else el.setAttribute('href', '#');
+  }
+  function trocarBlob(el) {
+    var attr = el.tagName === 'IMG' ? 'src' : 'href', m = /^\/_blob\/([0-9a-f]{32})$/.exec(el.getAttribute(attr) || '');
+    if (!m) return;
+    var id = m[1];
+    el.setAttribute('data-arq', id);
+    pintarArquivo(el, id);
+    if (!linkVivo(id) && !anx.falta[id]) { anx.pedir[id] = 1; if (!anx.timer) anx.timer = setTimeout(pedirLinks, 40); }
+  }
+  function varrerBlobs(raiz) {
+    if (!raiz || raiz.nodeType !== 1) return;
+    if (raiz.matches && raiz.matches('img[src^="/_blob/"],a[href^="/_blob/"]')) trocarBlob(raiz);
+    if (raiz.querySelectorAll) Array.prototype.forEach.call(raiz.querySelectorAll('img[src^="/_blob/"],a[href^="/_blob/"]'), trocarBlob);
+  }
+  function repintar(ids) {
+    ids.forEach(function (id) { Array.prototype.forEach.call(document.querySelectorAll('[data-arq="' + id + '"]'), function (el) { pintarArquivo(el, id); }); });
+  }
+  async function pedirLinks() {
+    anx.timer = null;
+    var ids = Object.keys(anx.pedir); anx.pedir = {};
+    if (!ids.length) return;
+    try {
+      await entrou;
+      for (var i = 0; i < ids.length; i += 200) {
+        var bloco = ids.slice(i, i + 200), c = await sb.rpc('painel_anexo_caminhos', { p_ids: bloco });
+        if (c.error) throw c.error;
+        var cam = {};
+        (c.data || []).forEach(function (x) { if (x && x.id && x.caminho) cam[x.id] = x.caminho; });
+        var lista = bloco.filter(function (id) { return cam[id]; }).map(function (id) { return cam[id]; });
+        if (lista.length) {
+          var s = await sb.storage.from(ANX_BALDE).createSignedUrls(lista, ANX_VALE);
+          if (s.error) throw s.error;
+          (s.data || []).forEach(function (x, k) {
+            var p = String((x && x.path) || lista[k] || ''), id = p.split('/').pop();
+            if (x && x.signedUrl && !x.error) { anx.url[id] = x.signedUrl; anx.em[id] = Date.now(); }
+          });
+        }
+        bloco.forEach(function (id) { if (!linkVivo(id)) anx.falta[id] = 1; });
+        repintar(bloco);
+      }
+      anx.tent = 0;
+    } catch (e) {
+      ids.forEach(function (id) { anx.pedir[id] = 1; }); // sem conexão ou recusa passageira: tenta de novo em 1 minuto, até 3 vezes
+      if (anx.tent < 3) { anx.tent++; anx.timer = setTimeout(pedirLinks, 60000); }
+    }
+  }
+  function vigiarBlobs() {
+    if (!document.body || typeof MutationObserver !== 'function') return;
+    new MutationObserver(function (lista) {
+      lista.forEach(function (m) {
+        if (m.type === 'attributes') varrerBlobs(m.target);
+        else Array.prototype.forEach.call(m.addedNodes || [], varrerBlobs);
+      });
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'href'] });
+    varrerBlobs(document.body);
+    // link vencendo: renova o que está na tela (a cada 30 min confere)
+    setInterval(function () {
+      var vencendo = {};
+      Array.prototype.forEach.call(document.querySelectorAll('[data-arq]'), function (el) { var id = el.getAttribute('data-arq'); if (anx.url[id] && !linkVivo(id)) vencendo[id] = 1; });
+      Object.keys(vencendo).forEach(function (id) { anx.pedir[id] = 1; });
+      if (Object.keys(vencendo).length && !anx.timer) anx.timer = setTimeout(pedirLinks, 40);
+    }, 30 * 60 * 1000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vigiarBlobs); else vigiarBlobs();
+
   /* ---------- Avisos ao painel (o "onSnapshot" do banco dos artefatos) ---------- */
   function fotoDoc(id, reg) { return { id: id, exists: !!reg, data: function () { return reg ? clonar(reg.d) : undefined; } }; }
   function disparar(o) {
@@ -549,7 +662,7 @@
   var partes = {
     db: db,
     user: { id: async function () { return ctx.uid; }, isOwner: async function () { return ctx.ver; } },
-    assets: { upload: async function () { throw erro('o envio de fotos e documentos pelo app ainda não está ligado'); } },
+    assets: { upload: function (blob, op) { return enviarArquivo(blob, op); } }, // F1a (17/11/2026)
     sample: null // IA do painel: desligada no app por enquanto
   };
   window.claude = {
@@ -632,5 +745,5 @@
     },
     limits: async function () { var j = await chamarIA({ tipo: 'limites' }); return { images: j.imagens, limite: j.limite, usados: j.usados }; }
   };
-  window.VIVERE_PONTE = { versao: VERSAO, ia: ia, perfil: perfil, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, divulgacao: divulgacao, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
+  window.VIVERE_PONTE = { versao: VERSAO, ia: ia, perfil: perfil, acaptarLivres: acaptarLivres, pendencias: pendencias, corrigir: corrigir, divulgacao: divulgacao, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, enviarArquivo: enviarArquivo, sair: function () { return sb.auth.signOut(); }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
 })();
