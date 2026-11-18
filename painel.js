@@ -2107,7 +2107,7 @@ function gavetaLead(id) {
   const refs = S.vitrine.map((v) => v.ref).filter(Boolean);
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillFunil(l) + pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>${autorLin(l, 'mut peq', 1)}`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
-    ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoResumoIA(id)}${blocoPerfilIA(id)}${blocoCorAnun(id, l)}`}
+    ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoRespLead(id)}${blocoResumoIA(id)}${blocoPerfilIA(id)}${blocoCorAnun(id, l)}`}
     <form id="fLead" class="form" data-id="${esc(id || '')}">
       ${novo ? `<label class="c inteiro">Nome<input id="lNome" required></label><label class="c">Telefone<input id="lTel" inputmode="tel" required></label><label class="c">Origem<select id="lOrig">${['Indicação', 'Plantão', 'Portal', 'Instagram', 'Site', 'Outro'].map((o) => `<option>${o}</option>`).join('')}</select></label>` : ''}
       <label class="c">Interesse<select id="lInt">${optInt(novo ? 'a_definir' : interesseDe(l))}</select></label>
@@ -3475,6 +3475,23 @@ function blocoPerfilIA(id) {
     ${pfLista('Falta saber', p.lacunas)}
     <p class="peq mut" id="pfSt" style="margin:8px 0 0">Sugestão da IA${p.confianca ? ' (' + esc(PF_CONF[p.confianca] || p.confianca) + ')' : ''}, só com o que o cliente informou nos canais da Vivere${(p.fontes || []).length ? ': ' + p.fontes.map((f) => PF_FONTE[f] || f).join(', ') : ''}. Gerado em ${dt(String(doc.gerado_em_local || doc.gerado_em || '').slice(0, 16))}. Confira antes de usar.</p></div>`;
 }
+// ---------- ✍️ 1ª resposta pronta (tarefa vivere-resposta-rapida-leads, F2, 18/11/2026) ----------
+// Gerada no servidor (função lead-resposta) quando o lead entra; só o servidor grava (coleção lead_resposta). Nada vai ao cliente sem o corretor.
+const LR_CLASSE = { quente: ['🔥 Lead quente', 'alta'], qualificado: ['✅ Qualificado', 'ok'], incompleto: ['❓ Falta 1 dado', 'media'], fora_do_perfil: ['Fora do perfil', ''], fora: ['Fora do perfil', ''] };
+function blocoRespLead(id) {
+  if (S.gestor) return '';   // como o perfil: no app, só o corretor do lead
+  const r = (S.leadResp || {})[id]; if (!r || !String(r.resposta || '').trim()) return '';
+  const c = LR_CLASSE[r.classe] || [r.classe ? String(r.classe) : '', ''];
+  const pill = c[0] ? `<span class="pill${c[1] ? ' ' + c[1] : ''}">${esc(c[0])}</span> ` : '';
+  const perg = String(r.pergunta || '').trim(), l = S.leads[id] || {};
+  const zap = digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}?text=${encodeURIComponent(r.resposta)}" target="_blank" rel="noopener">Abrir no WhatsApp com o texto</a>` : '';
+  return `<div class="painel" id="lrBox"><div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><h2 style="margin:0">✍️ 1ª resposta pronta</h2><span class="linha" style="flex-wrap:wrap;gap:6px"><button class="b p" type="button" data-copiar="${esc(r.resposta)}">Copiar resposta</button>${zap}</span></div>
+    ${pill || r.motivo ? `<p class="peq" style="margin:8px 0 0">${pill}${esc(r.motivo || '')}</p>` : ''}
+    <div style="margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere">${esc(r.resposta)}</div>
+    ${perg ? `<div class="linha" style="margin-top:8px;flex-wrap:wrap;gap:6px"><span class="peq"><b>Pergunta que falta:</b> ${esc(perg)}</span><button class="copiar" type="button" data-copiar="${esc(perg)}">Copiar</button></div>` : ''}
+    <p class="peq mut" style="margin:8px 0 0">Sugestão da Vivian${r.via === 'modelo' ? ' (texto-modelo)' : ''}, gerada em ${dt(String(r.gerado_em_local || r.gerado_em || '').slice(0, 16))}. Revise antes de enviar: nada vai ao cliente sozinho.</p></div>`;
+}
+function atualizaLR(id) { const b = document.getElementById('lrBox'), h = blocoRespLead(id); if (b) b.outerHTML = h || ''; }
 function atualizaPF(id) { const b = document.getElementById('pfBox'); if (b) b.outerHTML = blocoPerfilIA(id); }
 async function gerarPerfilIA(id) {
   const P = window.VIVERE_PONTE; if (!P || !P.perfil || !S.leads[id]) return;
@@ -4376,10 +4393,12 @@ render();
     if (S.gestor && G_ALVOS.has(alvo)) { S.prontos.add(alvo); return render(); }
     S[alvo] = o; S.prontos.add(alvo); render();
     if (alvo === 'perfilIA' && S.aberto && S.aberto.tipo === 'lead') atualizaPF(S.aberto.id);
+    if (alvo === 'leadResp' && S.aberto && S.aberto.tipo === 'lead') atualizaLR(S.aberto.id);
     if (alvo === 'leads' && S.aberto && S.aberto.tipo === 'lead' && S.leads[S.aberto.id]) { const hl = document.getElementById('histLista'); if (hl) hl.innerHTML = htmlHist(S.leads[S.aberto.id]); }
   }, erro);
   col('metas', 'metas'); col('metas_equipes', 'metasEq'); col('metas_videos', 'metasVid');   // fatia 7 do CRM: metas por corretor
-  col('perfil_ia', 'perfilIA');   // perfil do lead pela IA (lead-perfil, F2 17/11/2026): só o servidor grava
+  col('perfil_ia', 'perfilIA');
+  col('lead_resposta', 'leadResp');   // 1ª resposta pronta (lead-resposta, F2 18/11/2026): só o servidor grava   // perfil do lead pela IA (lead-perfil, F2 17/11/2026): só o servidor grava
   col('leads', 'leads'); col('meus_imoveis', 'meus'); col('catalogo', 'catalogo'); col('solicitacoes', 'sol'); col('decisoes', 'decisoes'); col('cadastro_drive', 'cadDrive'); col('eventos_agenciamento', 'eventos'); col('empreendimentos', 'empDocs'); col('fotos', 'fotosDocs'); col('demandas', 'dem'); col('demandas_pedidos', 'demPed'); col('equipe_cartoes', 'eqc'); col('captados', 'capt'); col('tarefas', 'tarefas'); col('atribuicoes', 'atrib');
   db.doc('controle/prazos').onSnapshot((d) => { S.prazos = d.exists ? d.data() : {}; render(); }, erro);
   db.doc('acaptar/estado').onSnapshot((d) => { S.acapProprio = d.exists ? d.data() : null; S.acap = S.acapProprio || acapDaFoto(); render(); }, () => {});
