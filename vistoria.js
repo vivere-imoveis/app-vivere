@@ -29,7 +29,9 @@
   var novoId = function () { return 'v-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
 
   /* ---------- dados ---------- */
-  async function ligarDb() {
+  var ligando = null;
+  function ligarDb() { if (!ligando) ligando = ligarDb1().then(function () { if (!V.db) ligando = null; }); return ligando; }
+  async function ligarDb1() {
     if (V.db || !window.claude) return;
     try { V.db = await window.claude.use('db'); } catch (e) { V.db = null; }
     if (!V.db) return;
@@ -75,7 +77,7 @@
     }).catch(function () { return file; });
   }
   async function enviarFotos(i, files) {
-    var c = V.atual && V.atual.comodos[i], p = P();
+    var c = V.atual && V.atual.comodos[i], p = P(), vid = V.atual && V.atual.id;
     if (!c || !p || !p.enviarArquivo) return;
     var lista = Array.prototype.slice.call(files, 0, Math.max(0, MAX_FOTOS - (c.fotos || []).length));
     if (!lista.length) { V.aviso = 'Limite de ' + MAX_FOTOS + ' fotos por cômodo.'; desenhar(); return; }
@@ -84,6 +86,7 @@
       try {
         var b = await comprimir(lista[k]);
         var r = await p.enviarArquivo(b, { type: b.type || lista[k].type });
+        if (!V.atual || V.atual.id !== vid) continue; // a saída fica travada durante o envio; isto é só proteção
         (c.fotos = c.fotos || []).push({ id: r.id, nome: lista[k].name || 'foto.jpg', tam: r.sizeBytes, em: agora() });
         mudou();
       } catch (e) { V.aviso = 'Não foi possível enviar ' + (lista[k].name || 'a foto') + ': ' + ((e && e.message) || 'erro') + '.'; }
@@ -104,8 +107,10 @@
   }
   function abrirLista() { ligarDb(); V.tela = 'lista'; V.atual = null; if (!V.carteira) lerCarteira(); desenhar(); }
   function abrirVistoria(id) { var d = V.docs[id]; if (!d) return; V.atual = JSON.parse(JSON.stringify(d)); V.atual.id = id; V.atual.comodos = V.atual.comodos || []; V.tela = 'form'; V.aviso = ''; desenhar(); }
+  var criando = false;
   function novaVistoria(imovel) {
-    if (soLeitura()) return;
+    if (soLeitura() || criando || saidaTravada()) return;
+    criando = true; setTimeout(function () { criando = false; }, 1500); // dois toques rápidos não criam dois rascunhos
     ligarDb().then(function () {
       var e = est();
       V.atual = { id: novoId(), imovel: imovel, tipo: '', comodos: [], chaves: { conferidas: false, qtd: '', obs: '' }, obs: '', status: 'rascunho',
@@ -113,7 +118,12 @@
       V.tela = 'form'; V.aviso = ''; desenhar(); gravarAgora();
     });
   }
+  function saidaTravada() {
+    if (!V.enviando) return false;
+    V.aviso = 'Aguarde as fotos terminarem de subir (' + V.enviando + ').'; desenhar(); return true;
+  }
   function fecharTudo() {
+    if (saidaTravada()) return;
     if (V.sujo) gravarAgora();
     V.tela = null; V.atual = null; var r = document.getElementById('vistSobre'); if (r) r.innerHTML = '';
   }
@@ -154,7 +164,7 @@
           return '<figure><img src="' + esc('/_blob/' + f.id) + '" alt="Foto ' + (k + 1) + ' de ' + esc(c.nome) + '" loading="lazy">' +
             (fechada ? '' : '<button type="button" data-vfrem="' + i + '|' + k + '" aria-label="Remover foto ' + (k + 1) + '">×</button>') + '</figure>';
         }).join('') + '</div>' +
-        (fechada ? '' : '<label class="b vs-foto">📷 Fotos<input type="file" accept="image/*" capture="environment" multiple data-vcfoto="' + i + '" hidden></label>') + '</div>';
+        (fechada ? '' : '<label class="b vs-foto">📷 Fotos<input type="file" accept="image/*" multiple data-vcfoto="' + i + '" hidden></label>') + '</div>';
     }).join('');
     var chv = a.chaves || {};
     return '<div class="cab"><div><p class="mut peq" style="margin:0">' + esc(im.origem === 'carteira' ? 'Locação administrada' : 'Imóvel do catálogo') + ' · ' + esc(dBR(a.criado_em)) + '</p><h3>Vistoria · ' + esc(im.ref || im.cod || '') + '</h3></div>' +
@@ -200,7 +210,7 @@
     if (t.matches('[data-vfundo]') && ev.target === t) return fecharTudo();
     var d = t.dataset, a = V.atual;
     if (d.vfechar !== undefined) return fecharTudo();
-    if (d.vvolta !== undefined) { if (V.sujo) gravarAgora(); return abrirLista(); }
+    if (d.vvolta !== undefined) { if (saidaTravada()) return; if (V.sujo) gravarAgora(); return abrirLista(); }
     if (d.vabre) return abrirVistoria(d.vabre);
     if (d.vcart) { var c = (V.carteira || []).filter(function (x) { return x.cod === d.vcart; })[0]; if (c) novaVistoria({ origem: 'carteira', cod: c.cod, ref: c.cod, endereco: c.endereco || '', bairro: c.bairro || '' }); return; }
     if (!a || a.status === 'enviada' || soLeitura()) return;
@@ -291,6 +301,9 @@
       if (window.MenuLateral && MenuLateral.atualiza) MenuLateral.atualiza();
     }
     ligarDb();
+    // celular trocando de app ou fechando a aba: grava o que estiver pendente
+    document.addEventListener('visibilitychange', function () { if (document.hidden && V.sujo) gravarAgora(); });
+    window.addEventListener('pagehide', function () { if (V.sujo) gravarAgora(); });
   }
   window.VistoriaApp = { versao: VERSAO, abrir: abrirLista, nova: novaVistoria };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vigiar); else vigiar();
