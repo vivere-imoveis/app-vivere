@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-17.5'; // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1, metas_equipes: 1 };   // metas_equipes: fatia 7 do CRM (placar das equipes, sem nomes)
@@ -102,6 +102,7 @@
       if (ctx.gestor) return { v: reg ? reg.v : 0, d: Object.assign({}, reg ? reg.d : null, { papel: 'gestor' }) };
       if (reg && reg.d && reg.d.papel === 'gestor') { var d = Object.assign({}, reg.d); delete d.papel; return { v: reg.v, d: d }; } // no "ver" e para corretor, sem aba Gestor
     }
+    if (escopo === COMUM && colecao === 'empreendimentos' && reg && mv && mv.lista.length) return { v: reg.v, d: comVersoes(reg.d) };
     return reg;
   }
   function alvoDoc(caminho) {
@@ -199,7 +200,7 @@
       if (primeira) avisar(escopo, col); else mudou[col] = 1;
     }));
     pronto[escopo] = true; ctx.ultima = Date.now();
-    if (escopo === COMUM) assinarMaterial();
+    if (escopo === COMUM) { await lerVersoes(); assinarMaterial(); }
     if (primeira) ouvintes.forEach(function (o) { if (o.escopo === escopo && !o.disparado) disparar(o); });
     else Object.keys(mudou).forEach(function (col) { avisar(escopo, col); });
   }
@@ -425,6 +426,45 @@
     if (escopo === COMUM && n.colecao === 'empreendimentos') assinarMaterial();
   }
 
+  /* ---------- Material recebido pela Vivian (tarefa vis-vivian-material-empreendimentos, 18/11/2026): versões ativas de
+     public.material_versoes, lidas pela RPC material_versoes_app (só status ativo, só com acesso ativo), a cada leitura do
+     _comum (abertura e releitura de ~4 min). Mesma regra da Vivian (juntarVersoes em material.js): a versão ativa entra
+     no material da ficha com "versão de dd/mm"; tabela de preços, memorial e book com versão ativa tiram da ficha o
+     material antigo do mesmo tipo; plantas e imagens se somam (as substituídas já saem arquivadas do banco). Os arquivos
+     ficam no mesmo depósito 'material' (emp/<id>) e abrem pelo mesmo link assinado. Falhou a leitura: fica a lista anterior. ---------- */
+  var MV_UNICOS = { tabela_precos: 1, memorial: 1, book: 1 };
+  var mv = { lista: [], chave: '' };
+  function diaMes(iso) { var t = Date.parse(iso || ''); if (!t) return ''; var d = new Date(t - 3 * 3600000); return ('0' + d.getUTCDate()).slice(-2) + '/' + ('0' + (d.getUTCMonth() + 1)).slice(-2); }
+  async function lerVersoes() {
+    var r;
+    try { r = await sb.rpc('material_versoes_app'); } catch (e) { return; }
+    if (!r || r.error || !Array.isArray(r.data)) return;
+    var lista = r.data.filter(function (v) { return v && v.emp_slug && /^[0-9a-f]{32}$/.test(String(v.a || '')); });
+    var chave = JSON.stringify(lista.map(function (v) { return [v.id, v.a, v.ativado_em, v.titulo, v.grupo]; }));
+    if (chave === mv.chave) return;
+    mv.lista = lista; mv.chave = chave;
+    avisar(COMUM, 'empreendimentos');
+  }
+  function comVersoes(dados) {
+    if (!dados || !Array.isArray(dados.itens)) return dados;
+    var por = {};
+    mv.lista.forEach(function (v) { (por[v.emp_slug] || (por[v.emp_slug] = [])).push(v); });
+    var mexeu = false, itens = dados.itens.map(function (e) {
+      var vs = e && por[e.id];
+      if (!vs) return e;
+      mexeu = true;
+      var unicos = {};
+      vs.forEach(function (v) { if (MV_UNICOS[v.tipo]) unicos[v.tipo] = 1; });
+      var mat = (Array.isArray(e.material) ? e.material : []).filter(function (m) { return !(m && !m.versao && unicos[m.tipo]); });
+      vs.forEach(function (v) {
+        var dm = diaMes(v.ativado_em), tit = String(v.titulo || '').replace(/\s+/g, ' ').trim().slice(0, 120) || 'Material';
+        mat.push({ a: v.a, ct: String(v.ct || ''), tipo: v.tipo, grupo: v.grupo || '', titulo: dm ? tit + ' (versão de ' + dm + ')' : tit, versao: true, versao_de: dm });
+      });
+      return Object.assign({}, e, { material: mat });
+    });
+    return mexeu ? Object.assign({}, dados, { itens: itens }) : dados;
+  }
+
   /* ---------- Material dos empreendimentos (tabela, plantas, book, imagens): os arquivos ficam no Storage, em bucket
      privado, e abrem por link assinado, criado só para quem está logado e com acesso ativo. O link vale 6 horas e é
      renovado sozinho depois de 5. As imagens têm miniatura (pasta min/, mesmo id): a grade mostra a miniatura e o
@@ -434,7 +474,7 @@
   function idsMaterial(soImagens) {
     var ids = {}, docs = (mem[COMUM] || {}).empreendimentos || {};
     Object.keys(docs).forEach(function (k) {
-      var itens = docs[k] && docs[k].d && docs[k].d.itens;
+      var r = registro(COMUM, 'empreendimentos', k), itens = r && r.d && r.d.itens;
       if (!Array.isArray(itens)) return;
       itens.forEach(function (e) {
         (e && Array.isArray(e.material) ? e.material : []).forEach(function (m) {
@@ -604,7 +644,7 @@
       var c = (mem[o.escopo] || {})[o.colecao] || {};
       if (o.doc != null) o.cb(fotoDoc(o.doc, registro(o.escopo, o.colecao, o.doc)));
       else {
-        var docs = Object.keys(c).sort().map(function (id) { return fotoDoc(id, c[id]); });
+        var docs = Object.keys(c).sort().map(function (id) { return fotoDoc(id, registro(o.escopo, o.colecao, id)); });
         o.cb({ docs: docs, size: docs.length, empty: !docs.length, forEach: function (f) { docs.forEach(f); } });
       }
     } catch (e) { setTimeout(function () { throw e; }); }
