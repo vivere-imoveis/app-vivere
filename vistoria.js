@@ -105,7 +105,7 @@
     }
     return r;
   }
-  function abrirLista() { ligarDb(); V.tela = 'lista'; V.atual = null; if (!V.carteira) lerCarteira(); desenhar(); }
+  function abrirLista() { if (saidaTravada()) return; ligarDb(); V.tela = 'lista'; V.atual = null; if (!V.carteira) lerCarteira(); desenhar(); }
   function abrirVistoria(id) { var d = V.docs[id]; if (!d) return; V.atual = JSON.parse(JSON.stringify(d)); V.atual.id = id; V.atual.comodos = V.atual.comodos || []; V.tela = 'form'; V.aviso = ''; desenhar(); }
   var criando = false;
   function novaVistoria(imovel) {
