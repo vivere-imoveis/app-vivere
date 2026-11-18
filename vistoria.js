@@ -5,11 +5,13 @@
    botão "Vistoria" na ficha de qualquer imóvel do catálogo; só no app (o painel.js do modelo não muda).
    A vistoria fica no painel de quem fez, coleção `vistorias` (rascunho salvo sozinho; "Enviar" fecha). As fotos sobem pelo
    envio do app (ponte 2026-11-17.4, bucket pedidos-anexos) e aparecem por '/_blob/<id>', que a ponte troca pelo link.
-   Depois (F2 e F3): relatório PDF na pasta do imóvel, HUB › Vistorias, dano vira chamado e aviso da Vivian. */
+   Depois (F2 e F3): relatório PDF na pasta do imóvel, HUB › Vistorias, dano vira chamado e aviso da Vivian.
+   F2b (17/11/2026): botão "Ver PDF" na vistoria enviada, pelo campo `relatorio` que só o robô grava (gatilho vist_trava);
+   em rascunho o campo é ignorado, e o link é montado do id do arquivo, nunca do texto do campo. */
 (function () {
   'use strict';
   if (window.VistoriaApp) return;
-  var VERSAO = 'vistoria 2026-11-17.1';
+  var VERSAO = 'vistoria 2026-11-17.2';
   var TIPOS = [['periodica', 'Periódica'], ['dano', 'Constatação de dano'], ['visita', 'Visita'], ['chaves', 'Conferência de chaves']];
   var ESTADOS = [['bom', 'Bom'], ['regular', 'Regular'], ['ruim', 'Ruim']];
   var COMODOS = ['Sala', 'Cozinha', 'Quarto', 'Suíte', 'Banheiro', 'Lavabo', 'Área de serviço', 'Varanda', 'Garagem', 'Área externa', 'Fachada'];
@@ -25,6 +27,15 @@
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   };
   var dBR = function (s) { var m = /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/.exec(String(s || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] + (m[4] ? ' ' + m[4] : '') : ''; };
+  // Relatório PDF (F2b): só em vistoria enviada; o link sai do id do arquivo no Drive, não do texto gravado.
+  var urlPdf = function (d) {
+    var r = d && d.status === 'enviada' && d.relatorio, id = r && String(r.drive_id || '');
+    return id && /^[A-Za-z0-9_-]{10,}$/.test(id) ? 'https://drive.google.com/file/d/' + id + '/view' : '';
+  };
+  var atrasado = function (d) { // enviada há mais de 30 min sem PDF (horário do aparelho, o mesmo de enviado_em)
+    var m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/.exec(String((d && d.enviado_em) || ''));
+    return !!m && Date.now() - new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime() > 30 * 60e3;
+  };
   var rot = function (lista, k) { for (var i = 0; i < lista.length; i++) if (lista[i][0] === k) return lista[i][1]; return k || ''; };
   var novoId = function () { return 'v-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
 
@@ -40,6 +51,9 @@
       snap.forEach(function (d) { n[d.id] = d.data() || {}; });
       V.docs = n;
       if (V.tela === 'lista') desenhar();
+      else if (V.tela === 'form' && V.atual && V.atual.status === 'enviada' && n[V.atual.id] && !urlPdf(V.atual) && urlPdf(n[V.atual.id])) {
+        V.atual.relatorio = n[V.atual.id].relatorio; desenhar();
+      }
     }, function () { });
   }
   async function lerCarteira() {
@@ -136,7 +150,7 @@
       var d = x[1], im = d.imovel || {}, nf = (d.comodos || []).reduce(function (s, c) { return s + ((c.fotos || []).length); }, 0);
       return '<button type="button" class="vs-item" data-vabre="' + esc(x[0]) + '"><b>' + esc(im.ref || im.cod || 'Imóvel') + '</b> · ' + esc(rot(TIPOS, d.tipo) || 'sem tipo') +
         '<span class="mut peq">' + esc(im.endereco || '') + (im.bairro ? ' · ' + esc(im.bairro) : '') + '</span><span class="mut peq">' +
-        (d.status === 'enviada' ? 'Enviada ' + esc(dBR(d.enviado_em)) : 'Rascunho de ' + esc(dBR(d.atualizado_em || d.criado_em))) + ' · ' + (d.comodos || []).length + ' cômodo(s) · ' + nf + ' foto(s)</span></button>';
+        (d.status === 'enviada' ? 'Enviada ' + esc(dBR(d.enviado_em)) + (urlPdf(d) ? ' · PDF pronto' : ' · PDF em preparo') : 'Rascunho de ' + esc(dBR(d.atualizado_em || d.criado_em))) + ' · ' + (d.comodos || []).length + ' cômodo(s) · ' + nf + ' foto(s)</span></button>';
     };
     var cart = V.carteira == null ? '<p class="mut peq">' + esc(V.cartErro || 'Lendo a carteira…') + '</p>'
       : !V.carteira.length ? '<p class="mut peq">Nenhuma locação ativa na carteira.</p>'
@@ -170,7 +184,9 @@
     return '<div class="cab"><div><p class="mut peq" style="margin:0">' + esc(im.origem === 'carteira' ? 'Locação administrada' : 'Imóvel do catálogo') + ' · ' + esc(dBR(a.criado_em)) + '</p><h3>Vistoria · ' + esc(im.ref || im.cod || '') + '</h3></div>' +
       '<div class="linha"><button class="b" type="button" data-vvolta>Lista</button><button class="b" type="button" data-vfechar>Fechar</button></div></div>' +
       '<div><span data-sens>' + esc(im.endereco || '') + '</span><div class="mut peq">' + esc(im.bairro || '') + '</div></div>' +
-      (a.status === 'enviada' ? '<p class="vs-ok">Enviada em ' + esc(dBR(a.enviado_em)) + ' por ' + esc((a.por && a.por.nome) || '—') + '. Não se altera mais.</p>' : '') +
+      (a.status === 'enviada' ? '<p class="vs-ok">Enviada em ' + esc(dBR(a.enviado_em)) + ' por ' + esc((a.por && a.por.nome) || '—') + '. Não se altera mais.</p>' +
+        (urlPdf(a) ? '<p class="linha" style="margin:0"><a class="b p" href="' + esc(urlPdf(a)) + '" target="_blank" rel="noopener noreferrer">📄 Ver PDF</a><span class="mut peq">Relatório no Drive da Vivere</span></p>'
+          : '<p class="mut peq" style="margin:0">' + (atrasado(a) ? 'O relatório PDF ainda não saiu. Avise a diretoria.' : 'O relatório PDF fica pronto em 1 a 2 minutos; o botão <b>Ver PDF</b> aparece aqui.') + '</p>') : '') +
       (V.aviso ? '<p class="vs-aviso" role="alert">' + esc(V.aviso) + '</p>' : '') +
       '<section class="vs-sec"><h4>Tipo</h4><div class="vs-chips">' + TIPOS.map(function (t) { return chip('data-vtipo', t[0], t[1], a.tipo === t[0]).replace('<button', fechada ? '<button disabled' : '<button'); }).join('') + '</div></section>' +
       '<section class="vs-sec"><h4>Cômodos</h4>' + (com || '<p class="mut peq">Nenhum cômodo ainda.</p>') +
