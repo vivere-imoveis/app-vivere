@@ -6,7 +6,7 @@
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj';
   var APP_URL = location.origin + location.pathname;
-  var VERSAO = 'app-vivere 2026-11-15.1'; // botão de olho nos campos de senha (sugestão nº 26 do Jorlei pela caixinha da Vivian)
+  var VERSAO = 'app-vivere 2026-11-18.1'; // aba Destaques do site (Cleiton, Nícollas e William; tarefa vis-site-23)
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -40,13 +40,13 @@
   var abaParam = (new URLSearchParams(location.search).get('aba') || '').trim();
   if (abaParam) history.replaceState(null, '', APP_URL + location.hash);
 
-  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'acessos') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
+  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'acessos' || abaParam === 'destaques') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
 
   sb.auth.onAuthStateChange(function (evento, sessao) {
     if (evento === 'PASSWORD_RECOVERY') modoSenha = true;
     var mudou = (!!sessao) !== (!!estado.sessao) || evento === 'PASSWORD_RECOVERY';
     estado.sessao = sessao;
-    if (evento === 'SIGNED_OUT') { estado.eu = null; estado.aba = 'inicio'; if (window.ACAPTAR) window.ACAPTAR.sair(); }
+    if (evento === 'SIGNED_OUT') { estado.eu = null; estado.aba = 'inicio'; if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); }
     if (mudou) setTimeout(iniciar, 0);
   });
 
@@ -92,12 +92,16 @@
     /* 14/11/2026 (pedido do Cleiton): "Meu painel" sempre no menu para quem já abre o painel (gestor sempre; corretor com o painel oficial). */
     if (!volta && (estado.eu.papel === 'gestor' || estado.oficial)) volta = 'painel.html';
     if (volta) lista.splice(1, 0, ['painel', volta.indexOf('?ver=') > 0 ? 'Painel · ' + esc(volta.split('?ver=')[1]) : 'Meu painel']);
+    /* 18/11/2026 (tarefa vis-site-23): Destaques do site para o gestor, o Nícollas e o William; o banco confere de novo */
+    var dst = window.DESTAQUES && window.DESTAQUES.pode(estado.eu);
+    if (dst) lista.splice(lista.length - 1, 0, ['destaques', 'Destaques do site']);
     if (estado.eu.papel === 'gestor') lista.push(['acessos', 'Acessos']);
     abas.hidden = false;
     abas.innerHTML = lista.map(function (a) { return '<button role="tab" data-aba="' + a[0] + '" aria-selected="' + (estado.aba === a[0]) + '">' + a[1] + '</button>'; }).join('');
     abas.querySelectorAll('button').forEach(function (b) { b.onclick = function () { if (b.dataset.aba === 'painel') { location.href = volta; return; } estado.aba = b.dataset.aba; estado.link = null; estado.confirmar = null; desenhar(); }; });
     if (estado.aba === 'senha') return telaSenha(main, false);
     if (estado.aba === 'acessos' && estado.eu.papel === 'gestor') return telaAcessos(main);
+    if (estado.aba === 'destaques' && dst) return window.DESTAQUES.tela(main, contexto());
     if (estado.aba === 'acaptar' && window.ACAPTAR) { var cod = codParam; codParam = ''; try { sessionStorage.removeItem('acaptar-cod'); } catch (e) { } return window.ACAPTAR.tela(main, contexto(), cod); }
     telaInicio(main);
   }
@@ -186,17 +190,19 @@
     main.innerHTML = '<div class="grade">' +
       cartaoPainel() +
       '<div class="cartao"><h3>A CAPTAR</h3><p id="acResumo">Imóveis a captar: os livres e os seus.</p><button class="btn pri" id="irAcaptar">Abrir o A CAPTAR</button></div>' +
+      (window.DESTAQUES && window.DESTAQUES.pode(estado.eu) ? '<div class="cartao"><h3>Destaques do site</h3><p>Escolha até 8 anúncios para a vitrine da home do site.</p><button class="btn pri" id="irDestaques">Abrir os destaques</button></div>' : '') +
       '<div class="cartao"><h3>Minha conta</h3><p data-sens>' + esc(estado.eu.email) + '</p><div class="linha-acoes"><button class="btn" id="irSenha">Trocar senha</button><button class="btn" id="sair">Sair</button></div></div>' +
       '</div><p class="s" style="margin-top:24px">' + VERSAO + '</p>';
     $('#sair').onclick = sair;
     $('#irSenha').onclick = function () { estado.aba = 'senha'; desenhar(); };
     $('#irAcaptar').onclick = function () { estado.aba = 'acaptar'; desenhar(); };
+    if ($('#irDestaques')) $('#irDestaques').onclick = function () { estado.aba = 'destaques'; desenhar(); };
     if (window.ACAPTAR) window.ACAPTAR.resumo(contexto()).then(function (r) { var p = $('#acResumo'); if (p) p.textContent = r.livres + ' livres para captar · ' + r.minhas + ' em captação por você.'; }).catch(function () { });
   }
 
   function contexto() { return { sb: sb, eu: estado.eu, sessaoUid: estado.sessao.user.id, esc: esc, toast: toast, titulo: titulo }; }
 
-  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
+  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
 
   /* ---------- Acessos (só o gestor) ---------- */
   async function chamar(corpo) {
