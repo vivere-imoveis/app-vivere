@@ -42,7 +42,7 @@
   var acmParams = abaParam === 'acm' ? { ref: (new URLSearchParams(location.search).get('ref') || '').trim().slice(0, 30), estudo: (new URLSearchParams(location.search).get('estudo') || '').trim().slice(0, 40) } : null;
   if (abaParam) history.replaceState(null, '', APP_URL + location.hash);
 
-  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'acessos' || abaParam === 'destaques' || abaParam === 'acm') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
+  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'acessos' || abaParam === 'destaques' || abaParam === 'acm' || abaParam === 'semresp') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
 
   sb.auth.onAuthStateChange(function (evento, sessao) {
     if (evento === 'PASSWORD_RECOVERY') modoSenha = true;
@@ -87,7 +87,7 @@
       main.innerHTML = '<div class="form cartao"><h2>Acesso não liberado</h2><div class="msg erro">Este login não tem acesso ativo ao app da Vivere. Fale com a diretoria.</div><button class="btn" id="sair">Sair</button></div>';
       $('#sair').onclick = sair; return;
     }
-    var lista = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['acm', 'Estudo de Mercado'], ['senha', 'Minha senha']];
+    var lista = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['semresp', 'Imóveis sem responsável'], ['acm', 'Estudo de Mercado'], ['senha', 'Minha senha']]; /* 19/11/2026: aba Imóveis sem responsável */
     /* quem veio do painel (aba A CAPTAR ou botão Captar) ganha a aba de volta para ele */
     var volta = ''; try { volta = sessionStorage.getItem('painel.volta') || ''; } catch (e) { }
     if (!/^painel\.html(\?ver=[a-z0-9_-]{1,40})?$/.test(volta)) volta = '';
@@ -105,6 +105,7 @@
     if (estado.aba === 'acessos' && estado.eu.papel === 'gestor') return telaAcessos(main);
     if (estado.aba === 'destaques' && dst) return window.DESTAQUES.tela(main, contexto());
     if (estado.aba === 'acm' && window.ACM) { var ap = acmParams; acmParams = null; return window.ACM.tela(main, contexto(), ap); }
+    if (estado.aba === 'semresp' && window.SEMRESP) return window.SEMRESP.tela(main, contexto());
     if (estado.aba === 'acaptar' && window.ACAPTAR) { var cod = codParam; codParam = ''; try { sessionStorage.removeItem('acaptar-cod'); } catch (e) { } return window.ACAPTAR.tela(main, contexto(), cod); }
     telaInicio(main);
   }
@@ -208,7 +209,7 @@
 
   function contexto() { return { sb: sb, eu: estado.eu, sessaoUid: estado.sessao.user.id, esc: esc, toast: toast, titulo: titulo }; }
 
-  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); if (window.ACM) window.ACM.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
+  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.SEMRESP) window.SEMRESP.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); if (window.ACM) window.ACM.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
 
   /* ---------- Acessos (só o gestor) ---------- */
   async function chamar(corpo) {
