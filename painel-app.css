@@ -233,3 +233,14 @@ thead th{font:500 11px var(--display);letter-spacing:.14em;text-transform:upperc
   .om-sel select{flex:1 1 auto;min-width:0;font:15px/1.4 var(--body);padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
   .om-sel .om-inv{flex:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 10px;font:500 13px var(--body);cursor:pointer}
 }
+
+/* Melhoria 122 (Nícollas, 19/11/2026): só o V da Vivere no cabeçalho do painel (o painel.css do modelo usa o selo com texto). */
+.selo{-webkit-mask-image:url(simbolo-v.svg);mask-image:url(simbolo-v.svg)}
+
+/* Melhoria 123 (Nícollas, 19/11/2026): o menu lateral entra deslizando e o conteúdo acompanha ao recolher/abrir; leve, só CSS. */
+@media (prefers-reduced-motion:no-preference){
+  body.ml-on #ml{animation:ml-entra .24s cubic-bezier(.2,.7,.2,1)}
+  @keyframes ml-entra{from{transform:translateX(-16px);opacity:0}to{transform:none;opacity:1}}
+  body.ml-on{transition:padding-left .24s cubic-bezier(.2,.7,.2,1)}
+  #ml .ml-g,#ml .ml-s,#ml .ml-x{transition:background-color .15s ease,border-color .15s ease}
+}
