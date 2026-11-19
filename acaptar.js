@@ -234,7 +234,7 @@
       var s = situacao(v), ac = '';
       if (s.k === 'livre') ac = '<button class="btn pri" data-acao="confirmar" data-id="' + esc(v.id) + '"' + (A.ocupado ? ' disabled' : '') + '>Ver e captar</button>';
       else if (s.k === 'meu') ac = '<button class="btn" data-sub="minhas">Abrir em Minhas</button>';
-      var conf = A.confirmar === v.id ? '<div class="msg aviso" style="margin-top:8px">O imóvel fica em captação por você, em nome da Vivere, por 7 dias renovados a cada contato registrado. A equipe verá que ele está com você, e o contato do proprietário abre em “Minhas captações”.<div class="linha-acoes" style="margin-top:8px"><button class="btn pri" data-acao="captar" data-id="' + esc(v.id) + '">Confirmar e captar</button><button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '';
+      var conf = A.confirmar === v.id ? '<div class="msg aviso" style="margin-top:8px">O imóvel fica em captação por você, em nome da Vivere, por 3 dias renovados a cada contato registrado. A equipe verá que ele está com você, e o contato do proprietário abre em “Minhas captações”.<div class="linha-acoes" style="margin-top:8px"><button class="btn pri" data-acao="captar" data-id="' + esc(v.id) + '">Confirmar e captar</button><button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '';
       var an = v.anunciado_em || v.coletado_em;
       return '<tr' + (A.cod ? ' class="alvo"' : '') + '>' + celImovel(v) +
         '<td data-r="Negócio e tipo">' + esc(NEG[v.negocio] || '—') + '<span class="s">' + esc(TIPO[v.tipo] || 'Tipo não informado') + '</span></td>' +
@@ -262,7 +262,7 @@
       var s = situacao(v), ac = '';
       if (s.k === 'livre') ac = '<button class="btn pri" data-acao="confirmar" data-id="' + esc(v.id) + '"' + (A.ocupado ? ' disabled' : '') + '>Ver e captar</button>';
       else if (s.k === 'meu') ac = '<button class="btn" data-sub="minhas">Abrir em Minhas</button>';
-      var conf = A.confirmar === v.id ? '<div class="msg aviso" style="margin-top:8px">O imóvel fica em captação por você, em nome da Vivere, por 7 dias renovados a cada contato registrado. A equipe verá que ele está com você, e o contato do proprietário abre em “Minhas captações”.<div class="linha-acoes" style="margin-top:8px"><button class="btn pri" data-acao="captar" data-id="' + esc(v.id) + '">Confirmar e captar</button><button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '';
+      var conf = A.confirmar === v.id ? '<div class="msg aviso" style="margin-top:8px">O imóvel fica em captação por você, em nome da Vivere, por 3 dias renovados a cada contato registrado. A equipe verá que ele está com você, e o contato do proprietário abre em “Minhas captações”.<div class="linha-acoes" style="margin-top:8px"><button class="btn pri" data-acao="captar" data-id="' + esc(v.id) + '">Confirmar e captar</button><button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '';
       var an = v.anunciado_em || v.coletado_em;
       return '<tr' + (A.cod ? ' class="alvo"' : '') + '>' + celImovel(v) +
         '<td data-r="Negócio e tipo">' + esc(NEG[v.negocio] || '—') + '<span class="s">' + esc(TIPO[v.tipo] || 'Tipo não informado') + '</span></td>' +
@@ -445,7 +445,7 @@
         else if (a === 'saiu') { A.saiu = id; desenhar(); }
         else if (a === 'saiu_ok') { A.saiu = null; rpc('ac_marcar_fora', { p_imovel: id, p_motivo: b.dataset.m }, 'Registrado: o imóvel foi para “Fora do mercado”.'); }
         else if (a === 'captar') { A.confirmar = null; rpc('ac_travar', { p_imovel: id }, 'Imóvel em captação por você. O contato está em “Minhas captações”.').then(function (d) { if (d && d.ok) { A.sub = 'minhas'; desenhar(); ligarFunil('captar', id, ''); } }); }
-        else if (a === 'registrar') { var ta = raiz.querySelector('#nota-' + CSS.escape(id)), nota = ta ? ta.value : ''; rpc('ac_registrar_contato', { p_imovel: id, p_nota: nota }, 'Contato registrado. O prazo de 7 dias recomeçou.').then(function (d) { if (d && d.ok !== false) ligarFunil('registrar', id, nota); }); }
+        else if (a === 'registrar') { var ta = raiz.querySelector('#nota-' + CSS.escape(id)), nota = ta ? ta.value : ''; rpc('ac_registrar_contato', { p_imovel: id, p_nota: nota }, 'Contato registrado. O prazo de 3 dias recomeçou.').then(function (d) { if (d && d.ok !== false) ligarFunil('registrar', id, nota); }); }
         else if (a === 'soltar') { A.soltar = id; desenhar(); }
         else if (a === 'soltar_ok') { A.soltar = null; rpc('ac_soltar', { p_imovel: id }, 'Imóvel solto. Ele voltou para os disponíveis.'); }
         else if (a === 'pedir') rpc('ac_pedir_captei', { p_imovel: id }, 'Pedido enviado à diretoria.');
