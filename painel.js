@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -1605,7 +1605,7 @@ const TF = (() => {
       <div class="cm-lin"><b>${esc(rotQuando(t))}</b> ${pillSit(t)} · ${rotOrig(t)}${S.gestor && S.verComo === 'todos' && t._dono && (t.origem || 'corretor') !== 'corretor' ? ' · para ' + esc(gCurto(t._dono)) : ''}</div>${t.obs ? `<div class="cm-lin mut">${esc(t.obs)}</div>` : ''}${autorLin(t, 'cm-lin mut peq')}`;
     const quem = S.gestor ? (S.verComo === 'todos' ? 'de todos os painéis' : 'de ' + esc(gCurto(S.verComo))) : '';
     const nota = S.gestor
-      ? `Tarefas ${quem}, na foto do dia (só leitura). Para passar uma tarefa a um corretor, use “+ Atribuir tarefa”: ela chega ao painel dele na próxima rodada diária.`
+      ? `Tarefas ${quem}, ${(/\/painel(\.html)?$/.test(location.pathname)) ? 'ao vivo' : 'na foto do dia'} (só leitura). Para passar uma tarefa a um corretor, use “+ Atribuir tarefa”: ela chega ao painel dele na próxima rodada diária.`
       : 'Suas tarefas e lembretes do dia a dia, fora dos leads. A Vivian também anota aqui o que você pedir pelo WhatsApp, e a diretoria pode passar tarefas para você; as delas chegam na rodada diária da Vivere.';
     return `<section class="sec">
     <div class="linha" style="justify-content:space-between"><div><h2 style="margin:0">Tarefas e lembretes</h2><p class="mut peq" style="margin:2px 0 0">${nota}</p></div>
@@ -1894,7 +1894,7 @@ document.addEventListener('change', (ev) => { const s = ev.target && ev.target.m
 function barraGestor() {
   const bt = (k, t) => `<button type="button" data-ver="${esc(k)}" aria-pressed="${S.verComo === k}">${esc(t)}</button>`;
   const f = gFotoGeral();
-  const info = !S.gProntos.has('paineis') ? 'Carregando a foto dos painéis…' : f ? `Foto do dia: ${dt(f)} · só leitura` : 'Sem foto dos painéis ainda · só leitura';
+  const info = (/\/painel(\.html)?$/.test(location.pathname)) ? (!S.gProntos.has('paineis') ? 'Carregando os painéis…' : 'Ao vivo · só leitura') : !S.gProntos.has('paineis') ? 'Carregando a foto dos painéis…' : f ? `Foto do dia: ${dt(f)} · só leitura` : 'Sem foto dos painéis ainda · só leitura';
   return `<div class="g-barra" role="group" aria-label="Ver como" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 12px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)">
     <span class="peq mut" style="font-weight:600">Ver como</span><div class="chips">${bt('todos', 'Todos')}${gPaineis().map((p) => bt(p.slug, gCurto(p.slug))).join('')}</div><select class="g-sel" data-versel aria-label="Ver como">${[['todos', 'Todos']].concat(gPaineis().map((p) => [p.slug, gCurto(p.slug)])).map(([k, r]) => `<option value="${esc(k)}"${S.verComo === k ? ' selected' : ''}>Ver como: ${esc(r)}</option>`).join('')}</select>
     <span class="peq mut" style="margin-left:auto">${esc(info)}</span></div>`;
@@ -1950,7 +1950,7 @@ function vGestor() {
     <div class="peq" style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px"><span>Leads em aberto <b>${p.abertos}</b> de ${p.leads}</span><span>Atrasados <b${p.atrasados ? ' style="color:var(--bad)"' : ''}>${p.atrasados}</b></span><span>Para hoje <b>${p.hoje}</b></span><span>Fechados <b>${p.fechados}</b></span><span>Ofertas <b>${p.ofertas}</b></span><span>A captar <b>${p.acap}</b></span><span>Imóveis ativos <b>${p.ativos}</b> de ${p.imoveis}</span><span>Solicitações <b>${p.pend}</b>${p.compl ? ` · ${p.compl} a complementar` : ''}</span><span>Último registro ${p.ult ? dt(p.ult) : '—'}</span><span>Uso do app ${usoApp(p)}</span></div>
     <div class="linha" style="margin-top:8px;gap:6px">${acoes(p)}</div>`;
   const f = gFotoGeral();
-  return `<section class="sec"><div><h2 style="margin:0">${S.verComo === 'todos' ? 'Visão geral dos painéis' : 'Visão geral · ' + esc(gCurto(S.verComo))}</h2><p class="mut peq" style="margin:2px 0 0">Foto do dia de cada painel${f ? ' (a mais recente: ' + dt(f) + ')' : ''}, atualizada 1x por dia pela rotina. Só leitura: as mudanças se fazem no painel do corretor.</p></div>
+  return `<section class="sec"><div><h2 style="margin:0">${S.verComo === 'todos' ? 'Visão geral dos painéis' : 'Visão geral · ' + esc(gCurto(S.verComo))}</h2><p class="mut peq" style="margin:2px 0 0">${(/\/painel(\.html)?$/.test(location.pathname)) ? 'Dados de cada painel ao vivo' : 'Foto do dia de cada painel' + (f ? ' (a mais recente: ' + dt(f) + ')' : '') + ', atualizada 1x por dia pela rotina'}. Só leitura: as mudanças se fazem no painel do corretor.</p></div>
   <div class="cartoes">
     <div class="cartao"><div class="r">Painéis</div><div class="v">${P.length}</div><div class="s">corretores na foto</div></div>
     <div class="cartao"><div class="r">Leads em aberto</div><div class="v">${soma('abertos')}</div><div class="s">de ${soma('leads')} no total</div></div>

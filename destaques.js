@@ -6,7 +6,7 @@
   'use strict';
   var PODE_PAINEIS = ['nicollas-maraschin', 'william']; // só decide se a aba aparece; quem manda é o banco
   var POR = 50;
-  var D = { itens: [], max: 8, carregado: false, carregando: false, erro: '', q: '', fin: '', pg: 0, ordem: { k: 'cadastrado_em', d: -1 }, ocupado: '' };
+  var D = { itens: [], max: 8, carregado: false, carregando: false, erro: '', q: '', fin: '', pg: 0, ordem: { k: 'cadastrado_em', d: -1 }, ocupado: '', capas: {} };
   var C = null; // { sb, eu, esc, toast, titulo }
 
   function esc(v) { return C.esc(v); }
@@ -24,8 +24,35 @@
       var r = await C.sb.rpc('site_destaques_listar');
       if (r.error) throw new Error(r.error.message || 'o banco recusou');
       D.itens = (r.data && r.data.itens) || []; D.max = (r.data && r.data.max) || 8; D.carregado = true;
+      await carregarCapas();
     } catch (e) { D.erro = 'Não foi possível carregar os anúncios: ' + (e && e.message || e); }
     D.carregando = false;
+  }
+
+  // Foto de capa (19/11/2026): 1ª foto do anúncio na vista pública site_imoveis, a mesma que o site usa.
+  var ORIGEM_FOTO = 'https://jucnlzznbwjthlqqgdlz.supabase.co/storage/';
+  async function carregarCapas() {
+    try {
+      var r = await C.sb.from('site_imoveis').select('codigo,capa:fotos->0->>url').range(0, 4999);
+      if (r.error) return;
+      var m = {}; (r.data || []).forEach(function (l) { var u = String(l.capa || ''); if (l.codigo && u.indexOf(ORIGEM_FOTO) === 0) m[String(l.codigo).toLowerCase()] = u; });
+      D.capas = m;
+    } catch (e) { /* sem capa, a lista segue */ }
+  }
+  function capa(x, cls) {
+    var u = D.capas[String(x.ref || '').toLowerCase()];
+    return u ? '<img class="' + cls + '" src="' + esc(u) + '" alt="Foto de capa de ' + esc(x.ref || '') + '" loading="lazy">'
+      : '<span class="' + cls + ' sem" title="Anúncio sem foto no site" aria-hidden="true">🏠</span>';
+  }
+  function estilo() {
+    if (document.getElementById('css-dst-capa')) return;
+    var st = document.createElement('style'); st.id = 'css-dst-capa';
+    st.textContent = '.dst-nome{display:flex;gap:12px;align-items:center}.dst-nome>div{min-width:0}'
+      + '.dst-th{width:88px;height:66px;flex:none;object-fit:cover;border-radius:8px;background:var(--line)}'
+      + '.dst-capa{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:8px;margin:0 0 10px;background:var(--line)}'
+      + '.dst-th.sem,.dst-capa.sem{display:grid;place-items:center;font-size:24px;color:var(--muted)}'
+      + '@media (max-width:560px){.dst-th{width:72px;height:54px}}';
+    document.head.appendChild(st);
   }
 
   function marcados() { return D.itens.filter(function (x) { return x.destaque; }); }
@@ -50,12 +77,12 @@
   function nome(x) { return '<b>' + esc(x.ref || x.id) + '</b><span class="s">' + esc([x.tipo, finDe(x)].filter(Boolean).join(' · ')) + '</span>'; }
 
   function desenhar(main) {
-    C.titulo('Destaques do site');
+    C.titulo('Destaques do site'); estilo();
     if (!D.carregado) { main.innerHTML = D.erro ? '<div class="msg erro">' + esc(D.erro) + '</div><button class="btn" id="dstDeNovo">Tentar de novo</button>' : '<div class="vazio">Carregando os anúncios…</div>'; var b = main.querySelector('#dstDeNovo'); if (b) b.onclick = function () { abrir(main); }; return; }
     var M = marcados(), cheio = M.length >= D.max, L = filtrados(), nPg = Math.max(1, Math.ceil(L.length / POR));
     if (D.pg > nPg - 1) D.pg = nPg - 1;
     var cards = M.map(function (x) {
-      return '<div class="cartao"><div class="linha-acoes" style="justify-content:space-between;align-items:flex-start"><div>' + nome(x) +
+      return '<div class="cartao">' + capa(x, 'dst-capa') + '<div class="linha-acoes" style="justify-content:space-between;align-items:flex-start"><div>' + nome(x) +
         '<span class="s">' + esc([x.bairro, x.cidade].filter(Boolean).join(' · ')) + ' · ' + brl(x.valor) + '</span>' +
         (x.por ? '<span class="s">marcado por ' + esc(x.por) + (x.em ? ' em ' + dataBR(x.em) : '') + '</span>' : '') + '</div>' +
         '<span class="pill warn">⭐ destaque</span></div><div class="linha-acoes" style="margin-top:10px">' + verSite(x) +
@@ -63,7 +90,7 @@
     }).join('');
     var nav = L.length > POR ? '<div class="linha-acoes" style="margin:8px 0"><button class="btn" data-dst-pg="-1"' + (D.pg ? '' : ' disabled') + '>‹ Anterior</button><span class="s" style="display:inline">' + (D.pg * POR + 1) + '–' + Math.min(L.length, (D.pg + 1) * POR) + ' de ' + L.length + '</span><button class="btn" data-dst-pg="1"' + (D.pg < nPg - 1 ? '' : ' disabled') + '>Próxima ›</button></div>' : '';
     var linhas = L.slice(D.pg * POR, (D.pg + 1) * POR).map(function (x) {
-      return '<tr><td class="c-nome">' + nome(x) + '</td><td data-r="Bairro">' + esc([x.bairro, x.cidade].filter(Boolean).join(' · ') || '—') + '</td>' +
+      return '<tr><td class="c-nome"><div class="dst-nome">' + capa(x, 'dst-th') + '<div>' + nome(x) + '</div></div></td><td data-r="Bairro">' + esc([x.bairro, x.cidade].filter(Boolean).join(' · ') || '—') + '</td>' +
         '<td data-r="Valor" class="num">' + brl(x.valor) + '</td><td data-r="Cadastrado">' + (dataBR(x.cadastrado_em) || '—') + '</td>' +
         '<td class="c-acoes"><div class="linha-acoes">' + verSite(x) + '<button class="btn pri" data-dst="' + esc(x.id) + '" data-liga="1"' + (cheio || D.ocupado ? ' disabled title="Já há ' + D.max + ' destaques: tire um antes"' : '') + '>⭐ Marcar destaque</button></div></td></tr>';
     }).join('');
