@@ -303,7 +303,7 @@
         '<p class="s"><span data-sens>' + esc((NEG[v.negocio] || '') + ' · ' + brl(v.preco)) + '</span>' + (v.area ? ' · ' + v.area + ' m²' : '') + (v.cod ? ' · <span class="cod">' + esc(v.cod) + '</span>' : '') + '</p>' +
         (en ? '<p class="s" data-sens>' + esc(en) + '</p>' : '') + dados +
         (hist ? '<ul class="registro">' + hist + '</ul>' : '') +
-        '<textarea id="nota-' + esc(t.imovel_id) + '" maxlength="500" placeholder="Como foi o contato? (opcional)" aria-label="Nota do contato"></textarea>' +
+        '<textarea id="nota-' + esc(t.imovel_id) + '" maxlength="2000" rows="4" placeholder="Como foi o contato? Pode colar a mensagem inteira (até 2.000 caracteres)" aria-label="Nota do contato"></textarea>' +
         '<div class="linha-acoes"><button class="btn pri" data-acao="registrar" data-id="' + esc(t.imovel_id) + '"' + (A.ocupado ? ' disabled' : '') + '>Registrar contato</button>' +
         (A.saiu === t.imovel_id ? '<div class="msg aviso" style="margin:8px 0">O imóvel saiu do mercado? Ele vai para “Fora do mercado” (o cadastro fica guardado) e a sua captação termina.<div class="linha-acoes" style="margin-top:8px">' + [['alugado', 'Foi alugado'], ['vendido', 'Foi vendido'], ['retirado', 'Proprietário desistiu'], ['outro', 'Outro motivo']].map(function (m) { return '<button class="btn" data-acao="saiu_ok" data-m="' + m[0] + '" data-id="' + esc(t.imovel_id) + '">' + m[1] + '</button>'; }).join('') + '<button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '') +
         (conf ? '<button class="btn perigo" data-acao="soltar_ok" data-id="' + esc(t.imovel_id) + '">Confirmar: soltar</button><button class="btn" data-acao="cancelar">Cancelar</button>' : '<button class="btn perigo" data-acao="soltar" data-id="' + esc(t.imovel_id) + '">Soltar imóvel</button>') +
@@ -327,7 +327,7 @@
       if (q.error) throw q.error;
       var l = q.data && q.data.dados, hist = l && Array.isArray(l.historico) ? l.historico.slice() : [];
       var cod = v.cod || '', aluguel = v.negocio === 'aluguel';
-      var linha = acao === 'captar' ? 'Imóvel ' + cod + ' em captação por você no A CAPTAR (o contato do proprietário fica lá).' : 'Contato registrado no A CAPTAR' + (nota ? ': ' + String(nota).slice(0, 400) : '.');
+      var linha = acao === 'captar' ? 'Imóvel ' + cod + ' em captação por você no A CAPTAR (o contato do proprietário fica lá).' : 'Contato registrado no A CAPTAR' + (nota ? ': ' + String(nota).slice(0, 2000) : '.');
       hist.push({ em: agora.slice(0, 16), tipo: acao === 'captar' ? 'Observação' : 'WhatsApp', texto: linha });
       var dados, mesclar = !!l;
       if (!l) {
