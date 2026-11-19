@@ -7,7 +7,7 @@
    Nenhum dado fica neste arquivo. */
 (function () {
   'use strict';
-  var DIA = 864e5, EXPIRA = 7;
+  var DIA = 864e5, EXPIRA = 3; // 19/11/2026: trava de 3 dias (antes 7)
   var TIPO = { apartment: 'Apartamento', house: 'Casa', land: 'Terreno', commercial: 'Comercial' };
   var NEG = { aluguel: 'Aluguel', venda: 'Venda' };
   var PRACA = { principal: 'Bairros principais', subsidiaria: 'Subsidiários', continente: 'Continente' };
