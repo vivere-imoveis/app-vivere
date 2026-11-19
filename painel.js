@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -1638,7 +1638,7 @@ const TF = (() => {
   function gaveta(id) {
     const novo = !id, t = novo ? { tipo: 'tarefa', prioridade: 'media', data: S.tfData || '' } : (S.tarefas || {})[id];
     if (!t) return '';
-    const info = novo ? '' : `<p class="mut peq" style="margin:4px 0 0">${rotOrig(t)} · criada em ${dt(t.criado_em)}${feita(t) && t.feita_em ? ' · feita em ' + dt(t.feita_em) : ''}</p>${autorLin(t, 'mut peq', 1)}`;
+    const info = novo ? '' : `<p class="mut peq" style="margin:4px 0 0">${S.gestor && t._dono ? `Painel de <b>${esc(gNome(t._dono))}</b> · ` : ''}${rotOrig(t)} · criada em ${dt(t.criado_em)}${feita(t) && t.feita_em ? ' · feita em ' + dt(t.feita_em) : ''}</p>${autorLin(t, 'mut peq', 1)}`;
     return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Tarefa">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Anotar' : t.tipo === 'lembrete' ? 'Lembrete' : t.tipo === 'recado' ? 'Recado' : 'Tarefa'}</p><h3>${novo ? 'Nova tarefa' : esc(t.titulo)}</h3>${novo ? '' : pillSit(t)}${info}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${soLer() ? `<div class="painel"><p style="margin:0">${esc(t.obs || 'Sem observação.')}</p><p class="mut peq" style="margin:8px 0 0">${esc(rotQuando(t))} · prioridade ${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}. Só leitura no painel do gestor.</p></div>` : `
@@ -2673,10 +2673,10 @@ async function salvarCardImovel(form) {
 function vSolic() {
   const L0 = Object.entries(S.sol).map(([id, s]) => ({ id, ...s, _st: statusDe(id, s), _em: s.enviado_em || s.criado_em }));
   const TIPO0 = { novo_imovel: 'cadastro de imóvel', fotos: 'fotos novas', alteracao: 'alteração', captacao: 'captação de imóvel', corretor_anunciante: 'corretor anunciante' }, ST0 = { rascunho: 'rascunho', pendente: 'aguardando aprovação', complemento: 'complementar', aprovada: 'aprovada', recusada: 'recusada', aplicada: 'aplicada', cancelada: 'cancelada' };
-  const fS = BA.filtra(L0, qDe(), (r) => ({ txt: [r.ref, TIPO0[r.tipo || 'alteracao'], ST0[r._st] || r._st, r.obs, r.descricao, r.imovel, r.cliente_nome, ...Object.keys(r.alteracoes || {}), ...Object.values(r.dados || {}).map((v) => Array.isArray(v) ? v.join(' ') : v)].filter((x) => x != null).join(' · '), valores: [(r.dados || {}).valor], nums: { dorm: (r.dados || {}).dormitorios, vagas: (r.dados || {}).vagas } }));
+  const fS = BA.filtra(L0, qDe(), (r) => ({ txt: [r.ref, S.gestor && r._dono ? gNome(r._dono) : '', TIPO0[r.tipo || 'alteracao'], ST0[r._st] || r._st, r.obs, r.descricao, r.imovel, r.cliente_nome, ...Object.keys(r.alteracoes || {}), ...Object.values(r.dados || {}).map((v) => Array.isArray(v) ? v.join(' ') : v)].filter((x) => x != null).join(' · '), valores: [(r.dados || {}).valor], nums: { dorm: (r.dados || {}).dormitorios, vagas: (r.dados || {}).vagas } }));
   const L = fS.lista; qInfo(fS, 'solicitações');
   const TIPO = { novo_imovel: 'Cadastro de imóvel', fotos: 'Fotos novas', alteracao: 'Alteração', captacao: 'Captação de imóvel', corretor_anunciante: 'Corretor anunciante' };
-  const resumo = (r) => r.tipo === 'corretor_anunciante' ? 'Lead de captação: ' + ((S.leads[r.lead_painel] || {}).nome || 'lead') : r.tipo === 'captacao' ? [r.imovel || r.ref || 'Imóvel captado', r.cliente_nome ? 'para ' + r.cliente_nome : ''].filter(Boolean).join(' · ') : r.tipo === 'novo_imovel' ? `${(r.fotos || []).length} fotos · ${(r.docs || []).length} documentos${r._st === 'rascunho' ? ` · faltam ${faltantes(r).length} itens` : ''}` : r.tipo === 'fotos' ? `${(r.fotos || []).length} fotos` : Object.keys(r.alteracoes || {}).join(', ') || (r.obs ? 'observação' : '—');
+  const resumo = (r) => r.tipo === 'corretor_anunciante' ? 'Lead de captação: ' + ((S.leads[r.lead_painel] || {}).nome || 'lead') : r.tipo === 'captacao' ? [r.imovel || r.ref || 'Imóvel captado', r.cliente_nome ? 'para ' + r.cliente_nome : ''].filter(Boolean).join(' · ') : r.tipo === 'novo_imovel' ? [[(r.dados || {}).tipo, (r.dados || {}).bairro].filter(Boolean).join(' em '), qtdN((r.fotos || []).length, 'foto'), qtdN((r.docs || []).length, 'documento'), r._st === 'rascunho' ? `faltam ${faltantes(r).length} itens` : ''].filter(Boolean).join(' · ') : r.tipo === 'fotos' ? qtdN((r.fotos || []).length, 'foto') : Object.keys(r.alteracoes || {}).map((k) => ROT_ALT[k] || k).join(', ') || (r.obs ? 'observação' : '—');
   const cols = [
     { k: '_em', l: 'Data', h: (r) => dt(r._em) },
     { k: 'tipo', l: 'Tipo', v: (r) => TIPO[r.tipo || 'alteracao'], h: (r) => esc(TIPO[r.tipo || 'alteracao']) },
@@ -2684,12 +2684,13 @@ function vSolic() {
     { k: 'resumo', l: 'Conteúdo', ord: false, h: (r) => `<span class="peq">${esc(resumo(r))}</span>${autorLin(r)}` },
     { k: '_st', l: 'Situação', h: (r) => pillSit(r._st) },
   ];
+  if (S.gestor && S.verComo === 'todos') cols.splice(1, 0, { k: '_dono', l: 'Corretor', v: (r) => gCurto(r._dono || ''), h: (r) => `<span class="peq">${esc(gCurto(r._dono || '') || '—')}</span>` });
   const pend = L.filter((r) => r._st === 'pendente').length;
   return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>Solicitações</h2>${S.ehDono ? '' : '<button class="b p" type="button" id="novoImovel">+ Cadastrar imóvel</button>'}</div>
     ${S.ehDono ? `<div class="faixa-dono">Você está como diretoria: ${pend} pedido${pend === 1 ? '' : 's'} aguardando. Toque num pedido para aprovar ou recusar.</div>` : ''}
     ${tabela('sol', cols, L, { padrao: { c: '_em', d: -1 }, abre: (r) => 'sol:' + r.id, vazio: 'Nenhuma solicitação. Use "Cadastrar imóvel", "Solicitar alteração" ou "Adicionar fotos" em Meus imóveis.', cartao: (r) => `
       <div class="cm-l1"><span class="cm-nome">${esc(TIPO[r.tipo || 'alteracao'])} · <span class="ref">${esc(r.ref || '—')}</span></span><span class="cm-v">${pillSit(r._st)}</span></div>
-      <div class="cm-lin">${esc(resumo(r))} · ${dt(r._em)}</div>${autorLin(r, 'cm-lin mut peq')}` })}
+      <div class="cm-lin">${S.gestor && S.verComo === 'todos' && r._dono ? `<b>${esc(gCurto(r._dono))}</b> · ` : ''}${esc(resumo(r))} · ${dt(r._em)}</div>${autorLin(r, 'cm-lin mut peq')}` })}
     <p class="status">Nada vai ao site sem a aprovação da diretoria.</p></section>`;
 }
 
@@ -2994,12 +2995,12 @@ function htmlFotosX(fotos, attr) {
 }
 function blocoPlacaLazer(s) {
   const d = s.dados || {}, L = [];
-  if (!vazio_(d.placa)) L.push(`<div><span>Placa</span><b>${esc(d.placa)}${temPlaca(d) && d.placa_data ? ' em ' + esc(String(d.placa_data).split('-').reverse().join('/')) : ''}${semPlaca(d) && d.placa_motivo ? ' · ' + esc(d.placa_motivo) : ''}${temPlaca(d) ? ` · ${nPlaca(s) ? nPlaca(s) + ' foto(s)' : 'sem foto'}` : ''}</b></div>`);
+  if (!vazio_(d.placa)) L.push(`<div><span>Placa da Vivere no imóvel</span><b>${esc(d.placa)}${temPlaca(d) && d.placa_data ? ' em ' + esc(String(d.placa_data).split('-').reverse().join('/')) : ''}${semPlaca(d) && d.placa_motivo ? ' · ' + esc(d.placa_motivo) : ''}${temPlaca(d) ? ` · ${nPlaca(s) ? nPlaca(s) + ' foto(s)' : 'sem foto'}` : ''}</b></div>`);
   if (!vazio_(d.lazer)) L.push(`<div><span>Área de lazer</span><b>${esc(d.lazer)}${lazerSim(d) ? ` · ${nLazer(s)} de ${MIN_FOTOS_LAZER} fotos` : ''}</b></div>`);
   const tr = travaLazer(s);
   if (!L.length && !tr) return '';
   const fotos = [...(s.fotos_lazer || []), ...(s.foto_placa || [])];
-  return `<div class="painel"><h2>Placa e áreas de lazer</h2>${tr ? `<p class="falta" style="margin:6px 0 0">${esc(tr)}</p>` : ''}${L.length ? `<div class="fatos" style="margin-top:10px">${L.join('')}</div>` : ''}${fotos.length ? `<div style="margin-top:10px">${htmlFotosX(fotos, '')}</div>` : ''}</div>`;
+  return `<div class="painel"><h2>Placa e áreas de lazer</h2>${tr ? `<p class="falta" style="margin:6px 0 0">${esc(tr.charAt(0).toUpperCase() + tr.slice(1))}</p>` : ''}${L.length ? `<div class="fatos" style="margin-top:10px">${L.join('')}</div>` : ''}${fotos.length ? `<div style="margin-top:10px">${htmlFotosX(fotos, '')}</div>` : ''}</div>`;
 }
 function blocoDriveVivian(id, s) {
   const cd = (S.cadDrive || {})[id] || null;
@@ -3016,17 +3017,32 @@ function blocoDriveVivian(id, s) {
   return `<div class="painel"><h2>Pasta no Drive e arquivos da Vivian</h2>${url ? `<div class="linha" style="margin-top:8px"><a class="b p" href="${escUrl(url)}" target="_blank" rel="noopener noreferrer">Pasta no Drive${cd.pasta_nome ? ' · ' + esc(cd.pasta_nome) : ''}</a></div>` : `<p class="peq mut" style="margin:6px 0 0">A pasta no Drive nasce quando o cadastro feito pela Vivian vai à diretoria.</p>`}${arqs.length ? `<div class="hist" style="margin-top:10px">${arqs.join('')}</div>` : ''}</div>`;
 }
 
+// ---------- trocas-sol-detalhe (19/11/2026): campo do cadastro no detalhe ----------
+const qtdN = (n, pal) => `${n} ${pal}${n === 1 ? '' : 's'}`;
+const SOL_SENS = /^(logradouro|numero|complemento|comissao|valor|condominio|iptu|entrada_min|p_cpf|p_celular|p_email|p_endereco|p_rg|p_tel2|p_conjuge_cpf)$/;
+function fatoSol(c, d) {
+  const v = d[c.k], sens = SOL_SENS.test(c.k) ? ' data-sens' : '';
+  let h;
+  if (Array.isArray(v)) h = `<div class="vchips">${v.map((x) => `<span class="vchip">${esc(x)}</span>`).join('')}</div>`;
+  else if (c.t === 'number' && /valor|condominio|iptu|entrada/.test(c.k)) h = esc(brl(v));
+  else if (/^area_/.test(c.k) && v !== '' && !isNaN(Number(v))) h = esc(Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
+  else if (c.t === 'tel') h = esc(fone(v));
+  else h = esc(v);
+  const largo = Array.isArray(v) || c.t === 'area' || !!c.w || String(v).length > 60;
+  return `<div class="${largo ? 'fl' : ''}"><span>${esc(rotulo(c, d))}</span><b${sens}${c.t === 'area' ? ' class="txt-longo"' : ''}>${h}</b></div>`;
+}
+(function () { const st = document.createElement('style'); st.id = 'css-sol-detalhe'; st.textContent = '.fatos>div{align-content:start}.fatos-sol{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.fatos-sol .fl{grid-column:1/-1}.fatos-sol .txt-longo{white-space:pre-line;line-height:1.45}.vchips,.fatos .vchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}.vchip,.fatos .vchip{display:inline-block;letter-spacing:0;color:var(--ink);padding:2px 10px;border-radius:999px;background:var(--soft,rgba(0,0,0,.05));border:1px solid var(--line);font-size:13px;font-weight:500;line-height:1.5}.falta-chip{color:var(--warn,#8a6100);border-color:currentColor;background:transparent}.alt-sol{display:grid;gap:10px;margin-top:10px}.alt-it{display:grid;gap:4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}.alt-de,.alt-para{white-space:pre-line;overflow-wrap:anywhere}@media(max-width:560px){.fatos-sol{grid-template-columns:repeat(2,minmax(0,1fr))}}'; document.head.appendChild(st); })();
 // ---------- Detalhe de uma solicitação (corretor vê; diretoria aprova) ----------
 function gavetaSol(id) {
   const s = S.sol[id]; if (!s) return '';
   const st = statusDe(id, s), dc = S.decisoes[id] || {}, d = s.dados || {}, tipo = s.tipo || 'alteracao';
   let corpo = '';
   if (tipo === 'novo_imovel') {
-    corpo = SECOES.map(([t, campos]) => { const linhas = campos.filter((c) => !vazio_(d[c.k])).map((c) => `<div><span>${esc(rotulo(c, d))}</span><b${/^(logradouro|numero|complemento|comissao|valor|condominio|iptu|entrada_min)$/.test(c.k) ? ' data-sens' : ''}>${esc(Array.isArray(d[c.k]) ? d[c.k].join(', ') : c.t === 'number' && /valor|condominio|iptu|entrada/.test(c.k) ? brl(d[c.k]) : d[c.k])}</b></div>`).join(''); return linhas ? `<div class="painel"><h2>${t}</h2><div class="fatos" style="margin-top:10px">${linhas}</div></div>` : ''; }).join('');
+    corpo = SECOES.filter(([t]) => t !== 'Placa e áreas de lazer').map(([t, campos]) => { const linhas = campos.filter((c) => !vazio_(d[c.k])).map((c) => fatoSol(c, d)).join(''); return linhas ? `<div class="painel"><h2>${t}</h2><div class="fatos fatos-sol" style="margin-top:10px">${linhas}</div></div>` : ''; }).join('');   // trocas-sol-detalhe: placa e lazer só no bloco próprio
     corpo += `<div class="painel"><h2>Descrição${s.descricao_origem === 'ia' ? ' (gerada com IA e revisada pelo corretor)' : ''}</h2>${s.pede_descricao ? '<p class="falta">O corretor pediu que a Vivere escreva a descrição.</p>' : `<p class="desc">${esc(s.descricao || '—')}</p>`}</div>`;
     corpo += `<div class="painel"><h2>Documentos</h2>${htmlDocs(s.docs || [], false)}</div>`;
     corpo += blocoPlacaLazer(s) + blocoDriveVivian(id, s);
-    const f = faltantes(s); if (f.length) corpo = `<div class="painel"><p class="falta" style="margin:0">Faltando: ${f.map(esc).join(' · ')}</p></div>` + corpo;
+    const f = faltantes(s); if (f.length) corpo = `<div class="painel"><p class="falta" style="margin:0 0 8px"><b>Faltando (${f.length})</b></p><div class="vchips">${f.map((x) => `<span class="vchip falta-chip">${esc(x)}</span>`).join('')}</div></div>` + corpo;
   } else if (tipo === 'corretor_anunciante') {
     corpo = `<div class="painel peq"><p style="margin:0">Aviso de que o lead de captação <b>${esc((S.leads[s.lead_painel] || {}).nome || '—')}</b> é corretor ou imobiliária. A entrega diária registra o telefone no cadastro de corretores anunciantes do HUB.</p></div>`;
   } else if (tipo === 'captacao') {
@@ -3034,7 +3050,7 @@ function gavetaSol(id) {
   } else if (tipo === 'fotos') {
     corpo = s.obs ? `<p class="peq">Obs.: ${esc(s.obs)}</p>` : '';
   } else {
-    corpo = `<div class="painel peq">${Object.entries(s.alteracoes || {}).map(([k, x]) => `<p${VLR_ALT.has(k) ? ' data-sens' : ''}>${esc(k)}: ${esc(x.de ?? '—')} → <b>${esc(x.para ?? '—')}</b></p>`).join('') || '—'}${s.obs ? `<p class="mut">Obs.: ${esc(s.obs)}</p>` : ''}</div>`;
+    corpo = `<div class="painel"><h2>O que muda</h2><div class="alt-sol">${Object.entries(s.alteracoes || {}).map(([k, x]) => `<div class="alt-it"${VLR_ALT.has(k) || /^proprietario_/.test(k) ? ' data-sens' : ''}><span class="mut peq">${esc(ROT_ALT[k] || k)}</span><div class="alt-de"><span class="mut peq">Antes</span> ${esc(fmtAlt(k, x.de))}</div><div class="alt-para"><span class="mut peq">Depois</span> <b>${esc(fmtAlt(k, x.para))}</b></div></div>`).join('') || '<p class="mut">—</p>'}</div>${s.obs ? `<p class="peq" style="margin:10px 0 0"><span class="mut">Obs.:</span> ${esc(s.obs)}</p>` : ''}</div>`;
   }
   if ((s.fotos || []).length) corpo += `<div class="painel"><h2>Fotos (${s.fotos.length})</h2><div style="margin-top:10px">${htmlFotos(s.fotos, false)}</div></div>`;
   const falta = tipo === 'novo_imovel' ? faltantes(s) : [];
@@ -3046,7 +3062,7 @@ function gavetaSol(id) {
   const editar = !S.ehDono && editavel ? `<button class="b p" type="button" data-continuar="${esc(id)}">${st === 'complemento' ? 'Complementar o pedido' : 'Continuar o cadastro'}</button>` : !S.ehDono && st === 'complemento' ? '<span class="peq mut">Envie uma nova alteração com o que a diretoria pediu.</span>' : '';
   const cancelar = !S.ehDono && st === 'pendente' ? `<button class="b" type="button" data-cancelar="${esc(id)}">Cancelar pedido</button>` : '';
   return `<div class="gaveta larga" role="dialog" aria-modal="true" aria-label="Solicitação">
-    <div class="cab"><div><p class="mut peq" style="margin:0">${esc({ novo_imovel: 'Cadastro de imóvel', fotos: 'Fotos novas', alteracao: 'Alteração de imóvel', captacao: 'Pedido de captação', corretor_anunciante: 'Aviso de corretor anunciante' }[tipo] || tipo)} · enviada em ${dt(s.enviado_em || s.criado_em)}</p><h3>${esc(s.ref || 'Imóvel')}</h3><p style="margin:6px 0 0">${pillSit(st)}</p>${autorLin(s, 'mut peq', 1)}</div><button class="b" type="button" data-fechar>Fechar</button></div>
+    <div class="cab"><div><p class="mut peq" style="margin:0">${esc({ novo_imovel: 'Cadastro de imóvel', fotos: 'Fotos novas', alteracao: 'Alteração de imóvel', captacao: 'Pedido de captação', corretor_anunciante: 'Aviso de corretor anunciante' }[tipo] || tipo)} · enviada em ${dt(s.enviado_em || s.criado_em)}</p><h3>${esc(s.ref || 'Imóvel')}</h3><p style="margin:6px 0 0">${pillSit(st)}${S.gestor && s._dono ? ` <span class="peq" style="margin-left:6px">Pedido por <b>${esc(gNome(s._dono))}</b></span>` : ''}</p>${autorLin(s, 'mut peq', 1)}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${dc.resposta ? `<div class="painel peq ${st === 'complemento' ? 'faixa-dono' : ''}"><b>${st === 'complemento' ? 'A diretoria pediu complemento:' : 'Resposta da diretoria:'}</b> ${esc(dc.resposta)}</div>` : ''}
     ${dc.por_nome && dc.status ? `<p class="peq mut" style="margin:0">Decidido por ${esc(dc.por_nome)}${dc.origem === 'vivian' ? ' pela Vivian' : ''}${dc.em ? ' em ' + esc(dt(dc.em)) : ''}${dc.auto ? ' (pedido da diretoria)' : ''}</p>` : ''}
     ${corpo}${aprova}<div class="linha">${editar}${cancelar}</div></div>`;
@@ -3056,10 +3072,11 @@ function gavetaSol(id) {
 // Painel do gestor (05/11/2026): só leitura; a decisão se toma no painel do corretor, pelo botão abaixo (vale na hora)
 function decNoPainel(s) {
   const p = (S.G.paineis || {})[s._dono] || {}, quem = s._dono ? gCurto(s._dono) : 'o corretor';
-  const url = /^https:\/\/claude\.ai\//.test(String(p.url || '')) ? p.url : '';
+  const noApp = /\/painel(\.html)?$/.test(location.pathname) && s._dono;   // trocas-sol-detalhe: no app o painel do corretor abre aqui mesmo
+  const url = noApp ? 'painel.html?ver=' + encodeURIComponent(s._dono) : /^https:\/\/claude\.ai\//.test(String(p.url || '')) ? p.url : '';
   return `<div class="painel"><h2>Decisão da diretoria</h2>
-    <p class="peq mut" style="margin:6px 0 0">O Painel do gestor é só leitura e mostra a foto do dia. Aprovar ou recusar se faz no painel de ${esc(quem)}, e vale na hora.</p>
-    <div class="linha" style="margin-top:10px">${url ? `<a class="b p" href="${escUrl(url)}" target="_blank" rel="noopener noreferrer">Decidir no painel de ${esc(quem)}</a>` : `<span class="falta">O endereço do painel de ${esc(quem)} não está na foto do dia: abra esse painel pela barra lateral.</span>`}</div></div>`;
+    <p class="peq mut" style="margin:6px 0 0">${noApp ? `A visão de todos os painéis é só leitura. Aprovar ou recusar se faz no painel de ${esc(quem)}, que abre aqui no app, e vale na hora.` : `O Painel do gestor é só leitura e mostra a foto do dia. Aprovar ou recusar se faz no painel de ${esc(quem)}, e vale na hora.`}</p>
+    <div class="linha" style="margin-top:10px">${url ? `<a class="b p" href="${noApp ? esc(url) : escUrl(url)}"${noApp ? '' : ' target="_blank" rel="noopener noreferrer"'}>Decidir no painel de ${esc(quem)}</a>` : `<span class="falta">O endereço do painel de ${esc(quem)} não está na foto do dia: abra esse painel pela barra lateral.</span>`}</div></div>`;
 }
 function decCapt(id, s) {
   const c = (S.capt || {})[s.capt_id] || null;
