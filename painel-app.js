@@ -53,3 +53,42 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
 })();
+
+/* Revisão visual do painel (19/11/2026, tarefa revisao-geral-hub-painel-corretor):
+   4. barra mínima fixa (celular e tablet) acompanha a rolagem e a aba: ao trocar de aba a página volta ao topo e a barra some;
+      antes ela ficava visível com o nome da aba anterior até rolar.
+   8. "Ordenar por" no celular vira um seletor; escolher uma opção clica o botão de ordenação que já existe (o painel.js segue igual). */
+(function () {
+  'use strict';
+  function nomeAba() { var b = document.querySelector('#abas button[aria-selected="true"]'); if (!b) return ''; var t = Array.prototype.filter.call(b.childNodes, function (x) { return x.nodeType === 3; }).map(function (x) { return x.nodeValue; }).join(' ').trim(); return t || (b.textContent || '').trim(); }
+  function sync() {
+    var mini = document.querySelector('.topo-mini'), topo = document.querySelector('header.topo'); if (!mini || !topo) return;
+    var mostra = getComputedStyle(topo).position !== 'sticky' && topo.getBoundingClientRect().bottom <= 0;
+    mini.classList.toggle('vis', mostra); mini.setAttribute('aria-hidden', String(!mostra));
+    var a = mini.querySelector('.tm-aba'); if (a) { var n = nomeAba(); if (a.textContent !== n) a.textContent = n; }
+  }
+  function seletores() {
+    document.querySelectorAll('.ordenar-movel:not(.om-ok)').forEach(function (box) {
+      var bts = box.querySelectorAll('button[data-ord]'); if (!bts.length) return;
+      var w = document.createElement('span'); w.className = 'om-sel';
+      var s = document.createElement('select'); s.setAttribute('aria-label', 'Ordenar por');
+      Array.prototype.forEach.call(bts, function (b, i) { var o = document.createElement('option'); o.value = String(i); o.textContent = (b.textContent || '').replace(/[↕▲▼↑↓]/g, '').trim(); if (b.hasAttribute('data-ativo')) o.selected = true; s.appendChild(o); });
+      var ativo = box.querySelector('button[data-ord][data-ativo]');
+      var inv = document.createElement('button'); inv.type = 'button'; inv.className = 'om-inv';
+      inv.textContent = ativo ? ((ativo.textContent || '').indexOf('▲') >= 0 ? '▲' : (ativo.textContent || '').indexOf('▼') >= 0 ? '▼' : '↕') : '↕';
+      inv.title = 'Inverter a ordem'; inv.setAttribute('aria-label', 'Inverter a ordem');
+      s.addEventListener('change', function () { var b = bts[Number(s.value)]; if (b) b.click(); });
+      inv.addEventListener('click', function () { var b = box.querySelector('button[data-ord][data-ativo]') || bts[Number(s.value)]; if (b) b.click(); });
+      w.appendChild(s); w.appendChild(inv); box.appendChild(w); box.classList.add('om-ok');
+    });
+  }
+  function liga() {
+    addEventListener('scroll', sync, { passive: true });
+    addEventListener('resize', sync);
+    document.addEventListener('click', function () { setTimeout(sync, 80); }, true);
+    var main = document.querySelector('main') || document.body;
+    new MutationObserver(function () { seletores(); }).observe(main, { childList: true, subtree: true });
+    seletores(); sync();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
+})();
