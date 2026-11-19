@@ -1,4 +1,6 @@
-/* A CAPTAR no app da Vivere — fatia 3 (09/11/2026).
+/* A CAPTAR no app da Vivere — fatia 3 (09/11/2026). 19/11/2026: aba Fora do mercado (lista 'fora': imóveis que sumiram dos
+   portais em 2 checagens seguidas ou que o corretor confirmou como alugados/vendidos; contato só para quem trava, como em
+   Disponíveis) e o botão “Saiu do mercado” em Minhas captações (função ac_marcar_fora).
    Lê do Supabase (tabelas ac_*), com as regras no banco: o corretor vê os imóveis livres e os dele;
    o contato do proprietário só chega a quem travou o imóvel; gestor e diretoria veem tudo.
    Escrita só pelas funções ac_travar, ac_registrar_contato, ac_soltar, ac_pedir_captei, ac_decidir_pedido e ac_liberar.
@@ -13,8 +15,8 @@
 
   var A = {
     sub: 'disp', im: [], tr: [], ped: [], ct: {}, carregado: false, carregando: false,
-    f: { q: '', neg: '' }, bs: {}, bAberto: false, bq: '', cod: '', ordem: { disp: { k: 'anuncio', d: -1 }, captei: { k: 'bairro', d: 1 }, dir: { k: 'desde', d: 1 } },
-    confirmar: null, soltar: null, ocupado: false
+    f: { q: '', neg: '' }, bs: {}, bAberto: false, bq: '', cod: '', ordem: { disp: { k: 'anuncio', d: -1 }, captei: { k: 'bairro', d: 1 }, dir: { k: 'desde', d: 1 }, fora: { k: 'anuncio', d: -1 } },
+    confirmar: null, soltar: null, saiu: null, ocupado: false
   };
   var C = null; // contexto vindo do app.js: { sb, eu, esc, toast, titulo, redesenhar }
 
@@ -246,6 +248,34 @@
       '<table class="ac ac-disp"><thead><tr>' + cols.map(function (c) { return thOrd('disp', c[0], c[1]); }).join('') + '</tr></thead><tbody>' + linhas + '</tbody></table>';
   }
 
+  function telaFora() {
+    var base = A.im.filter(function (v) { return v.lista === 'fora'; });
+    var arr = ordenar(filtrar(base), A.ordem.fora, valImovel);
+    var cols = [['bairro', 'Imóvel'], ['negocio', 'Negócio e tipo'], ['preco', 'Valor'], ['area', 'Quartos · área'], ['estrelas', 'Prioridade'], ['anuncio', 'Anunciado'], ['situacao', 'Situação']];
+    var colsBarra = [['bairro', 'Bairro'], ['negocio', 'Negócio'], ['tipo', 'Tipo'], ['preco', 'Valor'], ['quartos', 'Quartos'], ['area', 'Área'], ['estrelas', 'Prioridade'], ['anuncio', 'Anunciado'], ['situacao', 'Situação']];
+    var h = filtros(base);
+    var intro = '<p class="s" style="margin:0 0 10px">Imóveis que já estiveram para captar e saíram dos portais (sumiram em duas checagens seguidas ou o corretor confirmou que foram alugados ou vendidos). O cadastro fica guardado: dá para captar de novo, para a próxima locação ou venda. O contato abre em “Minhas captações”, como nos disponíveis.</p>';
+    h = intro + h;
+    if (!base.length) return h + '<div class="vazio">Nenhum imóvel fora do mercado por enquanto.</div>';
+    if (!arr.length) return h + '<div class="vazio">Nenhum imóvel com esses filtros.</div>';
+    var linhas = arr.map(function (v) {
+      var s = situacao(v), ac = '';
+      if (s.k === 'livre') ac = '<button class="btn pri" data-acao="confirmar" data-id="' + esc(v.id) + '"' + (A.ocupado ? ' disabled' : '') + '>Ver e captar</button>';
+      else if (s.k === 'meu') ac = '<button class="btn" data-sub="minhas">Abrir em Minhas</button>';
+      var conf = A.confirmar === v.id ? '<div class="msg aviso" style="margin-top:8px">O imóvel fica em captação por você, em nome da Vivere, por 7 dias renovados a cada contato registrado. A equipe verá que ele está com você, e o contato do proprietário abre em “Minhas captações”.<div class="linha-acoes" style="margin-top:8px"><button class="btn pri" data-acao="captar" data-id="' + esc(v.id) + '">Confirmar e captar</button><button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '';
+      var an = v.anunciado_em || v.coletado_em;
+      return '<tr' + (A.cod ? ' class="alvo"' : '') + '>' + celImovel(v) +
+        '<td data-r="Negócio e tipo">' + esc(NEG[v.negocio] || '—') + '<span class="s">' + esc(TIPO[v.tipo] || 'Tipo não informado') + '</span></td>' +
+        '<td data-r="Valor" class="num" data-sens>' + brl(v.preco) + '</td>' +
+        '<td data-r="Quartos · área" class="num">' + (v.quartos == null ? '—' : v.quartos + (v.quartos === 1 ? ' quarto' : ' quartos')) + '<span class="s">' + (v.area ? v.area + ' m²' : 'área —') + '</span></td>' +
+        '<td data-r="Prioridade"><span class="est" title="' + esc(PRACA[v.praca] || '') + '">' + estrelas(v.estrelas) + '</span></td>' +
+        '<td data-r="Anunciado">' + dataBR(an) + '<span class="s">' + esc(origemDe(v)) + '</span>' + sitesDe(v) + '</td>' +
+        '<td class="c-acoes c-sit"><div class="linha-acoes"><span class="pill ' + (s.k === 'livre' ? 'ok' : s.k === 'meu' ? 'warn' : '') + '">' + esc(s.t) + '</span>' + ac + '</div>' + conf + '</td></tr>';
+    }).join('');
+    return h + '<p class="s" style="margin:0 0 10px">' + arr.length + ' de ' + base.length + ' imóveis fora do mercado</p>' + barraOrd('fora', colsBarra) +
+      '<table class="ac ac-disp ac-fora"><thead><tr>' + cols.map(function (c) { return thOrd('fora', c[0], c[1]); }).join('') + '</tr></thead><tbody>' + linhas + '</tbody></table>';
+  }
+
   function telaMinhas() {
     var meus = A.tr.filter(function (t) { return t.user_id === C.sessaoUid; });
     if (A.cod) { var alvo = meus.filter(function (t) { var v = acharIm(t.imovel_id); return v && v.cod === A.cod; }); if (alvo.length) meus = alvo; }
@@ -275,7 +305,9 @@
         (hist ? '<ul class="registro">' + hist + '</ul>' : '') +
         '<textarea id="nota-' + esc(t.imovel_id) + '" maxlength="500" placeholder="Como foi o contato? (opcional)" aria-label="Nota do contato"></textarea>' +
         '<div class="linha-acoes"><button class="btn pri" data-acao="registrar" data-id="' + esc(t.imovel_id) + '"' + (A.ocupado ? ' disabled' : '') + '>Registrar contato</button>' +
+        (A.saiu === t.imovel_id ? '<div class="msg aviso" style="margin:8px 0">O imóvel saiu do mercado? Ele vai para “Fora do mercado” (o cadastro fica guardado) e a sua captação termina.<div class="linha-acoes" style="margin-top:8px">' + [['alugado', 'Foi alugado'], ['vendido', 'Foi vendido'], ['retirado', 'Proprietário desistiu'], ['outro', 'Outro motivo']].map(function (m) { return '<button class="btn" data-acao="saiu_ok" data-m="' + m[0] + '" data-id="' + esc(t.imovel_id) + '">' + m[1] + '</button>'; }).join('') + '<button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '') +
         (conf ? '<button class="btn perigo" data-acao="soltar_ok" data-id="' + esc(t.imovel_id) + '">Confirmar: soltar</button><button class="btn" data-acao="cancelar">Cancelar</button>' : '<button class="btn perigo" data-acao="soltar" data-id="' + esc(t.imovel_id) + '">Soltar imóvel</button>') +
+        (A.saiu === t.imovel_id ? '' : '<button class="btn" data-acao="saiu" data-id="' + esc(t.imovel_id) + '">Saiu do mercado</button>') +
         '</div></article>';
     }).join('') + '</div>';
   }
@@ -376,14 +408,14 @@
   var raiz = null;
   function desenhar() {
     if (!raiz) return;
-    var subs = [['disp', 'Disponíveis'], ['minhas', 'Minhas captações'], ['captei', 'Captei · 1 Capcoin']];
+    var subs = [['disp', 'Disponíveis'], ['minhas', 'Minhas captações'], ['captei', 'Captei · 1 Capcoin'], ['fora', 'Fora do mercado']];
     if (diretoria()) subs.push(['dir', 'Diretoria']);
     if (!subs.some(function (s) { return s[0] === A.sub; })) A.sub = 'disp';
     var total = A.im.filter(function (v) { return v.lista === 'base'; }).length;
     var livres = A.im.filter(function (v) { return v.lista === 'base' && situacao(v).k === 'livre'; }).length;
     var minhas = A.tr.filter(function (t) { return t.user_id === C.sessaoUid; }).length;
     var vencendo = A.tr.filter(function (t) { return t.user_id === C.sessaoUid && (EXPIRA * DIA - (Date.now() - ultimo(t))) <= 2 * DIA; }).length;
-    var corpo = A.sub === 'minhas' ? telaMinhas() : A.sub === 'captei' ? telaCaptei() : A.sub === 'dir' ? telaDir() : telaDisp();
+    var corpo = A.sub === 'minhas' ? telaMinhas() : A.sub === 'captei' ? telaCaptei() : A.sub === 'dir' ? telaDir() : A.sub === 'fora' ? telaFora() : telaDisp();
     raiz.innerHTML =
       '<div class="resumo-ac"><div class="tot"><b>' + total + '</b><span>Total disponível</span></div><div><b>' + livres + '</b><span>Livres</span></div><div><b>' + minhas + '</b><span>Minhas</span></div>' + (diretoria() ? '<div><b>' + A.tr.length + '</b><span>Em captação (equipe)</span></div>' : '<div><b>' + vencendo + '</b><span>Vencem em até 2 dias</span></div>') + '<div><b>' + A.im.filter(function (v) { return v.lista === 'captei'; }).length + '</b><span>No Captei</span></div></div>' +
       '<div class="cod-ac"><label for="acCod">Código do imóvel</label><input id="acCod" placeholder="AC-XXXXXX" value="' + esc(A.cod) + '" autocomplete="off">' + (A.cod ? '<button class="btn" data-acao="limpar_cod">Limpar</button>' : '') + '</div>' +
@@ -394,7 +426,7 @@
   }
 
   function ligar() {
-    raiz.querySelectorAll('[data-sub]').forEach(function (b) { b.onclick = function () { A.sub = b.dataset.sub; A.confirmar = null; A.soltar = null; try { sessionStorage.setItem('acaptar-sub', A.sub); } catch (e) { } desenhar(); }; });
+    raiz.querySelectorAll('[data-sub]').forEach(function (b) { b.onclick = function () { A.sub = b.dataset.sub; A.confirmar = null; A.soltar = null; A.saiu = null; try { sessionStorage.setItem('acaptar-sub', A.sub); } catch (e) { } desenhar(); }; });
     raiz.querySelectorAll('[data-ord]').forEach(function (b) { b.onclick = function () { var p = b.dataset.ord.split(':'), st = A.ordem[p[0]]; A.ordem[p[0]] = st.k === p[1] ? { k: p[1], d: -st.d } : { k: p[1], d: 1 }; desenhar(); }; });
     raiz.querySelectorAll('[data-copiar]').forEach(function (b) { b.onclick = function () { try { navigator.clipboard.writeText(b.dataset.copiar).then(function () { b.textContent = 'Copiado'; setTimeout(function () { b.textContent = 'Copiar'; }, 1500); }); } catch (e) { } }; });
     var busca = raiz.querySelector('#acBusca');
@@ -409,7 +441,9 @@
       b.onclick = function () {
         var id = b.dataset.id, a = b.dataset.acao;
         if (a === 'confirmar') { A.confirmar = id; desenhar(); }
-        else if (a === 'cancelar') { A.confirmar = null; A.soltar = null; desenhar(); }
+        else if (a === 'cancelar') { A.confirmar = null; A.soltar = null; A.saiu = null; desenhar(); }
+        else if (a === 'saiu') { A.saiu = id; desenhar(); }
+        else if (a === 'saiu_ok') { A.saiu = null; rpc('ac_marcar_fora', { p_imovel: id, p_motivo: b.dataset.m }, 'Registrado: o imóvel foi para “Fora do mercado”.'); }
         else if (a === 'captar') { A.confirmar = null; rpc('ac_travar', { p_imovel: id }, 'Imóvel em captação por você. O contato está em “Minhas captações”.').then(function (d) { if (d && d.ok) { A.sub = 'minhas'; desenhar(); ligarFunil('captar', id, ''); } }); }
         else if (a === 'registrar') { var ta = raiz.querySelector('#nota-' + CSS.escape(id)), nota = ta ? ta.value : ''; rpc('ac_registrar_contato', { p_imovel: id, p_nota: nota }, 'Contato registrado. O prazo de 7 dias recomeçou.').then(function (d) { if (d && d.ok !== false) ligarFunil('registrar', id, nota); }); }
         else if (a === 'soltar') { A.soltar = id; desenhar(); }
@@ -422,7 +456,7 @@
         else if (a === 'bairros') { A.bAberto = !A.bAberto; if (!A.bAberto) A.bq = ''; desenhar(); }
         else if (a === 'bx') { delete A.bs[id]; guardarBairros(); desenhar(); }
         else if (a === 'blimpar') { A.bs = {}; guardarBairros(); desenhar(); }
-        else if (a === 'bgrupo') { var lista = bairrosDe(A.im.filter(function (v) { return v.lista === (A.sub === 'captei' ? 'captei' : 'base'); })).filter(function (b) { return b.praca === id && (!A.bq || norm(b.nome).indexOf(norm(A.bq)) >= 0); }); var todos = lista.every(function (b) { return A.bs[b.k]; }); lista.forEach(function (b) { if (todos) delete A.bs[b.k]; else A.bs[b.k] = 1; }); guardarBairros(); desenhar(); }
+        else if (a === 'bgrupo') { var lista = bairrosDe(A.im.filter(function (v) { return v.lista === (A.sub === 'captei' ? 'captei' : A.sub === 'fora' ? 'fora' : 'base'); })).filter(function (b) { return b.praca === id && (!A.bq || norm(b.nome).indexOf(norm(A.bq)) >= 0); }); var todos = lista.every(function (b) { return A.bs[b.k]; }); lista.forEach(function (b) { if (todos) delete A.bs[b.k]; else A.bs[b.k] = 1; }); guardarBairros(); desenhar(); }
       };
     });
   }
@@ -435,7 +469,7 @@
     var v = A.im.filter(function (x) { return x.cod === A.cod; })[0];
     if (!v) { C.toast('Código não encontrado na base.'); return; }
     var s = v.lista === 'captei' ? null : situacao(v);
-    A.sub = v.lista === 'captei' ? 'captei' : s.k === 'meu' ? 'minhas' : 'disp';
+    A.sub = v.lista === 'captei' ? 'captei' : s.k === 'meu' ? 'minhas' : v.lista === 'fora' ? 'fora' : 'disp';
   }
 
   window.ACAPTAR = {
