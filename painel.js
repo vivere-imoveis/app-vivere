@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -2015,9 +2015,9 @@ function vLeads() {
   // 16/11/2026 (fatia 1 da ampliação do CRM): um funil por vez no topo; "Todos" só para Lista e Agenda
   const contF = {}; L.forEach((l) => { contF[l._f] = (contF[l._f] || 0) + 1; });
   if (!S.funil) { try { S.funil = localStorage.getItem('painel.funil') || ''; } catch (e) {} }
-  if (S.funil !== 'todos' && !FC.FUNIS[S.funil]) S.funil = FC.ORDEM.find((f) => contF[f]) || 'locacao';
+  if (S.funil !== 'todos' && !FC.FUNIS[S.funil]) S.funil = 'todos'; // 19/11/2026: sem escolha guardada, abre em Todos
   const FU = S.funil === 'todos' ? null : FC.def(S.funil);
-  const chipsFunil = `<div class="chips funil-chips" role="group" aria-label="Escolher o funil">${FC.ORDEM.filter((f) => f !== 'definir' || contF.definir || S.funil === 'definir').map((f) => `<button type="button" data-funil="${f}" aria-pressed="${S.funil === f}">${FC.FUNIS[f].icone} ${esc(FC.FUNIS[f].rot)} (${contF[f] || 0})</button>`).join('')}<button type="button" data-funil="todos" aria-pressed="${S.funil === 'todos'}">Todos (${L.length})</button></div>`;
+  const chipsFunil = `<div class="chips funil-chips" role="group" aria-label="Escolher o funil"><button type="button" data-funil="todos" aria-pressed="${S.funil === 'todos'}">Todos (${L.length})</button>${FC.ORDEM.filter((f) => f !== 'definir' || contF.definir || S.funil === 'definir').map((f) => `<button type="button" data-funil="${f}" aria-pressed="${S.funil === f}">${FC.FUNIS[f].icone} ${esc(FC.FUNIS[f].rot)} (${contF[f] || 0})</button>`).join('')}</div>`;
   const Ltodos = L;
   if (FU) L = L.filter((l) => l._f === S.funil);
   const contInt = {}; L.forEach((l) => { contInt[l._int] = (contInt[l._int] || 0) + 1; });
