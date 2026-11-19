@@ -1638,7 +1638,7 @@ const TF = (() => {
   function gaveta(id) {
     const novo = !id, t = novo ? { tipo: 'tarefa', prioridade: 'media', data: S.tfData || '' } : (S.tarefas || {})[id];
     if (!t) return '';
-    const info = novo ? '' : `<p class="mut peq" style="margin:4px 0 0">${rotOrig(t)} · criada em ${dt(t.criado_em)}${feita(t) && t.feita_em ? ' · feita em ' + dt(t.feita_em) : ''}</p>${autorLin(t, 'mut peq', 1)}`;
+    const info = novo ? '' : `<p class="mut peq" style="margin:4px 0 0">${S.gestor && t._dono ? `Painel de <b>${esc(gNome(t._dono))}</b> · ` : ''}${rotOrig(t)} · criada em ${dt(t.criado_em)}${feita(t) && t.feita_em ? ' · feita em ' + dt(t.feita_em) : ''}</p>${autorLin(t, 'mut peq', 1)}`;
     return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Tarefa">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Anotar' : t.tipo === 'lembrete' ? 'Lembrete' : t.tipo === 'recado' ? 'Recado' : 'Tarefa'}</p><h3>${novo ? 'Nova tarefa' : esc(t.titulo)}</h3>${novo ? '' : pillSit(t)}${info}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${soLer() ? `<div class="painel"><p style="margin:0">${esc(t.obs || 'Sem observação.')}</p><p class="mut peq" style="margin:8px 0 0">${esc(rotQuando(t))} · prioridade ${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}. Só leitura no painel do gestor.</p></div>` : `
