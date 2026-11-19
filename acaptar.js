@@ -234,7 +234,7 @@
       var s = situacao(v), ac = '';
       if (s.k === 'livre') ac = '<button class="btn pri" data-acao="confirmar" data-id="' + esc(v.id) + '"' + (A.ocupado ? ' disabled' : '') + '>Ver e captar</button>';
       else if (s.k === 'meu') ac = '<button class="btn" data-sub="minhas">Abrir em Minhas</button>';
-      var conf = A.confirmar === v.id ? '<div class="msg aviso" style="margin-top:8px">O imóvel fica em captação por você, em nome da Vivere, por 3 dias renovados a cada contato registrado. A equipe verá que ele está com você, e o contato do proprietário abre em “Minhas captações”.<div class="linha-acoes" style="margin-top:8px"><button class="btn pri" data-acao="captar" data-id="' + esc(v.id) + '">Confirmar e captar</button><button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '';
+      var conf = A.confirmar === v.id ? '<div class="msg aviso" style="margin-top:8px">' + avisoParecido(v.id) + 'O imóvel fica em captação por você, em nome da Vivere, por 3 dias renovados a cada contato registrado. A equipe verá que ele está com você, e o contato do proprietário abre em “Minhas captações”.<div class="linha-acoes" style="margin-top:8px"><button class="btn pri" data-acao="captar" data-id="' + esc(v.id) + '">Confirmar e captar</button><button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '';
       var an = v.anunciado_em || v.coletado_em;
       return '<tr' + (A.cod ? ' class="alvo"' : '') + '>' + celImovel(v) +
         '<td data-r="Negócio e tipo">' + esc(NEG[v.negocio] || '—') + '<span class="s">' + esc(TIPO[v.tipo] || 'Tipo não informado') + '</span></td>' +
@@ -262,7 +262,7 @@
       var s = situacao(v), ac = '';
       if (s.k === 'livre') ac = '<button class="btn pri" data-acao="confirmar" data-id="' + esc(v.id) + '"' + (A.ocupado ? ' disabled' : '') + '>Ver e captar</button>';
       else if (s.k === 'meu') ac = '<button class="btn" data-sub="minhas">Abrir em Minhas</button>';
-      var conf = A.confirmar === v.id ? '<div class="msg aviso" style="margin-top:8px">O imóvel fica em captação por você, em nome da Vivere, por 3 dias renovados a cada contato registrado. A equipe verá que ele está com você, e o contato do proprietário abre em “Minhas captações”.<div class="linha-acoes" style="margin-top:8px"><button class="btn pri" data-acao="captar" data-id="' + esc(v.id) + '">Confirmar e captar</button><button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '';
+      var conf = A.confirmar === v.id ? '<div class="msg aviso" style="margin-top:8px">' + avisoParecido(v.id) + 'O imóvel fica em captação por você, em nome da Vivere, por 3 dias renovados a cada contato registrado. A equipe verá que ele está com você, e o contato do proprietário abre em “Minhas captações”.<div class="linha-acoes" style="margin-top:8px"><button class="btn pri" data-acao="captar" data-id="' + esc(v.id) + '">Confirmar e captar</button><button class="btn" data-acao="cancelar">Cancelar</button></div></div>' : '';
       var an = v.anunciado_em || v.coletado_em;
       return '<tr' + (A.cod ? ' class="alvo"' : '') + '>' + celImovel(v) +
         '<td data-r="Negócio e tipo">' + esc(NEG[v.negocio] || '—') + '<span class="s">' + esc(TIPO[v.tipo] || 'Tipo não informado') + '</span></td>' +
@@ -391,6 +391,20 @@
     return '<section class="sec" style="margin-top:0"><h2 class="tit-sec">Em captação</h2>' + travas + '</section><section class="sec"><h2 class="tit-sec">Pedidos do Captei</h2>' + peds + '</section>';
   }
 
+  // 19/11/2026 (Cleiton): na dúvida se o anúncio é o mesmo imóvel que já está com outro corretor, aviso para o corretor confirmar
+  async function verParecidos(id) {
+    A.parecidos = A.parecidos || {};
+    try { var r = await C.sb.rpc('ac_parecidos', { p_imovel: id }); A.parecidos[id] = (r && !r.error && Array.isArray(r.data)) ? r.data : []; }
+    catch (e) { A.parecidos[id] = []; }
+    if (A.confirmar === id) desenhar();
+  }
+  function avisoParecido(id) {
+    var l = (A.parecidos && A.parecidos[id]) || [];
+    if (!l.length) return '';
+    var refs = l.map(function (x) { return esc(x.ref) + (x.situacao === 'agenciado' ? ' (já é agenciamento da Vivere)' : ' (em captação por outro corretor)'); }).join(', ');
+    return '<b>⚠️ Pode ser o mesmo imóvel de: ' + refs + '.</b> Confira o endereço com a diretoria antes de ligar para o proprietário; se tiver certeza de que é outro imóvel, confirme abaixo.<br><br>';
+  }
+
   async function rpc(nome, args, msgOk) {
     if (A.ocupado) return null;
     A.ocupado = true; desenhar();
@@ -440,7 +454,7 @@
     raiz.querySelectorAll('[data-acao]').forEach(function (b) {
       b.onclick = function () {
         var id = b.dataset.id, a = b.dataset.acao;
-        if (a === 'confirmar') { A.confirmar = id; desenhar(); }
+        if (a === 'confirmar') { A.confirmar = id; desenhar(); verParecidos(id); }
         else if (a === 'cancelar') { A.confirmar = null; A.soltar = null; A.saiu = null; desenhar(); }
         else if (a === 'saiu') { A.saiu = id; desenhar(); }
         else if (a === 'saiu_ok') { A.saiu = null; rpc('ac_marcar_fora', { p_imovel: id, p_motivo: b.dataset.m }, 'Registrado: o imóvel foi para “Fora do mercado”.'); }
