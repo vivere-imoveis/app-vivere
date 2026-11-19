@@ -141,7 +141,11 @@
   }
   function cartaoImovel(x) {
     var por = {}; (x.faltam || []).forEach(function (f) { (por[f.grupo] = por[f.grupo] || []).push(f); });
-    var h = '<article class="cartao pend-im" data-id="' + esc(x.id) + '"><div class="pend-im-topo"><div><b class="pend-ref">' + esc(x.ref || x.id) + '</b> <span class="mut">' + esc([x.tipo, x.bairro].filter(Boolean).join(' · ')) + '</span>' +
+    // 19/11/2026 (melhoria 74, Hugo): foto de capa do site, edifício/empreendimento e unidade, para saber qual é o imóvel sem abrir o código.
+    var foto = /^https:\/\/www\.viverenapraia\.com\.br\/imagens\//.test(x.capa || '') ? '<img class="pend-foto" src="' + esc(x.capa) + '" alt="Foto do imóvel ' + esc(x.ref || '') + '" loading="lazy">' : '<span class="pend-foto sem" aria-hidden="true">⌂</span>';
+    var ident = [x.edificio, x.unidade].filter(Boolean).join(' · ');
+    var h = '<article class="cartao pend-im" data-id="' + esc(x.id) + '"><div class="pend-im-topo">' + foto + '<div class="pend-im-id"><b class="pend-ref">' + esc(x.ref || x.id) + '</b> <span class="mut">' + esc([x.tipo, x.bairro].filter(Boolean).join(' · ')) + '</span>' +
+      (ident ? '<div class="pend-ed">' + esc(ident) + '</div>' : '') + (x.titulo ? '<div class="mut pend-tit">' + esc(x.titulo) + '</div>' : '') +
       (x.orfao ? '<div class="pend-orfao">Agenciador fora da equipe' + (x.agenciador ? ' (' + esc(x.agenciador) + ')' : '') + ': fica com a diretoria</div>' : '') +
       '</div><span class="pill ' + (x.n >= 5 ? 'alta' : 'media') + '">' + x.n + ' pendência' + (x.n === 1 ? '' : 's') + '</span></div><div class="pend-grupos">';
     ORDEM_G.forEach(function (g) { if (por[g]) h += '<div class="pend-g"><span class="pend-g-t">' + GRUPOS[g] + '</span><span class="chips2">' + por[g].map(function (f) { return '<span>' + esc(f.rotulo) + '</span>'; }).join('') + '</span></div>'; });
@@ -295,4 +299,5 @@
   }
   window.PENDENCIAS = { abrir: abrir, fechar: fechar, reler: carrega };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
+  document.addEventListener('error', function (ev) { var t = ev.target; if (t && t.tagName === 'IMG' && t.classList.contains('pend-foto')) { var sp = document.createElement('span'); sp.className = 'pend-foto sem'; sp.setAttribute('aria-hidden', 'true'); sp.textContent = '⌂'; t.replaceWith(sp); } }, true);
 })();
