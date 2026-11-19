@@ -14,7 +14,8 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);-webkit-tex
 .topo{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
 .topo .wrap{padding-top:14px;padding-bottom:0}
 .marca{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:12px}
-.selo{flex:none;width:52px;height:52px;background:var(--ink);-webkit-mask:url(selo.png) center/contain no-repeat;mask:url(selo.png) center/contain no-repeat}
+/* Melhoria 122 (Nícollas, 19/11/2026): só o V da Vivere no cabeçalho; o selo com o texto em volta não se lia ao lado dos títulos. */
+.selo{flex:none;width:46px;height:46px;background:var(--ink);-webkit-mask:url(simbolo-v.svg) center/contain no-repeat;mask:url(simbolo-v.svg) center/contain no-repeat}
 .marca .bloco{min-width:0;flex:1}
 .marca h1{font:500 12px/1.2 var(--display);letter-spacing:.26em;text-transform:uppercase;margin:0;color:var(--muted)}
 .marca .nome{font:500 22px/1.15 var(--display);letter-spacing:.04em;margin:2px 0 0}
@@ -188,3 +189,11 @@ body.ml-on.ml-min #ml .ml-n{position:absolute;top:0;right:2px;font-size:9px;min-
 body.ml-on.ml-min #ml .ml-topo{justify-content:center}
 @media (min-width:1280px){body.ml-on .wrap{max-width:min(1560px,calc(94vw - var(--ml-w,236px)))}}
 .ml-troca{font-size:16px}
+
+/* Melhoria 123 (Nícollas, 19/11/2026): o menu lateral entra deslizando e o conteúdo acompanha ao recolher/abrir; leve, só CSS. */
+@media (prefers-reduced-motion:no-preference){
+  body.ml-on #ml{animation:ml-entra .24s cubic-bezier(.2,.7,.2,1)}
+  @keyframes ml-entra{from{transform:translateX(-16px);opacity:0}to{transform:none;opacity:1}}
+  body.ml-on{transition:padding-left .24s cubic-bezier(.2,.7,.2,1)}
+  #ml .ml-g,#ml .ml-s,#ml .ml-x{transition:background-color .15s ease,border-color .15s ease}
+}
