@@ -186,12 +186,15 @@ html.pend-aberta,html.pend-aberta body{overflow:hidden}
 .pv-filtros .ms .ms-bt{width:100%;box-sizing:border-box;min-width:0}
 .pv-filtros .ms .ms-rot{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* 2. Tablet e meia tela (701 a 1100 px): nome do corretor numa linha só, botões na linha de baixo; topo deixa de ser fixo
+/* 2. Do tablet à tela cheia: o nome do corretor ganha ao menos 380 px numa linha só e os botões descem quando não cabem
+      (no tablet o nome quebrava palavra por palavra e invadia o A CAPTAR). Tablet e meia tela (701 a 1100 px): topo deixa de ser fixo
       (ocupava 1/3 da tela) e a barra mínima fixa aparece ao rolar, como no celular */
-@media (min-width:701px) and (max-width:1100px){
-  .marca .bloco{flex:1 1 calc(100% - 80px)}
+@media (min-width:701px){
+  .marca .bloco{flex:1 1 380px}
   .marca h1{white-space:nowrap}
   .marca .nome{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+@media (min-width:701px) and (max-width:1100px){
   header.topo{position:static}
   .topo-mini{position:fixed;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:10px;
     padding:calc(6px + env(safe-area-inset-top,0px)) 24px 6px;background:var(--bg);border-bottom:1px solid var(--line);
