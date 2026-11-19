@@ -2690,7 +2690,7 @@ function vSolic() {
     ${S.ehDono ? `<div class="faixa-dono">Você está como diretoria: ${pend} pedido${pend === 1 ? '' : 's'} aguardando. Toque num pedido para aprovar ou recusar.</div>` : ''}
     ${tabela('sol', cols, L, { padrao: { c: '_em', d: -1 }, abre: (r) => 'sol:' + r.id, vazio: 'Nenhuma solicitação. Use "Cadastrar imóvel", "Solicitar alteração" ou "Adicionar fotos" em Meus imóveis.', cartao: (r) => `
       <div class="cm-l1"><span class="cm-nome">${esc(TIPO[r.tipo || 'alteracao'])} · <span class="ref">${esc(r.ref || '—')}</span></span><span class="cm-v">${pillSit(r._st)}</span></div>
-      <div class="cm-lin">${S.gestor && r._dono ? `<b>${esc(gCurto(r._dono))}</b> · ` : ''}${esc(resumo(r))} · ${dt(r._em)}</div>${autorLin(r, 'cm-lin mut peq')}` })}
+      <div class="cm-lin">${S.gestor && S.verComo === 'todos' && r._dono ? `<b>${esc(gCurto(r._dono))}</b> · ` : ''}${esc(resumo(r))} · ${dt(r._em)}</div>${autorLin(r, 'cm-lin mut peq')}` })}
     <p class="status">Nada vai ao site sem a aprovação da diretoria.</p></section>`;
 }
 
@@ -3050,7 +3050,7 @@ function gavetaSol(id) {
   } else if (tipo === 'fotos') {
     corpo = s.obs ? `<p class="peq">Obs.: ${esc(s.obs)}</p>` : '';
   } else {
-    corpo = `<div class="painel"><h2>O que muda</h2><div class="alt-sol">${Object.entries(s.alteracoes || {}).map(([k, x]) => `<div class="alt-it"${VLR_ALT.has(k) ? ' data-sens' : ''}><span class="mut peq">${esc(ROT_ALT[k] || k)}</span><div class="alt-de"><span class="mut peq">Antes</span> ${esc(fmtAlt(k, x.de))}</div><div class="alt-para"><span class="mut peq">Depois</span> <b>${esc(fmtAlt(k, x.para))}</b></div></div>`).join('') || '<p class="mut">—</p>'}</div>${s.obs ? `<p class="peq" style="margin:10px 0 0"><span class="mut">Obs.:</span> ${esc(s.obs)}</p>` : ''}</div>`;
+    corpo = `<div class="painel"><h2>O que muda</h2><div class="alt-sol">${Object.entries(s.alteracoes || {}).map(([k, x]) => `<div class="alt-it"${VLR_ALT.has(k) || /^proprietario_/.test(k) ? ' data-sens' : ''}><span class="mut peq">${esc(ROT_ALT[k] || k)}</span><div class="alt-de"><span class="mut peq">Antes</span> ${esc(fmtAlt(k, x.de))}</div><div class="alt-para"><span class="mut peq">Depois</span> <b>${esc(fmtAlt(k, x.para))}</b></div></div>`).join('') || '<p class="mut">—</p>'}</div>${s.obs ? `<p class="peq" style="margin:10px 0 0"><span class="mut">Obs.:</span> ${esc(s.obs)}</p>` : ''}</div>`;
   }
   if ((s.fotos || []).length) corpo += `<div class="painel"><h2>Fotos (${s.fotos.length})</h2><div style="margin-top:10px">${htmlFotos(s.fotos, false)}</div></div>`;
   const falta = tipo === 'novo_imovel' ? faltantes(s) : [];
@@ -3072,7 +3072,7 @@ function gavetaSol(id) {
 // Painel do gestor (05/11/2026): só leitura; a decisão se toma no painel do corretor, pelo botão abaixo (vale na hora)
 function decNoPainel(s) {
   const p = (S.G.paineis || {})[s._dono] || {}, quem = s._dono ? gCurto(s._dono) : 'o corretor';
-  const noApp = /\/painel\.html$/.test(location.pathname) && s._dono;   // trocas-sol-detalhe: no app o painel do corretor abre aqui mesmo
+  const noApp = /\/painel(\.html)?$/.test(location.pathname) && s._dono;   // trocas-sol-detalhe: no app o painel do corretor abre aqui mesmo
   const url = noApp ? 'painel.html?ver=' + encodeURIComponent(s._dono) : /^https:\/\/claude\.ai\//.test(String(p.url || '')) ? p.url : '';
   return `<div class="painel"><h2>Decisão da diretoria</h2>
     <p class="peq mut" style="margin:6px 0 0">${noApp ? `A visão de todos os painéis é só leitura. Aprovar ou recusar se faz no painel de ${esc(quem)}, que abre aqui no app, e vale na hora.` : `O Painel do gestor é só leitura e mostra a foto do dia. Aprovar ou recusar se faz no painel de ${esc(quem)}, e vale na hora.`}</p>
