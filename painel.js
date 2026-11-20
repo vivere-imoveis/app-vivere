@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -2010,6 +2010,70 @@ function vInicio() {
   ${avisoOculto}${secs.map((k) => (SEC[k] ? SEC[k]() : '')).join('')}<p class="status">Dados atualizados em ${dt(S.info.atualizado_em)}. A vitrine e os seus imóveis são atualizados pela rotina diária da Vivere.</p></section>`;
 }
 
+// ---------- 🧭 Perfis sugeridos para confirmar (20/11/2026, vis-leads-perfil-completo F1) — trocas-perfil-confirmar ----------
+// O banco (privado.perfil_sugerir) grava lead.perfil_sugerido com a campanha, o imóvel de interesse e o que o cliente disse à Vivian.
+// O corretor confirma (vira lead.perfil, que é o que as Ofertas e o cruzamento usam) ou ajusta no formulário do lead.
+// O perfil confirmado nunca é sobrescrito pelo banco. Na visão do gestor e no ?ver= (só leitura), nada aparece aqui.
+const PF_CAMPOS = ['tipo', 'bairros', 'vmin', 'vmax', 'dorm', 'vagas'];
+const pfCheio = (p) => !!p && typeof p === 'object' && PF_CAMPOS.some((k) => { const v = p[k]; return v != null && v !== '' && v !== 0 && !(Array.isArray(v) && !v.length); });
+const pfSoLeitura = () => S.gestor || !!(window.VIVERE_PONTE && window.VIVERE_PONTE.estado && window.VIVERE_PONTE.estado().ver);   // gestor e visão de outro painel (?ver=)
+function pfPendente(l) { return !pfSoLeitura() && !!l && pfCheio(l.perfil_sugerido) && !pfCheio(l.perfil) && abertaL(l); }
+function pfPendentes() { return Object.entries(S.leads || {}).filter(([, l]) => pfPendente(l)).sort((a, b) => String(a[1].nome || '').localeCompare(String(b[1].nome || ''), 'pt-BR')); }
+const pfDesc = (s) => OP.descrevePerfil(OP.deFormulario(s)) || '—';
+const pfDescLead = (id, l) => { const p = OP.perfilDo(leadN(id, l), ctxOp()); return (p && OP.descrevePerfil(p)) || pfDesc(l.perfil_sugerido); };   // o que o Confirmar grava (crítico, 20/11/2026)
+const pfFontes = (s) => (Array.isArray(s && s.fontes) ? s.fontes : []).map(String).filter(Boolean).join(' · ');
+function avisoPerfis() {
+  const n = pfPendentes().length; if (!n) return '';
+  return `<div class="painel" style="border-left:3px solid var(--brass,#8c7550)"><div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><span>🧭 <b>${n} lead${n > 1 ? 's' : ''} com perfil sugerido para confirmar</b> <span class="mut peq">pela campanha, pelo imóvel de interesse e pelo que o cliente disse à Vivian</span></span><button class="b p" type="button" data-pfconfabre="">Confirmar perfis</button></div></div>`;
+}
+function gavetaPfConf() {
+  const L = pfPendentes();
+  const itens = L.slice(0, 100).map(([id, l]) => { const s = l.perfil_sugerido, f = pfFontes(s);
+    return `<div class="prop"><div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><div style="min-width:0"><b>${esc(l.nome || '—')}</b> ${pillInt(l)}<div class="peq" style="margin-top:2px">${esc(pfDescLead(id, l))}</div>${f ? `<div class="mut peq">De: ${esc(f)}</div>` : ''}</div><div class="linha" style="gap:6px"><button class="b p" type="button" data-pfconf="${esc(id)}">✓ Confirmar</button><button class="b" type="button" data-pfabrir="${esc(id)}">Abrir lead</button></div></div></div>`; }).join('');
+  return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Perfis para confirmar">
+    <div class="cab"><div><p class="mut peq" style="margin:0">Meus leads</p><h3>🧭 Perfis para confirmar (${L.length})</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
+    <p class="peq mut" style="margin:0 0 8px">Sugestão montada pela campanha de origem, pelo imóvel de interesse e pelo que o cliente disse à Vivian. Ao confirmar, vira o perfil do lead e passa a valer nas Ofertas. Se algo estiver errado, abra o lead e ajuste antes de salvar.</p>
+    ${itens || '<p class="mut">Nenhum perfil para confirmar agora.</p>'}${L.length > 100 ? `<p class="mut peq">Mostrando 100 de ${L.length}. Confirme estes e abra de novo.</p>` : ''}
+  </div>`;
+}
+function pfPerfilDe(id, l) {
+  const p = OP.perfilDo(leadN(id, l), ctxOp()); if (!p) return null;
+  return { finalidade: p.fin || '', tipo: p.tipo || '', bairros: (p.bairros || []).join(', '), vmin: p.vmin || null, vmax: p.vmax || null, dorm: p.dorm || null, vagas: p.vagas || null, obs: p.obs || (l.perfil || {}).obs || '', em: agora().slice(0, 16), por: 'corretor' };
+}
+async function pfConfirmar(id, b) {
+  const l = S.leads[id]; if (!l || pfSoLeitura()) return; const perfil = pfPerfilDe(id, l); if (!perfil) return;
+  if (b) b.disabled = true;
+  const intN = INT_POR[l.interesse] ? null : interesseDerivado({ ...l, perfil });
+  const ok = await gravar(() => db.collection('leads').doc(id).update({ perfil, ...(intN && intN !== 'a_definir' ? { interesse: intN } : {}), atualizado_em: agora(), origem: 'painel' }), 'Perfil confirmado.');
+  if (!ok) { if (b) b.disabled = false; return; }
+  S.leads[id] = { ...S.leads[id], perfil, ...(intN && intN !== 'a_definir' ? { interesse: intN } : {}) };
+  if (S.aberto && S.aberto.tipo === 'pfconf') { if (pfPendentes().length) redesenharGaveta(); else fechar(); }
+  render();
+}
+// no formulário do lead: preenche os campos do perfil; o corretor confere e salva (o formulário não grava sozinho)
+function pfPreencher(id) {
+  const l = S.leads[id]; if (!l) return; const p = pfPerfilDe(id, l); if (!p) return;
+  const put = (el, v) => { const e = document.getElementById(el); if (!e || v == null || v === '') return; e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); };
+  put('pFin', p.finalidade); put('pTipo', p.tipo); put('pBairros', p.bairros); put('pMin', p.vmin ? fmtVlr(p.vmin) : ''); put('pMax', p.vmax ? fmtVlr(p.vmax) : '');
+  put('pDorm', p.dorm ? String(p.dorm) : ''); put('pVagas', p.vagas ? String(p.vagas) : '');
+  const st = document.getElementById('pfUsoSt'); if (st) st.textContent = 'Campos do perfil preenchidos no formulário. Confira e toque em Salvar alterações.';
+  const tit = document.getElementById('pTit'); if (tit) tit.scrollIntoView({ block: 'center' });
+}
+function pfSug(id) {
+  const l = S.leads[id]; if (!l || pfSoLeitura() || !pfCheio(l.perfil_sugerido)) return '';
+  const s = l.perfil_sugerido, f = pfFontes(s), conf = pfCheio(l.perfil);
+  return `<div class="prop" style="margin-top:8px"><div class="t">Perfil para a busca de imóveis</div><div class="peq">${esc(conf ? pfDesc(s) : pfDescLead(id, l))}</div>${f ? `<div class="mut peq">De: ${esc(f)}</div>` : ''}${conf ? '<div class="mut peq" style="margin-top:4px">Este lead já tem perfil confirmado; o formulário abaixo é o que vale.</div>' : `<div class="linha" style="margin-top:6px;flex-wrap:wrap;gap:6px"><button class="b p" type="button" data-pfusar="${esc(id)}">Usar no perfil do lead</button><span class="peq mut" id="pfUsoSt"></span></div>`}</div>`;
+}
+document.addEventListener('click', (ev) => {
+  const el = ev.target && ev.target.closest ? ev.target.closest('[data-pfconfabre],[data-pfconf],[data-pfabrir],[data-pfusar]') : null;
+  if (!el) return;
+  ev.preventDefault();
+  if (el.hasAttribute('data-pfconfabre')) return abrir('pfconf');
+  if (el.hasAttribute('data-pfconf')) return pfConfirmar(el.getAttribute('data-pfconf'), el);
+  if (el.hasAttribute('data-pfabrir')) return abrir('lead', el.getAttribute('data-pfabrir'));
+  if (el.hasAttribute('data-pfusar')) return pfPreencher(el.getAttribute('data-pfusar'));
+});
+
 // ---------- Arquivados (20/11/2026, base de leads F3 no app) — trocas-leads-arquivados ----------
 // Decisão do Cleiton (20/11/2026): nenhum corretor exclui lead. Arquivar = o corretor larga o lead: ele fica no painel dele em
 // "Arquivados", só leitura, e volta à diretoria como arquivado (que pode redistribuir). Perdido segue como etapa, à parte.
@@ -2140,7 +2204,7 @@ function vLeads() {
   const etapasVis = telaVis('leads_blocos', 'etapas') || (S.filtroEtapa !== 'abertos');
   return `<section class="sec">
     <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha">${btnArq()}<button class="b" type="button" data-relabre="" aria-label="Relatórios e exportação">📊 Relatórios</button><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
-    ${chipsFunil}${telaOrdem('leads_blocos').map((k) => (blocos[k] ? blocos[k]() : '')).join('')}
+    ${avisoPerfis()}${chipsFunil}${telaOrdem('leads_blocos').map((k) => (blocos[k] ? blocos[k]() : '')).join('')}
     ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca || !etapasVis ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
     ${tabela('leads', colsV, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: 'Nenhum lead neste filtro.', cartao: (r) => cartaoLeadMovel(r, FU) })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
   </section>`;
@@ -3563,7 +3627,7 @@ function blocoPerfilIA(id) {
   const l = S.leads[id]; if (!l) return '';
   const doc = S.pfTemp[id] || S.perfilIA[id] || null, p = doc && doc.perfil, pode = !!(window.VIVERE_PONTE && window.VIVERE_PONTE.perfil);
   const cab = `<div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><h2 style="margin:0">🧭 Perfil do cliente</h2>${pode ? `<button class="b${p ? '' : ' p'}" type="button" data-pfgerar="${esc(id)}">${p ? 'Atualizar perfil' : 'Gerar perfil'}</button>` : ''}</div>`;
-  if (!p) return `<div class="painel" id="pfBox">${cab}<p class="peq mut" id="pfSt" style="margin:6px 0 0">${pode ? 'A Vivian monta o perfil sozinha quando o lead entra e a cada conversa nova. Se ainda não apareceu, toque em Gerar perfil.' : 'O perfil aparece aqui quando a Vivian gerar.'}</p></div>`;
+  if (!p) return `<div class="painel" id="pfBox">${cab}<p class="peq mut" id="pfSt" style="margin:6px 0 0">${pode ? 'A Vivian monta o perfil sozinha quando o lead entra e a cada conversa nova. Se ainda não apareceu, toque em Gerar perfil.' : 'O perfil aparece aqui quando a Vivian gerar.'}</p>${pfSug(id)}</div>`;
   const b = p.busca || {}, ab = p.abordagem || {};
   const pills = [PF_MOM[p.momento], PF_URG[p.urgencia]].filter(Boolean).map((x) => `<span class="pill">${esc(x)}</span>`).join(' ');
   const buscaTx = [b.finalidade, (b.tipos || []).join(', '), (b.bairros || []).length ? 'em ' + b.bairros.join(', ') : '', b.quartos ? b.quartos + ' quartos' : '', b.faixa, b.prazo ? 'prazo: ' + b.prazo : ''].map((x) => String(x || '').trim()).filter(Boolean).join(' · ');
@@ -3578,6 +3642,7 @@ function blocoPerfilIA(id) {
     ${p.amplitude ? `<p class="peq" style="margin:8px 0 0"><b>Além do imóvel que ele viu:</b> ${esc(p.amplitude)}</p>` : ''}
     ${ims.length ? `<div style="margin-top:8px"><b class="peq">Imóveis da carteira que combinam</b><ul class="peq" style="margin:4px 0 0;padding-left:18px">${ims.map((x) => `<li><b>${esc(x.ref)}</b> · ${esc(x.porque || '')}</li>`).join('')}</ul></div>` : ''}
     ${pfLista('Falta saber', p.lacunas)}
+    ${pfSug(id)}
     <p class="peq mut" id="pfSt" style="margin:8px 0 0">Sugestão da IA${p.confianca ? ' (' + esc(PF_CONF[p.confianca] || p.confianca) + ')' : ''}, só com o que o cliente informou nos canais da Vivere${(p.fontes || []).length ? ': ' + p.fontes.map((f) => PF_FONTE[f] || f).join(', ') : ''}. Gerado em ${dt(String(doc.gerado_em_local || doc.gerado_em || '').slice(0, 16))}. Confira antes de usar.</p></div>`;
 }
 // ---------- ✍️ 1ª resposta pronta (tarefa vivere-resposta-rapida-leads, F2, 18/11/2026) ----------
@@ -3989,7 +4054,7 @@ function popupEmp(e) {
 // ---------- Gavetas ----------
 function abrir(tipo, id, semFoco) {
   S.aberto = { tipo, id };
-  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : tipo === 'rel' ? gavetaRel() : tipo === 'metasvid' ? gavetaMetasVid(id) : gavetaVitrine(id);
+  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'pfconf' ? gavetaPfConf() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : tipo === 'rel' ? gavetaRel() : tipo === 'metasvid' ? gavetaMetasVid(id) : gavetaVitrine(id);
   const so = document.getElementById('sobre');
   so.innerHTML = `<div class="sobre" data-fundo>${html}</div>`;
   if (!semFoco) { const pri = so.querySelector('input,select,textarea,button'); if (pri) pri.focus(); }
