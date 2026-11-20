@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -1872,6 +1872,7 @@ function gFiltra(alvo, v) {
 function aplicarVer() {
   if (S.gProntos.has('paineis') && S.verComo !== 'todos' && !(S.G.paineis || {})[S.verComo]) S.verComo = 'todos';
   G_ALVOS.forEach((alvo) => { S[alvo] = gFiltra(alvo, S.verComo); });
+  separarArq();   // trocas-leads-arquivados
 }
 function ligarGestor() {
   S.gestor = true;
@@ -1908,7 +1909,7 @@ document.addEventListener('click', (ev) => {
   render();
 });
 function gResumo(slug) {
-  const salvo = {}; G_ALVOS.forEach((a) => { salvo[a] = S[a]; S[a] = gFiltra(a, slug); });
+  const salvo = {}, salvoArq = S.leadsArq; G_ALVOS.forEach((a) => { salvo[a] = S[a]; S[a] = gFiltra(a, slug); }); separarArq();
   try {
     const L = Object.values(S.leads), av = todosAvisos(), M = Object.values(S.meus);
     const sts = Object.entries(S.sol).map(([id, s]) => statusDe(id, s));
@@ -1921,7 +1922,7 @@ function gResumo(slug) {
       pend: sts.filter((x) => x === 'pendente').length, compl: sts.filter((x) => x === 'complemento').length, ult,
       ofertas: leadsComOfertas().length, acap: acapDoSlug(slug),   // 08/11/2026: o gestor vê tudo
     };
-  } finally { G_ALVOS.forEach((a) => { S[a] = salvo[a]; }); }
+  } finally { G_ALVOS.forEach((a) => { S[a] = salvo[a]; }); S.leadsArq = salvoArq; }
 }
 const usoApp = (p) => p.uso_dias == null ? '—' : p.uso_dias ? `<b>${p.uso_dias}</b> <span class="mut peq">de 7 dias · ${dt(p.uso_ultima)}</span>` : '<span class="mut peq">sem uso em 7 dias</span>'; /* trocas-f5l: uso do app (ponte) */
 function vGestor() {
@@ -2009,8 +2010,93 @@ function vInicio() {
   ${avisoOculto}${secs.map((k) => (SEC[k] ? SEC[k]() : '')).join('')}<p class="status">Dados atualizados em ${dt(S.info.atualizado_em)}. A vitrine e os seus imóveis são atualizados pela rotina diária da Vivere.</p></section>`;
 }
 
+// ---------- Arquivados (20/11/2026, base de leads F3 no app) — trocas-leads-arquivados ----------
+// Decisão do Cleiton (20/11/2026): nenhum corretor exclui lead. Arquivar = o corretor larga o lead: ele fica no painel dele em
+// "Arquivados", só leitura, e volta à diretoria como arquivado (que pode redistribuir). Perdido segue como etapa, à parte.
+// O banco (privado.lead_trava) carimba arquivado_em, arquivado_por e a linha do histórico; o corretor não desarquiva.
+const ARQ_MOTIVOS = ['Sem retorno', 'Não quer mais', 'Comprou ou alugou com outro', 'Contato inválido', 'Duplicado', 'Outro'];
+S.leadsArq = {}; S.verArq = false;
+function arqL(l) { return !!l && (l.arquivado === true || l.arquivado === 'true'); }
+function separarArq() {
+  const v = {}, a = {};
+  Object.entries(S.leads || {}).forEach(([id, l]) => { (arqL(l) ? a : v)[id] = l; });
+  S.leads = v; S.leadsArq = a;
+}
+function arqNomePainel(slug) {
+  if (!slug) return '';
+  if (S.gestor) return gNome(slug);
+  return String(slug).replace(/[-_]+/g, ' ').replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+}
+function arqLinha(l) {
+  const red = l.redistribuido_para ? ` · redistribuído para ${esc(arqNomePainel(l.redistribuido_para))}${l.redistribuido_em ? ' em ' + dt(l.redistribuido_em) : ''}` : '';
+  return `Arquivado em ${dt(l.arquivado_em)} · ${esc(l.arquivado_motivo || 'Sem motivo informado')} · voltou à diretoria${red}`;
+}
+function btnArq() {
+  const n = Object.keys(S.leadsArq || {}).length;
+  return `<button class="b" type="button" data-arqver="1" aria-label="Ver os leads arquivados">🗄 Arquivados (${n})</button>`;
+}
+function vArquivados() {
+  let L = Object.entries(S.leadsArq || {}).map(([id, l]) => ({ id, ...l, _int: interesseDe(l), _dono: l._dono || '' }));
+  const total = L.length;
+  L = BA.filtra(L, qDe(), baLead).lista;
+  const cols = [
+    { k: 'nome', l: 'Nome', h: (r) => `<b>${esc(r.nome || '—')}</b>` },
+    ...(S.gestor ? [{ k: '_dono', l: 'Corretor', v: (r) => gNome(r._dono), h: (r) => esc(gCurto(r._dono)) }] : []),
+    { k: 'interesse', l: 'Interesse', v: (r) => (INT_POR[r._int] || {}).i, h: (r) => pillInt(r) },
+    { k: 'etapa', l: 'Etapa', h: (r) => pillEtapa(r) },
+    { k: 'arquivado_motivo', l: 'Motivo', h: (r) => esc(r.arquivado_motivo || 'Sem motivo informado') },
+    { k: 'arquivado_em', l: 'Arquivado em', h: (r) => dt(r.arquivado_em) },
+    { k: 'redistribuido_para', l: 'Redistribuído', v: (r) => r.redistribuido_para || '', h: (r) => r.redistribuido_para ? esc(arqNomePainel(r.redistribuido_para)) : '<span class="mut">—</span>' },
+  ];
+  const cartao = (r) => `<div><b>${esc(r.nome || '—')}</b> ${pillInt(r)}${pillEtapa(r)}${S.gestor ? ` <span class="mut peq">${esc(gCurto(r._dono))}</span>` : ''}</div><div class="mut peq" style="margin-top:4px">${arqLinha(r)}</div>`;
+  const hub = S.gestor ? '<a class="b" href="https://claude.ai/artifact/LR3j38He26qquNQHKunkMx" target="_blank" rel="noopener">Base de leads no HUB ↗</a>' : '';
+  return `<section class="sec">
+    <div class="linha" style="justify-content:space-between"><h2>🗄 Leads arquivados</h2><div class="linha">${hub}<button class="b p" type="button" data-arqver="0">← Voltar a Meus leads</button></div></div>
+    <p class="mut peq" style="margin:4px 0 10px">${S.gestor ? 'Arquivados ' + (S.verComo === 'todos' ? 'de todos os corretores' : 'de ' + esc(gCurto(S.verComo))) + '. ' : ''}Só leitura: o histórico fica guardado e o lead volta à diretoria, que pode redistribuí-lo. Arquivados não entram na Lista, no Kanban, no Pipeline, no Funil, na Agenda nem nos avisos. ${total} no total.</p>
+    ${tabela('leads_arq', cols, L, { padrao: { c: 'arquivado_em', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: total ? 'Nenhum arquivado nesta busca.' : 'Nenhum lead arquivado.', cartao })}
+  </section>`;
+}
+function gavetaArq(id) {
+  const l = S.leadsArq[id]; if (!l) return '';
+  const p = l.perfil || {};
+  const perfil = [p.finalidade, p.tipo, p.bairros, (p.vmin || p.vmax) ? 'R$ ' + [p.vmin, p.vmax].filter(Boolean).map(fmtVlr).join(' a ') : '', p.dorm ? p.dorm + ' dorm.' : '', p.vagas ? p.vagas + ' vaga(s)' : '', p.obs].filter(Boolean).map((x) => esc(x)).join(' · ');
+  return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead arquivado">
+    <div class="cab"><div><p class="mut peq" style="margin:0">Lead arquivado · ${esc(l.campanha || 'sem origem')}${S.gestor && l._dono ? ' · ' + esc(gCurto(l._dono)) : ''}</p><h3>${esc(l.nome || '—')}</h3>${pillFunil(l) + pillInt(l) + pillEtapa(l)}<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p></div><button class="b" type="button" data-fechar>Fechar</button></div>
+    <div class="prop" style="border-left:3px solid var(--brass,#8c7550)"><div class="t">🗄 Arquivado</div><div>${arqLinha(l)}</div>${l.arquivado_obs ? `<div class="mut peq" style="margin-top:4px">${esc(l.arquivado_obs)}</div>` : ''}<div class="mut peq" style="margin-top:6px">Só leitura. Para reativar ou passar a outro corretor, fale com a diretoria.</div></div>
+    <div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b></div></div>
+    ${perfil ? `<div class="prop"><div class="t">Perfil do cliente</div><div>${perfil}</div></div>` : ''}
+    <div class="painel"><h2>Histórico</h2><div class="hist" style="margin-top:10px">${htmlHist(l)}</div></div>
+  </div>`;
+}
+function caixaArquivar(id) {
+  const l = S.leads[id]; if (!l) return '';
+  return `<div class="painel" id="arqCaixa"><h2>🗄 Arquivar ${esc(l.nome || 'lead')}</h2>
+    <p class="mut peq" style="margin:4px 0 8px">O lead não é apagado: sai das suas listas, fica em Arquivados com o histórico e volta à diretoria. Depois de arquivar, só a diretoria reativa.</p>
+    <div class="form"><label class="c">Motivo<select id="arqMotivo"><option value="">Escolha</option>${ARQ_MOTIVOS.map((m) => `<option>${esc(m)}</option>`).join('')}</select></label>
+    <label class="c inteiro">Observação<textarea id="arqObs" maxlength="500" placeholder="Ex.: três tentativas sem resposta; comprou com outra imobiliária"></textarea></label>
+    <div class="inteiro linha"><button class="b p" type="button" data-arqok="${esc(id)}">Confirmar o arquivamento</button><button class="b" type="button" data-arqnao="1">Cancelar</button><span class="erro" id="eArq"></span></div></div></div>`;
+}
+async function confirmarArquivar(id) {
+  const err = document.getElementById('eArq'), motivo = (document.getElementById('arqMotivo') || {}).value || '', obs = String((document.getElementById('arqObs') || {}).value || '').trim();
+  if (!S.leads[id]) { if (err) err.textContent = 'Lead não encontrado (já arquivado?).'; return; }
+  if (!ARQ_MOTIVOS.includes(motivo)) { if (err) err.textContent = 'Escolha o motivo.'; return; }
+  if (motivo === 'Outro' && !obs) { if (err) err.textContent = 'Em "Outro", descreva o motivo na observação.'; return; }
+  const b = document.querySelector('[data-arqok]'); if (b) b.disabled = true;
+  const ok = await gravar(() => db.collection('leads').doc(id).update({ arquivado: true, arquivado_motivo: motivo, arquivado_obs: obs, atualizado_em: agora(), origem: 'painel' }), 'Lead arquivado: está em Arquivados e voltou à diretoria.');
+  if (ok) fechar(); else if (b) b.disabled = false;
+}
+document.addEventListener('click', (ev) => {
+  const el = ev.target && ev.target.closest ? ev.target.closest('[data-arqver],[data-arqlead],[data-arqok],[data-arqnao]') : null;
+  if (!el) return;
+  if (el.hasAttribute('data-arqver')) { S.verArq = el.getAttribute('data-arqver') === '1'; render(); window.scrollTo(0, 0); return; }
+  if (el.hasAttribute('data-arqlead')) { const c = document.getElementById('arqCaixa'); if (c) { c.scrollIntoView({ block: 'center' }); return; } const f = document.getElementById('fLead'); if (f) { f.insertAdjacentHTML('afterend', caixaArquivar(el.getAttribute('data-arqlead'))); const n = document.getElementById('arqCaixa'); if (n) { n.scrollIntoView({ block: 'center' }); const s = document.getElementById('arqMotivo'); if (s) s.focus(); } } return; }
+  if (el.hasAttribute('data-arqnao')) { const c = document.getElementById('arqCaixa'); if (c) c.remove(); return; }
+  if (el.hasAttribute('data-arqok')) confirmarArquivar(el.getAttribute('data-arqok'));
+});
+
 // ---------- Meus leads ----------
 function vLeads() {
+  if (S.verArq) return vArquivados();   // trocas-leads-arquivados
   let L = Object.entries(S.leads).map(([id, l]) => ({ id, ...l, _ult: ultimoReg(l), _av: avisosDe(id, l), _int: interesseDe(l) }));
   L.forEach((l) => { l._f = FC.funilDoInteresse(l._int); l._et = FC.etapaNoFunil(l.etapa, l._f); l._ab = FC.aberta(l.etapa, l._f); });
   // 16/11/2026 (fatia 1 da ampliação do CRM): um funil por vez no topo; "Todos" só para Lista e Agenda
@@ -2053,7 +2139,7 @@ function vLeads() {
   const blocos = { previsao: () => blocoPrevisao(Ltodos.filter((l) => (!FU || l._f === S.funil) && (!S.filtroInt || l._int === S.filtroInt)), FU ? S.funil : null), interesse: () => chipsInt };
   const etapasVis = telaVis('leads_blocos', 'etapas') || (S.filtroEtapa !== 'abertos');
   return `<section class="sec">
-    <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha"><button class="b" type="button" data-relabre="" aria-label="Relatórios e exportação">📊 Relatórios</button><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
+    <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha">${btnArq()}<button class="b" type="button" data-relabre="" aria-label="Relatórios e exportação">📊 Relatórios</button><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
     ${chipsFunil}${telaOrdem('leads_blocos').map((k) => (blocos[k] ? blocos[k]() : '')).join('')}
     ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca || !etapasVis ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
     ${tabela('leads', colsV, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: 'Nenhum lead neste filtro.', cartao: (r) => cartaoLeadMovel(r, FU) })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
@@ -2101,6 +2187,7 @@ function htmlHist(l) {
   return hist.length ? hist.map((x) => `<div class="i"><div class="q">${dt(x.em)} · ${esc(x.tipo || 'Registro')}</div>${esc(x.texto)}</div>`).join('') : '<p class="mut">Nenhuma tratativa registrada.</p>';
 }
 function gavetaLead(id) {
+  if (id && !S.leads[id] && S.leadsArq[id]) return gavetaArq(id);   // trocas-leads-arquivados
   const novo = !id, l = novo ? { etapa: 'Novo', perfil: {}, historico: [], entrada: hojeISO() } : S.leads[id];
   if (!l) return '';
   const p = l.perfil || {};
@@ -2132,7 +2219,7 @@ function gavetaLead(id) {
       <label class="c inteiro">Redes que o próprio cliente informou (opcional)<input id="pRedes" maxlength="300" value="${esc(l.redes || '')}" placeholder="@perfil ou link que ele passou"></label>
       <label class="c inteiro peq" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="pCons" style="width:auto" ${l.consentimento && l.consentimento.ok ? 'checked' : ''}> O cliente autorizou usar as redes que ele informou no perfil da Vivian (LGPD)</label>
       ${novo ? '<label class="c inteiro">Primeiro registro (opcional)<textarea id="lObsNovo" placeholder="Como chegou, o que procura"></textarea></label>' : ''}
-      <div class="inteiro linha"><button class="b p" type="submit">${novo ? 'Cadastrar lead' : 'Salvar alterações'}</button><span class="erro" id="eLead"></span></div>
+      <div class="inteiro linha"><button class="b p" type="submit">${novo ? 'Cadastrar lead' : 'Salvar alterações'}</button>${novo || S.gestor ? '' : `<button class="b" type="button" data-arqlead="${esc(id)}">🗄 Arquivar lead</button>`}<span class="erro" id="eLead"></span></div>
     </form>
     <datalist id="refsVit">${refs.slice(0, 800).map((r) => `<option value="${esc(r)}">`).join('')}</datalist>
     ${novo ? '' : `<div class="painel"><h2>Registrar tratativa</h2>
@@ -3945,6 +4032,7 @@ const val = (id) => { const el = document.getElementById(id); return el ? el.val
 async function salvarLead(form) {
   const id = form.dataset.id, novo = !id, fSel = FC.funilDoInteresse(val('lInt')), etapa = FC.etapaNoFunil(val('lEtapa'), fSel);
   const err = document.getElementById('eLead'); err.textContent = '';
+  if (!novo && !S.leads[id]) { err.textContent = S.leadsArq[id] ? 'Este lead foi arquivado e está em Arquivados (só leitura). Feche e reabra.' : 'Lead não encontrado. Feche e reabra.'; return; }   // trocas-leads-arquivados
   if (etapa === 'Perdido' && !val('lMotivo')) { err.textContent = 'Informe o motivo da perda.'; return; }
   const perfil = { finalidade: FIN_DO_INT[val('lInt')] || '', tipo: val('pTipo'), bairros: val('pBairros'), vmin: numVlr(val('pMin')), vmax: numVlr(val('pMax')), dorm: val('pDorm') ? Number(val('pDorm')) : null, vagas: val('pVagas') ? Number(val('pVagas')) : null, obs: val('pObs'), em: agora().slice(0, 16), por: 'corretor' };
   const intSel = val('lInt');
@@ -4409,7 +4497,7 @@ render();
   const col = (nome, alvo) => db.collection(nome).onSnapshot((snap) => {
     const o = {}; snap.docs.forEach((d) => { if (d.exists) o[d.id] = d.data(); });
     if (S.gestor && G_ALVOS.has(alvo)) { S.prontos.add(alvo); return render(); }
-    S[alvo] = o; S.prontos.add(alvo); render();
+    S[alvo] = o; if (alvo === 'leads') separarArq(); S.prontos.add(alvo); render();
     if (alvo === 'perfilIA' && S.aberto && S.aberto.tipo === 'lead') atualizaPF(S.aberto.id);
     if (alvo === 'leadResp' && S.aberto && S.aberto.tipo === 'lead') atualizaLR(S.aberto.id);
     if (alvo === 'leads' && S.aberto && S.aberto.tipo === 'lead' && S.leads[S.aberto.id]) { const hl = document.getElementById('histLista'); if (hl) hl.innerHTML = htmlHist(S.leads[S.aberto.id]); }
