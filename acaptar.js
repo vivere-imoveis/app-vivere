@@ -420,16 +420,64 @@
   }
 
   var raiz = null;
+  // ---------- Para meus leads (20/11/2026, vis-leads-acaptar-cruzamento F2) /* trocas-acaptar-leads */ ----------
+  // Imóveis livres do A CAPTAR (e os que já estão com o corretor) que combinam com o perfil dos leads abertos dele:
+  // mesmo bairro e negócio (obrigatórios) e, quando o perfil diz, tipo, faixa de valor e quartos. O cruzamento é feito no
+  // banco (public.acaptar_para_meus_leads: perfil confirmado, senão o sugerido pela Vivian; arquivados e proprietários fora).
+  // Decisão do Cleiton (20/11/2026): só mostrar — captar segue as regras do A CAPTAR (3 dias, até 5 por corretor).
+  A.cl = null; A.clErro = ''; A.clCarregando = false;
+  (function () { if (document.getElementById('css-acl')) return; var st = document.createElement('style'); st.id = 'css-acl';
+    st.textContent = '.acl-lista{display:grid;gap:10px}.acl-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}.acl-im{overflow-wrap:anywhere}.acl-im .cod{margin-right:6px}.acl-leads{margin:6px 0 8px;padding-left:18px;display:grid;gap:2px}.acl-leads li{overflow-wrap:anywhere}.acl-card .linha-acoes{display:flex;flex-wrap:wrap;gap:6px}';
+    document.head.appendChild(st); })();
+  async function carregarLeads() {
+    if (A.clCarregando) return; A.clCarregando = true; A.clErro = '';
+    try { var r = await C.sb.rpc('acaptar_para_meus_leads'); if (r.error) throw r.error; A.cl = r.data || { imoveis: [] }; }
+    catch (e) { A.clErro = 'Não foi possível cruzar com os seus leads agora: ' + ((e && e.message) || e); }
+    A.clCarregando = false; desenhar();
+  }
+  function aclLista() {
+    return ((A.cl && A.cl.imoveis) || []).filter(function (x) { var v = acharIm(x.ref); if (!v) return false; var k = situacao(v).k; return k === 'livre' || k === 'meu'; });
+  }
+  function telaLeads() {
+    var intro = '<p class="s" style="margin:0 0 10px">Imóveis livres (e os que já estão com você) que combinam com o que os seus leads procuram: mesmo bairro e negócio e, quando o perfil diz, o tipo, a faixa de valor e os quartos. Captar continua pelas regras de sempre: 3 dias renovados a cada contato e até 5 por corretor.</p>';
+    if (A.cl === null) {
+      if (!A.clCarregando && !A.clErro) setTimeout(carregarLeads, 0);
+      return intro + (A.clErro ? '<div class="msg erro">' + esc(A.clErro) + ' <button class="btn" data-acl="recarregar">Tentar de novo</button></div>' : '<div class="vazio">Cruzando os imóveis com os seus leads…</div>');
+    }
+    var L = aclLista();
+    var rod = '<p class="s" style="margin-top:10px">' + (A.cl.leads_com_perfil || 0) + ' leads com perfil para cruzar · ' + (A.cl.leads_sem_perfil || 0) + ' sem bairro ou sem venda/locação no perfil: confirme ou complete os perfis em Meus leads para eles entrarem aqui. <button class="btn" data-acl="recarregar">Atualizar</button></p>';
+    if (!L.length) return intro + '<div class="vazio">Nenhum imóvel livre combina agora com os perfis dos seus leads.</div>' + rod;
+    var cards = L.map(function (x) {
+      var v = acharIm(x.ref), meu = situacao(v).k === 'meu', ls = x.leads || [];
+      var leads = ls.slice(0, 6).map(function (l) { return '<li><b>' + esc(l.nome || '—') + '</b> <span class="s">' + esc((l.motivos || []).join(' · ')) + '</span></li>'; }).join('') + (ls.length > 6 ? '<li class="s">e mais ' + (ls.length - 6) + '</li>' : '');
+      var bt = meu ? '<button class="btn" data-acl="minhas">Abrir em Minhas captações</button>' : '<button class="btn pri" data-acl="captar" data-id="' + esc(v.id) + '"' + (A.ocupado ? ' disabled' : '') + '>Ver e captar</button>';
+      return '<div class="acl-card"><div class="acl-im"><span class="cod">' + esc(v.cod || '') + '</span><b>' + esc(TIPO[v.tipo] || 'Imóvel') + '</b> · ' + esc(NEG[v.negocio] || '—') + ' · ' + esc(v.bairro || '—') +
+        ' <span class="s" data-sens>' + brl(v.preco) + (v.quartos != null ? ' · ' + v.quartos + (v.quartos === 1 ? ' quarto' : ' quartos') : '') + (v.area ? ' · ' + v.area + ' m²' : '') + '</span>' + (meu ? ' <span class="pill">Já está com você</span>' : '') + '</div>' +
+        '<div class="s" style="margin-top:4px">Combina com ' + ls.length + (ls.length > 1 ? ' leads seus' : ' lead seu') + ':</div><ul class="acl-leads">' + leads + '</ul><div class="linha-acoes">' + bt + '</div></div>';
+    }).join('');
+    return intro + '<div class="acl-lista">' + cards + '</div>' + rod;
+  }
+  function aclClique(b) {
+    var k = b.dataset.acl;
+    if (k === 'recarregar') { A.cl = null; A.clErro = ''; desenhar(); return; }
+    var sub = k === 'minhas' ? 'minhas' : 'disp';
+    A.sub = sub; try { sessionStorage.setItem('acaptar-sub', sub); } catch (e) { }
+    var alvo = null;
+    if (k === 'captar') { var v = acharIm(b.dataset.id); if (v) { A.cod = v.cod || ''; A.confirmar = v.id; alvo = v.id; } }
+    desenhar(); window.scrollTo(0, 0);
+    if (alvo) verParecidos(alvo);   // o mesmo aviso de imóvel parecido do fluxo de sempre (crítico, 20/11/2026)
+  }
+
   function desenhar() {
     if (!raiz) return;
-    var subs = [['disp', 'Disponíveis'], ['minhas', 'Minhas captações'], ['captei', 'Captei · 1 Capcoin'], ['fora', 'Fora do mercado']];
+    var subs = [['disp', 'Disponíveis'], ['leads', 'Para meus leads' + (A.cl && A.cl.imoveis ? ' (' + aclLista().length + ')' : '')], ['minhas', 'Minhas captações'], ['captei', 'Captei · 1 Capcoin'], ['fora', 'Fora do mercado']];
     if (diretoria()) subs.push(['dir', 'Diretoria']);
     if (!subs.some(function (s) { return s[0] === A.sub; })) A.sub = 'disp';
     var total = A.im.filter(function (v) { return v.lista === 'base'; }).length;
     var livres = A.im.filter(function (v) { return v.lista === 'base' && situacao(v).k === 'livre'; }).length;
     var minhas = A.tr.filter(function (t) { return t.user_id === C.sessaoUid; }).length;
     var vencendo = A.tr.filter(function (t) { return t.user_id === C.sessaoUid && (EXPIRA * DIA - (Date.now() - ultimo(t))) <= 2 * DIA; }).length;
-    var corpo = A.sub === 'minhas' ? telaMinhas() : A.sub === 'captei' ? telaCaptei() : A.sub === 'dir' ? telaDir() : A.sub === 'fora' ? telaFora() : telaDisp();
+    var corpo = A.sub === 'leads' ? telaLeads() : A.sub === 'minhas' ? telaMinhas() : A.sub === 'captei' ? telaCaptei() : A.sub === 'dir' ? telaDir() : A.sub === 'fora' ? telaFora() : telaDisp();
     raiz.innerHTML =
       '<div class="resumo-ac"><div class="tot"><b>' + total + '</b><span>Total disponível</span></div><div><b>' + livres + '</b><span>Livres</span></div><div><b>' + minhas + '</b><span>Minhas</span></div>' + (diretoria() ? '<div><b>' + A.tr.length + '</b><span>Em captação (equipe)</span></div>' : '<div><b>' + vencendo + '</b><span>Vencem em até 2 dias</span></div>') + '<div><b>' + A.im.filter(function (v) { return v.lista === 'captei'; }).length + '</b><span>No Captei</span></div></div>' +
       '<div class="cod-ac"><label for="acCod">Código do imóvel</label><input id="acCod" placeholder="AC-XXXXXX" value="' + esc(A.cod) + '" autocomplete="off">' + (A.cod ? '<button class="btn" data-acao="limpar_cod">Limpar</button>' : '') + '</div>' +
@@ -440,6 +488,7 @@
   }
 
   function ligar() {
+    raiz.querySelectorAll('[data-acl]').forEach(function (b) { b.onclick = function () { aclClique(b); }; });   // trocas-acaptar-leads
     raiz.querySelectorAll('[data-sub]').forEach(function (b) { b.onclick = function () { A.sub = b.dataset.sub; A.confirmar = null; A.soltar = null; A.saiu = null; try { sessionStorage.setItem('acaptar-sub', A.sub); } catch (e) { } desenhar(); }; });
     raiz.querySelectorAll('[data-ord]').forEach(function (b) { b.onclick = function () { var p = b.dataset.ord.split(':'), st = A.ordem[p[0]]; A.ordem[p[0]] = st.k === p[1] ? { k: p[1], d: -st.d } : { k: p[1], d: 1 }; desenhar(); }; });
     raiz.querySelectorAll('[data-copiar]').forEach(function (b) { b.onclick = function () { try { navigator.clipboard.writeText(b.dataset.copiar).then(function () { b.textContent = 'Copiado'; setTimeout(function () { b.textContent = 'Copiar'; }, 1500); }); } catch (e) { } }; });
