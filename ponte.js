@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-21.1'; // segmentos e remarketing da base de leads (trocas-followup-app) · antes: 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-21.2'; // _chegada_em dos leads pela coluna criado_em (trocas-usabilidade-f3, Lucas #4) · antes: 'ponte 2026-11-21.1'; // segmentos e remarketing da base de leads (trocas-followup-app) · antes: 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1, metas_equipes: 1 };   // metas_equipes: fatia 7 do CRM (placar das equipes, sem nomes)
@@ -190,11 +190,11 @@
     });
     await Promise.all(Object.keys(falta).map(async function (col) {
       var ids = falta[col], total = Object.keys(vivos[col]).length, linhas = [];
-      var base = function () { return sb.from('painel_docs').select('doc_id,dados,versao').eq('painel', escopo).eq('colecao', col); };
+      var base = function () { return sb.from('painel_docs').select('doc_id,dados,versao,criado_em').eq('painel', escopo).eq('colecao', col); };
       if (ids.length > 60 || ids.length * 2 > total) linhas = await paginas(function () { return base().order('doc_id'); });
       else { var r = await base().in('doc_id', ids); if (r.error) throw r.error; linhas = r.data || []; }
       var c = gaveta(escopo, col);
-      linhas.forEach(function (l) { var a = c[l.doc_id]; if (!a || (!a.p && a.v < l.versao)) c[l.doc_id] = { v: l.versao, d: l.dados }; });
+      linhas.forEach(function (l) { var a = c[l.doc_id]; if (!a || (!a.p && a.v < l.versao)) c[l.doc_id] = { v: l.versao, d: comChegada(col, l.dados, l.criado_em) }; });
       if (escopo === COMUM) gravarCache(col, linhas);
       chegou[escopo + '/' + col] = true;
       if (primeira) avisar(escopo, col); else mudou[col] = 1;
@@ -215,6 +215,8 @@
   function semHora(d) { return JSON.stringify(Object.assign({}, d, { foto_em: '' })); }
   function agoraLocal() { var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16); }
   function comDono(dados, painel, doc) { return Object.assign({}, dados, { _dono: painel, _id: doc }); }
+  // trocas-usabilidade-f3 (Lucas #4): hora em que o lead entrou neste painel (criado_em da linha), só na memória da tela
+  function comChegada(col, dados, criado) { if (!(col === 'leads' && criado && dados && typeof dados === 'object' && !Array.isArray(dados))) return dados; var iso = String(criado).replace(' ', 'T').replace(/(\.\d{3})\d+/, '$1').replace(/([+-]\d{2})$/, '$1:00'); return Object.assign({}, dados, { _chegada_em: iso }); } // ISO que o Safari lê (o tempo real manda com espaço e microssegundos)
   function deTodos(q) { return q.neq('painel', COMUM).not('painel', 'like', 'u:%'); }
   // Uso do app (fatia 5 L): dias com acesso nos últimos 7 e o último acesso, por painel. Só o gestor lê a app_uso; erro ou outro papel = sem a coluna.
   async function lerUso() {
@@ -285,14 +287,14 @@
     });
     await Promise.all(Object.keys(falta).map(async function (g) {
       var col = GMAPA[g], ids = falta[g].filter(function (v, i, a) { return a.indexOf(v) === i; }), linhas;
-      var base = function () { return deTodos(sb.from('painel_docs').select('painel,doc_id,dados,versao').eq('colecao', col)); };
+      var base = function () { return deTodos(sb.from('painel_docs').select('painel,doc_id,dados,versao,criado_em').eq('colecao', col)); };
       if (ids.length > 60 || falta[g].length * 2 > total[g]) linhas = await paginas(function () { return base().order('painel').order('doc_id'); });
       else linhas = await paginas(function () { return base().in('doc_id', ids).order('painel').order('doc_id'); });
       var c = m[g];
       linhas.forEach(function (l) {
         if (!painelReal(l.painel)) return;
         var id = l.painel + '__' + l.doc_id, a = c[id];
-        if (!a || a.v < l.versao) { c[id] = { v: l.versao, d: comDono(l.dados, l.painel, l.doc_id) }; mudou[g] = 1; }
+        if (!a || a.v < l.versao) { c[id] = { v: l.versao, d: comDono(comChegada(col, l.dados, l.criado_em), l.painel, l.doc_id) }; mudou[g] = 1; }
       });
     }));
     var lp = listaPaineis(r0.data || [], await lerUso()), cp = m.g_paineis || (m.g_paineis = {});
@@ -325,7 +327,7 @@
     var n = p && p.new;
     if (!n || !n.colecao || !n.doc_id || typeof n.versao !== 'number' || !painelReal(n.painel)) return;
     if (!n.dados || typeof n.dados !== 'object') { sincronizar(GEST).catch(function () { }); return; }
-    espelharGestor(n.painel, n.colecao, n.doc_id, n.versao, n.dados);
+    espelharGestor(n.painel, n.colecao, n.doc_id, n.versao, comChegada(n.colecao, n.dados, n.criado_em));
   }
   function apagamentoGestor(o) {
     var g = GFONTE[o.colecao];
@@ -416,6 +418,7 @@
     if (p && p.eventType === 'DELETE') { aplicarApagamento(p); return; }
     var n = p && p.new;
     if (!n || !n.colecao || !n.doc_id || typeof n.versao !== 'number') return;
+    if (n.colecao === 'leads' && n.criado_em) n = Object.assign({}, n, { dados: comChegada('leads', n.dados, n.criado_em) });   // trocas-usabilidade-f3
     var c = gaveta(escopo, n.colecao), a = c[n.doc_id];
     if (a && a.p) { a.eco = n; return; } // gravação em curso: guarda o eco; gravarDoc usa se a versão bater (etiqueta de autoria, 10/11/2026)
     if (a && a.v > n.versao) return; // versão igual também entra: traz o que o banco acrescentou na gravação (etiqueta de autoria)
