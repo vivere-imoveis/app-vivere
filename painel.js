@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -557,6 +557,8 @@ window.escUrl = (u) => { const s = String(u == null ? '' : u).trim(), t = s.repl
 const zapNum = (s) => { let d = digitos(s); if (d.startsWith('55') && d.length >= 12) d = d.slice(2); return d.replace(/^0+/, ''); }; /* painel #5: o 55 entra uma vez só */
 // Valor pontuado (Nicolas, 26/10/2026): 1.250.000 enquanto digita; grava só o número. Aceita centavos depois da vírgula.
 const numVlr = (s) => { if (s == null || s === '') return null; if (typeof s === 'number') return isFinite(s) ? s : null;
+  { const u = String(s).toLowerCase().replace(/r\$|\s/g, '').match(/^(\d[\d.]*(?:,\d+)?)(mi|milh[oõ]es|milh[aã]o|mil|k)$/);   // trocas-usabilidade-f1 (Lucas #6)
+    if (u) { let n = u[1]; n = n.includes(',') ? +n.replace(/\./g, '').replace(',', '.') : /^\d{1,3}(\.\d{3})+$/.test(n) ? +n.replace(/\./g, '') : +n; if (isFinite(n) && n > 0) return Math.round(n * (u[2] === 'mil' || u[2] === 'k' ? 1e3 : 1e6)); } }
   const t = String(s).trim(); if (!/\d/.test(t)) return null; const [i, d] = t.split(','); const n = Number((i || '').replace(/\D/g, '') + (d != null ? '.' + d.replace(/\D/g, '').slice(0, 2) : '')); return isFinite(n) ? n : null; };
 const fmtVlr = (v) => { const n = numVlr(v); if (n == null) return ''; const [i, d] = String(Math.round(n * 100) / 100).split('.'); return Number(i).toLocaleString('pt-BR') + (d ? ',' + d : ''); };
 const VLR = 'type="text" inputmode="decimal" autocomplete="off" data-vlr data-sens';
@@ -2583,9 +2585,9 @@ function vLeads() {
   const etapasVis = telaVis('leads_blocos', 'etapas') || (S.filtroEtapa !== 'abertos');
   return `<section class="sec">
     <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha">${btnArq()}${S.gestor ? '<button class="b" type="button" data-bl="abrir" aria-label="Base de leads da Vivere">📇 Base de leads</button>' : ''}<button class="b" type="button" data-relabre="" aria-label="Relatórios e exportação">📊 Relatórios</button><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
-    ${avisoPerfis()}${chipsFunil}${telaOrdem('leads_blocos').map((k) => (blocos[k] ? blocos[k]() : '')).join('')}
+    ${avisoDemora()}${avisoPerfis()}${chipsFunil}${telaOrdem('leads_blocos').map((k) => (blocos[k] ? blocos[k]() : '')).join('')}
     ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca || !etapasVis ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
-    ${tabela('leads', colsV, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: 'Nenhum lead neste filtro.', cartao: (r) => cartaoLeadMovel(r, FU) })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
+    ${tabela('leads', colsV, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: S.demora ? 'Ainda carregando os seus leads…' : 'Nenhum lead neste filtro.', cartao: (r) => cartaoLeadMovel(r, FU) })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
   </section>`;
 }
 // ---------- Visões dos leads (30/10/2026): Kanban, Pipeline, Funil e Agenda ----------
@@ -4084,7 +4086,7 @@ async function aplicarRV(id, oque) {
   }
   const dados = { prox_acao: r.proxima_acao, atualizado_em: agora(), origem: 'painel' }; if (r.data_proxima_acao) dados.data_prox = r.data_proxima_acao;
   const ok = await gravar(() => db.collection('leads').doc(id).update(dados), 'Próxima ação aplicada.');
-  if (ok) { S.leads[id] = { ...S.leads[id], ...dados }; const a = document.getElementById('lProx'), d = document.getElementById('lData'); if (a) a.value = dados.prox_acao; if (d && dados.data_prox) d.value = dados.data_prox; atualizaRV(id); }
+  if (ok) { S.leads[id] = { ...S.leads[id], ...dados }; const a = document.getElementById('lProx'), d = document.getElementById('lData'); if (a) a.value = dados.prox_acao; if (d && dados.data_prox) d.value = dados.data_prox; atualizaRV(id); if (S.aberto && S.aberto.tipo === 'lead' && S.aberto.id === id) gavSnap('lead', id); }   // trocas-usabilidade-f1
 }
 
 // ---------- Voz: o que já dá para fazer no painel e com a Vivian no WhatsApp ----------
@@ -4430,6 +4432,43 @@ function popupEmp(e) {
 }
 
 
+// ---------- Gravação e usabilidade (21/11/2026, revisão do Lucas) — trocas-usabilidade-f1 ----------
+// #3: guarda o lead como estava ao abrir a gaveta; se outra pessoa mudou algum campo do formulário, Salvar avisa e pede um 2º toque.
+// #7: guarda os valores da gaveta ao abrir; tocar fora ou Esc com algo digitado pede um 2º toque (o botão Fechar continua fechando).
+// #6: o campo de valor aceita "1,5 mi" e "300 mil" (formata ao sair do campo). #15: aviso de demora em vez de "Nenhum lead".
+const LEAD_CHAVES = { interesse: 'interesse', etapa: 'etapa', motivo: 'motivo', prox_acao: 'próxima ação', data_prox: 'data da próxima ação', imovel_interesse: 'imóvel de interesse', data_fechamento: 'data de fechamento', perfil: 'perfil', campos: 'campos do funil', redes: 'redes', consentimento: 'consentimento' };
+const jsonEst = (v) => JSON.stringify(v, (k, x) => x && typeof x === 'object' && !Array.isArray(x) ? Object.keys(x).sort().reduce((o, c) => { o[c] = x[c]; return o; }, {}) : x);
+function leadFoto(l) {
+  const o = {};
+  Object.keys(LEAD_CHAVES).forEach((k) => { let v = (l || {})[k]; if (k === 'perfil' && v && typeof v === 'object') { v = { ...v }; delete v.em; delete v.por; } o[k] = jsonEst(v == null || v === '' ? null : v); });
+  return o;
+}
+function leadMudouDesde(id) {
+  const ini = S.leadIni && S.leadIni.id === id ? S.leadIni.foto : null; if (!ini || !S.leads[id]) return [];
+  const ag = leadFoto(S.leads[id]);
+  return Object.keys(LEAD_CHAVES).filter((k) => ini[k] !== ag[k]).map((k) => LEAD_CHAVES[k]);
+}
+function gavValores() {
+  const g = document.querySelector('#sobre .gaveta'); if (!g) return '';
+  return JSON.stringify([...g.querySelectorAll('input,select,textarea')].filter((e) => !['file', 'search', 'button', 'submit', 'hidden'].includes(e.type)).map((e) => (e.type === 'checkbox' || e.type === 'radio' ? e.checked : e.value)));
+}
+function gavSnap(tipo, id) {
+  S.leadIni = tipo === 'lead' && id && S.leads[id] ? { id, foto: leadFoto(S.leads[id]) } : null;
+  S.descartarAte = 0; S.gavIni = null;
+  setTimeout(() => { if (S.aberto && S.aberto.tipo === tipo && S.aberto.id === id) S.gavIni = gavValores(); }, 0);   // depois dos ajustes automáticos do formulário
+}
+function fecharPedindo() {
+  if (!S.aberto) return;
+  const sujo = !S.novo && S.gavIni != null && gavValores() !== S.gavIni;
+  if (sujo && !(S.descartarAte > Date.now())) { S.descartarAte = Date.now() + 5000; toast('Você tem algo digitado e não salvo. Toque fora (ou Esc) de novo para descartar.'); return; }
+  fechar();
+}
+const avisoDemora = () => S.demora ? '<div class="msg" style="margin:0 0 10px">Está demorando para carregar os seus leads. Nada foi apagado: confira a internet e recarregue a página se continuar.</div>' : '';
+document.addEventListener('change', (ev) => {
+  const el = ev.target; if (!el || !el.dataset || el.dataset.vlr == null || !/[a-z]/i.test(el.value)) return;
+  const n = numVlr(el.value); if (n != null) { el.value = fmtVlr(n); el.dispatchEvent(new Event('input', { bubbles: true })); }
+});
+
 // ---------- Gavetas ----------
 function abrir(tipo, id, semFoco) {
   S.aberto = { tipo, id };
@@ -4437,6 +4476,7 @@ function abrir(tipo, id, semFoco) {
   const so = document.getElementById('sobre');
   so.innerHTML = `<div class="sobre" data-fundo>${html}</div>`;
   if (!semFoco) { const pri = so.querySelector('input,select,textarea,button'); if (pri) pri.focus(); }
+  gavSnap(tipo, id);   // trocas-usabilidade-f1
 }
 function fechar() { if (S.novo && S.novo.sujo) gravarNovo('rascunho', true); if (ctrlIA) { ctrlIA.abort(); ctrlIA = null; } S.aberto = null; S.novo = null; S.proposta = null; document.getElementById('sobre').innerHTML = ''; }
 function redesenharGaveta() { const g = document.querySelector('.gaveta'), y = g ? g.scrollTop : 0; abrir(S.aberto.tipo, S.aberto.id, true); const g2 = document.querySelector('.gaveta'); if (g2) g2.scrollTop = y; }
@@ -4454,7 +4494,7 @@ async function gravar(fn, okMsg) {
   }
 }
 // Interesse manda na Finalidade (08/11/2026): Comprador/Vendedor → Venda; anual → Locação; temporada → Temporada.
-// A Finalidade some do formulário (só volta em "A definir") e o bloco do perfil diz se é o que o cliente procura ou o imóvel que ele tem.
+// A Finalidade some do formulário; em "A definir" a finalidade já gravada é mantida (trocas-usabilidade-f1, Lucas #13) e o bloco do perfil diz se é o que o cliente procura ou o imóvel que ele tem.
 const FIN_DO_INT = { comprador: 'Venda', vendedor: 'Venda', locatario_anual: 'Locação', locador_anual: 'Locação', locatario_temporada: 'Temporada', locador_temporada: 'Temporada' };
 function ajustaFinInt() {
   const si = document.getElementById('lInt'); if (!si) return;
@@ -4478,7 +4518,8 @@ async function salvarLead(form) {
   const err = document.getElementById('eLead'); err.textContent = '';
   if (!novo && !S.leads[id]) { err.textContent = S.leadsArq[id] ? 'Este lead foi arquivado e está em Arquivados (só leitura). Feche e reabra.' : 'Lead não encontrado. Feche e reabra.'; return; }   // trocas-leads-arquivados
   if (etapa === 'Perdido' && !val('lMotivo')) { err.textContent = 'Informe o motivo da perda.'; return; }
-  const perfil = { finalidade: FIN_DO_INT[val('lInt')] || '', tipo: val('pTipo'), bairros: val('pBairros'), vmin: numVlr(val('pMin')), vmax: numVlr(val('pMax')), dorm: val('pDorm') ? Number(val('pDorm')) : null, vagas: val('pVagas') ? Number(val('pVagas')) : null, obs: val('pObs'), em: agora().slice(0, 16), por: 'corretor' };
+  const perfil = { finalidade: FIN_DO_INT[val('lInt')] || (!novo && S.leads[id] && S.leads[id].perfil && S.leads[id].perfil.finalidade) || '', tipo: val('pTipo'), bairros: val('pBairros'), vmin: numVlr(val('pMin')), vmax: numVlr(val('pMax')), dorm: val('pDorm') ? Number(val('pDorm')) : null, vagas: val('pVagas') ? Number(val('pVagas')) : null, obs: val('pObs'), em: agora().slice(0, 16), por: 'corretor' };
+  if ([perfil.vmin, perfil.vmax].some((v) => v != null && v > 0 && v < 100)) { err.textContent = 'Valor do perfil muito baixo. Escreva o valor cheio (1.500.000) ou "1,5 mi".'; return; }   // trocas-usabilidade-f1 (Lucas #6)
   const intSel = val('lInt');
   // perfil do lead (vivere-ia-perfil-amplo-leads F2, 17/11/2026): redes só as que o cliente informou; consentimento registrado com data
   const l0 = (!novo && S.leads[id]) || {}, consMarc = !!(document.getElementById('pCons') || {}).checked, redesV = val('pRedes').trim().slice(0, 300);
@@ -4494,8 +4535,11 @@ async function salvarLead(form) {
     const ok = await gravar(() => db.collection('leads').doc(novoId).set({ ...dados, nome: val('lNome'), telefone: digitos(val('lTel')), campanha: val('lOrig'), entrada: hojeISO(), historico: hist, criado_no_painel: true }), 'Lead cadastrado.');
     if (ok) { fechar(); S.aba = 'leads'; render(); }
   } else {
+    const mud = leadMudouDesde(id);   // trocas-usabilidade-f1 (Lucas #3)
+    if (mud.length && form.dataset.porCima !== '1') { form.dataset.porCima = '1'; err.textContent = `Este lead mudou desde que você abriu (${mud.join(', ')}). Feche e reabra para ver a versão nova, ou toque em Salvar de novo para gravar o que está na tela por cima.`; return; }
     if (etapa !== ((S.leads[id] || {}).etapa || 'Novo')) { dados.etapa_em = agora(); dados.etapa_por = 'corretor'; const de = etapaDe(S.leads[id] || {}); if (de !== etapa) dados.historico = [...histDe(S.leads[id] || {}), { em: agora().slice(0, 16), tipo: 'Observação', texto: `Etapa: ${de} → ${etapa}${etapa === 'Perdido' && val('lMotivo') ? ' (' + val('lMotivo') + ')' : ''}.` }]; }
     const ok = await gravar(() => db.collection('leads').doc(id).update(dados), 'Alterações salvas.');
+    delete form.dataset.porCima;   // trocas-usabilidade-f1
     if (ok) fechar();
   }
 }
@@ -4518,7 +4562,7 @@ async function enviarAlteracao(form) {
 // ---------- Eventos ----------
 document.addEventListener('click', async (ev) => {
   const t = ev.target.closest('button,a,[data-abre],[data-fundo]'); if (!t) return;
-  if (t.matches('[data-fundo]') && ev.target === t) return fechar();
+  if (t.matches('[data-fundo]') && ev.target === t) return fecharPedindo();   // trocas-usabilidade-f1 (Lucas #7)
   const d = t.dataset;
   if (d.aba) { S.aba = d.aba; try { sessionStorage.setItem('painel.aba', S.aba); } catch (e) {} render(); window.scrollTo(0, 0); return; }
   if (d.fechar !== undefined) return fechar();
@@ -4659,6 +4703,7 @@ document.addEventListener('change', (ev) => {
 });
 document.addEventListener('input', (ev) => {   // valor pontuado (Nicolas, 26/10/2026)
   const el = ev.target; if (!el || !el.dataset || el.dataset.vlr == null) return;
+  if (/[a-z]/i.test(el.value)) return;   // 1,5 mi / 300 mil: formata ao sair do campo (trocas-usabilidade-f1, Lucas #6)
   const v = el.value, pos = el.selectionStart ?? v.length, antes = v.slice(0, pos).replace(/[^\d,]/g, '').length;
   let [i, d] = v.replace(/[^\d,]/g, '').split(/,(.*)/s); i = (i || '').replace(/^0+(?=\d)/, ''); d = d == null ? null : d.replace(/,/g, '').slice(0, 2);
   const novo = (i ? Number(i).toLocaleString('pt-BR') : (d != null ? '0' : '')) + (d != null ? ',' + d : '');
@@ -4677,7 +4722,7 @@ let tRasc;
 function agendarRascunho() { clearTimeout(tRasc); tRasc = setTimeout(() => { if (S.novo && S.novo.sujo && S.novo.tipo === 'novo_imovel' && S.novo.status_atual !== 'complemento') gravarNovo('rascunho', true).then((ok) => { if (ok && S.novo) S.novo.sujo = false; }); }, 4000); }
 function continuar(id) { const so = S.sol[id]; if (!so) return; S.novo = { ...JSON.parse(JSON.stringify(so)), id, status_atual: statusDe(id, so) }; return abrir(so.tipo === 'fotos' ? 'fotosimv' : 'novoimv'); }
 document.addEventListener('input', (ev) => { if (S.novo && ev.target.id === 'c_descricao') { S.novo.descricao = ev.target.value; S.novo.descricao_origem = S.novo.descricao_origem === 'ia' ? 'ia_editada' : S.novo.descricao_origem || 'corretor'; S.novo.sujo = true; agendarRascunho(); } });
-document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && S.aberto) fechar(); });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && S.aberto) fecharPedindo(); });   // trocas-usabilidade-f1 (Lucas #7)
 
 // ---------- Tela configurável, valor e previsão (16/11/2026, fatia 2 da ampliação do CRM) ----------
 // Decisões do Cleiton nos cartões de 16/11/2026: o corretor liga/desliga e ordena os cartões e as seções do Início e os blocos de
@@ -4940,8 +4985,8 @@ render();
   const erro = () => { toast('A conexão com os dados caiu. Recarregue a página.'); };
   const col = (nome, alvo) => db.collection(nome).onSnapshot((snap) => {
     const o = {}; snap.docs.forEach((d) => { if (d.exists) o[d.id] = d.data(); });
-    if (S.gestor && G_ALVOS.has(alvo)) { S.prontos.add(alvo); return render(); }
-    S[alvo] = o; if (alvo === 'leads') separarArq(); S.prontos.add(alvo); render();
+    if (S.gestor && G_ALVOS.has(alvo)) { if (alvo === 'leads') S.demora = false; S.prontos.add(alvo); return render(); }
+    S[alvo] = o; if (alvo === 'leads') { separarArq(); S.demora = false; } S.prontos.add(alvo); render();
     if (alvo === 'perfilIA' && S.aberto && S.aberto.tipo === 'lead') atualizaPF(S.aberto.id);
     if (alvo === 'leadResp' && S.aberto && S.aberto.tipo === 'lead') atualizaLR(S.aberto.id);
     if (alvo === 'leads' && S.aberto && S.aberto.tipo === 'lead' && S.leads[S.aberto.id]) { const hl = document.getElementById('histLista'); if (hl) hl.innerHTML = htmlHist(S.leads[S.aberto.id]); }
@@ -4973,7 +5018,7 @@ render();
   }, erro);
   db.doc('controle/info').onSnapshot((d) => { S.info = d.exists ? d.data() : {}; render(); }, erro);
   db.doc('config/painel').onSnapshot((d) => { if (d.exists && (d.data() || {}).papel === 'gestor' && !S.gestor) ligarGestor(); }, () => {});
-  setTimeout(() => { if (!S.prontos.size) { S.prontos.add('leads'); render(); } }, 10000);
+  setTimeout(() => { if (!S.prontos.has('leads')) { S.demora = true; S.prontos.add('leads'); render(); } }, 10000);   // trocas-usabilidade-f1 (Lucas #15)
 })();
 window.VZ_CFG={ ids:['qAba'], idAbas:'qAba',
   abas:ABAS.map(([k,n])=>[k,n+' ('+(ROT_ABA_Q[k]||'')+')']),
