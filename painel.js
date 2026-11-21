@@ -2173,7 +2173,7 @@ function vArquivados() {
     { k: 'redistribuido_para', l: 'Redistribuído', v: (r) => r.redistribuido_para || '', h: (r) => r.redistribuido_para ? esc(arqNomePainel(r.redistribuido_para)) : '<span class="mut">—</span>' },
   ];
   const cartao = (r) => `<div><b>${esc(r.nome || '—')}</b> ${pillInt(r)}${pillEtapa(r)}${S.gestor ? ` <span class="mut peq">${esc(gCurto(r._dono))}</span>` : ''}</div><div class="mut peq" style="margin-top:4px">${arqLinha(r)}</div>`;
-  const hub = S.gestor ? '<a class="b" href="https://claude.ai/artifact/LR3j38He26qquNQHKunkMx" target="_blank" rel="noopener">Base de leads no HUB ↗</a>' : '';
+  const hub = S.gestor ? '<button class="b" type="button" data-bl="abrir">📇 Base de leads</button>' : '';   // trocas-base-app
   return `<section class="sec">
     <div class="linha" style="justify-content:space-between"><h2>🗄 Leads arquivados</h2><div class="linha">${hub}<button class="b p" type="button" data-arqver="0">← Voltar a Meus leads</button></div></div>
     <p class="mut peq" style="margin:4px 0 10px">${S.gestor ? 'Arquivados ' + (S.verComo === 'todos' ? 'de todos os corretores' : 'de ' + esc(gCurto(S.verComo))) + '. ' : ''}Só leitura: o histórico fica guardado e o lead volta à diretoria, que pode redistribuí-lo. Arquivados não entram na Lista, no Kanban, no Pipeline, no Funil, na Agenda nem nos avisos. ${total} no total.</p>
@@ -2186,7 +2186,7 @@ function gavetaArq(id) {
   const perfil = [p.finalidade, p.tipo, p.bairros, (p.vmin || p.vmax) ? 'R$ ' + [p.vmin, p.vmax].filter(Boolean).map(fmtVlr).join(' a ') : '', p.dorm ? p.dorm + ' dorm.' : '', p.vagas ? p.vagas + ' vaga(s)' : '', p.obs].filter(Boolean).map((x) => esc(x)).join(' · ');
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead arquivado">
     <div class="cab"><div><p class="mut peq" style="margin:0">Lead arquivado · ${esc(l.campanha || 'sem origem')}${S.gestor && l._dono ? ' · ' + esc(gCurto(l._dono)) : ''}</p><h3>${esc(l.nome || '—')}</h3>${pillFunil(l) + pillInt(l) + pillEtapa(l)}<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p></div><button class="b" type="button" data-fechar>Fechar</button></div>
-    <div class="prop" style="border-left:3px solid var(--brass,#8c7550)"><div class="t">🗄 Arquivado</div><div>${arqLinha(l)}</div>${l.arquivado_obs ? `<div class="mut peq" style="margin-top:4px">${esc(l.arquivado_obs)}</div>` : ''}<div class="mut peq" style="margin-top:6px">Só leitura. Para reativar ou passar a outro corretor, fale com a diretoria.</div></div>
+    <div class="prop" style="border-left:3px solid var(--brass,#8c7550)"><div class="t">🗄 Arquivado</div><div>${arqLinha(l)}</div>${l.arquivado_obs ? `<div class="mut peq" style="margin-top:4px">${esc(l.arquivado_obs)}</div>` : ''}<div class="mut peq" style="margin-top:6px">${S.gestor ? `Só leitura aqui. <button class="b p" type="button" data-bl-lead="${esc((l._dono || '') + '|' + id)}">Reativar ou redistribuir</button>` : 'Só leitura. Para reativar ou passar a outro corretor, fale com a diretoria.'}</div></div>
     <div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b></div></div>
     ${perfil ? `<div class="prop"><div class="t">Perfil do cliente</div><div>${perfil}</div></div>` : ''}
     <div class="painel"><h2>Histórico</h2><div class="hist" style="margin-top:10px">${htmlHist(l)}</div></div>
@@ -2218,8 +2218,159 @@ document.addEventListener('click', (ev) => {
   if (el.hasAttribute('data-arqok')) confirmarArquivar(el.getAttribute('data-arqok'));
 });
 
+/* trocas-base-app */
+// ---------- Base de leads (21/11/2026, vis-base-leads-sobras) ----------
+// Só o gestor (diretoria). Uma linha por pessoa (telefone), com os leads de cada corretor, a linha do tempo e o follow-up.
+// Lê e grava pelas RPCs base_leads_lista, base_leads_pessoa e base_leads_acao (VIVERE_PONTE.baseLeads); o banco barra quem não é diretoria.
+S.verBase = false; S.bl = null; S.blErro = ''; S.blCarreg = false; S.blF = { sit: '', cor: '', q: '' }; S.blP = {}; S.blPErro = {}; S.blConf = ''; S.blOcup = false;
+const BL_SIT = [['', 'Todos'], ['ativo', 'Com lead ativo'], ['arquivado', 'Só arquivados'], ['a_classificar', 'A classificar'], ['revisitar', 'Revisitar até 7 dias'], ['nao_contatar', 'Não contatar']];
+const BL_EV = { entrada: 'Entrada', atendimento: 'Atendimento', etapa: 'Etapa', interesse: 'Interesse', arquivado: 'Arquivado', desarquivado: 'Reativado', descartado: 'Descartado', distribuido: 'Distribuído', nao_contatar: 'Não contatar', contato_liberado: 'Contato liberado' };
+const blHoje = () => new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
+const blMais7 = () => new Date(Date.now() - 3 * 36e5 + 7 * 864e5).toISOString().slice(0, 10);
+function blSit(p) {
+  const ld = p.ld || [];
+  if (p.situacao === 'a_classificar' && !ld.length) return 'a_classificar';
+  return ld.length && ld.every((x) => x.arquivado) ? 'arquivado' : 'ativo';
+}
+const blRotSit = { ativo: ['Ativo', 'ok'], arquivado: ['Arquivado', 'info'], a_classificar: ['A classificar', 'media'] };
+const blPillSit = (p) => { const k = blSit(p), r = blRotSit[k] || [k, '']; return `<span class="pill ${r[1]}">${esc(r[0])}</span>`; };
+const blInt = (k) => esc((INT_POR[k] || {}).rot || (k ? String(k) : 'A definir'));
+function blCors(p) {
+  const at = (p.ld || []).filter((x) => !x.arquivado).map((x) => x.corretor || x.painel), ar = (p.ld || []).filter((x) => x.arquivado && !x.redistribuido_para).map((x) => x.corretor || x.painel);
+  return [...new Set(at)].join(', ') + (ar.length ? `${at.length ? ' · ' : ''}arquivado: ${[...new Set(ar)].join(', ')}` : '');
+}
+async function blCarregar() {
+  if (S.blCarreg) return; S.blCarreg = true; S.blErro = '';
+  try { const P = window.VIVERE_PONTE; if (!P || !P.baseLeads) throw new Error('função indisponível nesta versão do app'); S.bl = (await P.baseLeads('lista')) || { pessoas: [], corretores: [] }; }
+  catch (e) { S.blErro = 'Não foi possível carregar a base de leads: ' + ((e && e.message) || e); }
+  S.blCarreg = false; render();
+}
+async function blPessoa(id, forca) {
+  if (!forca && (S.blP[id] || S.blPErro[id] === 'carregando')) return;
+  S.blPErro[id] = 'carregando';
+  try { S.blP[id] = await window.VIVERE_PONTE.baseLeads('pessoa', id); S.blPErro[id] = ''; }
+  catch (e) { S.blPErro[id] = 'Não foi possível abrir: ' + ((e && e.message) || e); }
+  if (S.aberto && S.aberto.tipo === 'base' && S.aberto.id === id) redesenharGaveta();
+}
+function vBaseLeads() {
+  const voltar = '<button class="b p" type="button" data-bl="voltar">← Voltar a Meus leads</button>';
+  const intro = '<p class="mut peq" style="margin:4px 0 10px">Uma linha por pessoa (telefone), juntando os leads de todos os corretores. Abra a pessoa para ver a linha do tempo, reativar ou redistribuir um lead arquivado e marcar o follow-up (não contatar e revisitar em). Só a diretoria vê esta tela.</p>';
+  if (S.bl === null) { if (!S.blCarreg && !S.blErro) setTimeout(blCarregar, 0);
+    return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>📇 Base de leads</h2>${voltar}</div>${intro}${S.blErro ? `<div class="msg erro">${esc(S.blErro)} <button class="b" type="button" data-bl="recarregar">Tentar de novo</button></div>` : '<div class="vazio">Carregando a base…</div>'}</section>`; }
+  const hoje = blHoje(), ate7 = blMais7(), q = demTx(S.blF.q);
+  let L = (S.bl.pessoas || []).map((p) => Object.assign({}, p, { _sit: blSit(p), _cors: blCors(p), _nl: (p.ld || []).length }));
+  L = L.filter((p) => {
+    const f = S.blF.sit;
+    if (f === 'revisitar' && !(p.revisitar_em && p.revisitar_em <= ate7)) return false;
+    if (f === 'nao_contatar' && !p.nao_contatar) return false;
+    if (['ativo', 'arquivado', 'a_classificar'].includes(f) && p._sit !== f) return false;
+    if (S.blF.cor && !(p.ld || []).some((x) => x.corretor_id === S.blF.cor || x.painel === S.blF.cor)) return false;
+    return !q || demTx([p.nome, p.telefone, digitos(p.telefone), p._cors, p.interesse].join(' ')).includes(q);
+  });
+  const chip = (v, txt) => `<button type="button" class="dm-chip" aria-pressed="${S.blF.sit === v}" data-bl-sit="${esc(v)}">${esc(txt)}</button>`;
+  const sel = `<select data-bl-cor="1" aria-label="Filtrar por corretor"><option value="">Todos os corretores</option>${(S.bl.corretores || []).map((c) => `<option value="${esc(c.id)}"${S.blF.cor === c.id ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select>`;
+  const busca = `<input type="search" class="dm-busca" data-bl-q="1" placeholder="Nome, telefone ou corretor" value="${esc(S.blF.q)}" aria-label="Buscar na base de leads" style="min-width:200px;flex:1 1 200px">`;
+  const rev = (p) => p.revisitar_em ? `<span class="pill ${p.revisitar_em < hoje ? 'alta' : p.revisitar_em <= ate7 ? 'media' : ''}">${dt(p.revisitar_em)}</span>` : '<span class="mut">—</span>';
+  const nc = (p) => p.nao_contatar ? ' <span class="pill alta" title="Pediu para não ser contatado (LGPD)">não contatar</span>' : '';
+  const cols = [
+    { k: 'nome', l: 'Nome', h: (p) => `<b>${esc(p.nome || '—')}</b>${nc(p)}` },
+    { k: 'telefone', l: 'Telefone', v: (p) => digitos(p.telefone), h: (p) => esc(fone(p.telefone)) },
+    { k: 'interesse', l: 'Interesse', v: (p) => (INT_POR[p.interesse] || {}).i, h: (p) => blInt(p.interesse) },
+    { k: '_sit', l: 'Situação', h: blPillSit },
+    { k: '_cors', l: 'Corretor', h: (p) => esc(p._cors || '—') },
+    { k: '_nl', l: 'Leads', n: 1, h: (p) => String(p._nl) },
+    { k: 'ultimo_evento_em', l: 'Último registro', h: (p) => dt(p.ultimo_evento_em) },
+    { k: 'revisitar_em', l: 'Revisitar em', h: rev },
+  ];
+  const cartao = (p) => `<div class="cm-l1"><b>${esc(p.nome || '—')}</b> ${blPillSit(p)}${nc(p)}</div><div class="cm-l2">${esc(fone(p.telefone))} · ${blInt(p.interesse)}</div><div class="cm-l2 mut">${esc(p._cors || 'sem corretor')} · último registro ${dt(p.ultimo_evento_em)}${p.revisitar_em ? ' · revisitar ' + dt(p.revisitar_em) : ''}</div>`;
+  return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>📇 Base de leads</h2><div class="linha"><button class="b" type="button" data-bl="recarregar">Atualizar</button>${voltar}</div></div>${intro}
+    <div class="linha" style="flex-wrap:wrap;gap:6px;margin:0 0 10px">${BL_SIT.map(([v, t]) => chip(v, t)).join('')}${sel}${busca}</div>
+    ${tabela('base_leads', cols, L, { padrao: { c: 'ultimo_evento_em', d: -1 }, abre: (p) => 'base:' + p.id, cartao, vazio: S.blF.sit || S.blF.cor || q ? 'Ninguém com esses filtros.' : 'A base ainda está vazia.' })}</section>`;
+}
+function gavetaBase(id) {
+  const resumo = ((S.bl && S.bl.pessoas) || []).find((p) => p.id === id) || {};
+  const x = S.blP[id];
+  if (!x) { if (!S.blPErro[id]) setTimeout(() => blPessoa(id), 0);
+    return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Pessoa da base de leads"><div class="cab"><div><h3>${esc(resumo.nome || 'Pessoa')}</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>${S.blPErro[id] && S.blPErro[id] !== 'carregando' ? `<div class="msg erro">${esc(S.blPErro[id])} <button class="b" type="button" data-bl-pes="${esc(id)}">Tentar de novo</button></div>` : '<div class="vazio">Carregando a pessoa…</div>'}</div>`; }
+  const cors = ((S.bl && S.bl.corretores) || []);
+  const lead = (l) => {
+    const ch = (l.painel || '') + '|' + (l.doc_id || ''), conf = S.blConf;
+    let st = l.arquivado ? `<span class="pill info">Arquivado</span> <span class="mut peq">${dt(l.arquivado_em)} · ${esc(l.arquivado_motivo || 'Sem motivo informado')}${l.redistribuido_para ? ' · redistribuído para ' + esc(arqNomePainel(l.redistribuido_para)) : ''}</span>` : '<span class="pill ok">Ativo</span>';
+    let ac = '';
+    if (l.arquivado && !l.redistribuido_para) {
+      if (conf === 'reat:' + ch) ac = `<div class="linha" style="gap:6px;margin-top:6px"><span class="peq">O lead volta à lista de ${esc(l.corretor_nome || l.painel)} na mesma etapa.</span><button class="b p" type="button" data-bl-reat="${esc(ch)}" data-bl-id="${esc(id)}"${S.blOcup ? ' disabled' : ''}>Confirmar a reativação</button><button class="b" type="button" data-bl-conf="">Cancelar</button></div>`;
+      else if (conf === 'red:' + ch) ac = `<div class="form" style="margin-top:6px"><label class="c">Passar para<select id="blRedCor"><option value="">Escolha o corretor</option>${cors.filter((c) => c.painel !== l.painel).map((c) => `<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('')}</select></label>
+        <label class="c inteiro">Observação<textarea id="blRedObs" maxlength="300" placeholder="Ex.: cliente voltou a procurar; prioridade"></textarea></label>
+        <div class="inteiro linha"><button class="b p" type="button" data-bl-red="${esc(ch)}" data-bl-id="${esc(id)}"${S.blOcup ? ' disabled' : ''}>Confirmar a redistribuição</button><button class="b" type="button" data-bl-conf="">Cancelar</button><span class="erro" id="eBlRed"></span></div></div>`;
+      else ac = `<div class="linha" style="gap:6px;margin-top:6px"><button class="b" type="button" data-bl-conf="reat:${esc(ch)}"${x.nao_contatar ? ' disabled title="Pessoa marcada como não contatar"' : ''}>Reativar com ${esc(l.corretor_nome || l.painel)}</button><button class="b" type="button" data-bl-conf="red:${esc(ch)}"${x.nao_contatar ? ' disabled title="Pessoa marcada como não contatar"' : ''}>Redistribuir</button></div>`;
+    }
+    return `<div class="i"><div class="q"><b>${esc(l.corretor_nome || l.painel || '—')}</b> · ${esc(l.etapa || 'Novo')} · entrada ${dt(l.entrada)}${l.campanha ? ' · ' + esc(l.campanha) : ''}</div><div>${st}</div>${ac}</div>`;
+  };
+  const ev = (e) => `<div class="i"><div class="q">${dt(e.em)} · <b>${esc(BL_EV[e.tipo] || e.tipo || '')}</b>${e.painel ? ' · ' + esc(arqNomePainel(e.painel)) : ''}${e.etapa ? ' · ' + esc(e.etapa) : ''}${e.por ? ' · por ' + esc(e.por) : ''}</div>${e.motivo || e.texto ? `<div class="peq">${esc([e.motivo, e.texto].filter(Boolean).join(' · '))}</div>` : ''}</div>`;
+  const LD = x.leads_detalhe || [], EV = x.eventos || [];
+  return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Pessoa da base de leads">
+    <div class="cab"><div><p class="mut peq" style="margin:0">Base de leads · ${esc(blInt(x.interesse))}</p><h3>${esc(x.nome || '—')}</h3>${blPillSit(Object.assign({}, resumo, { ld: LD.map((l) => ({ arquivado: !!l.arquivado })) }))}${x.nao_contatar ? ' <span class="pill alta">não contatar</span>' : ''}<p class="mut peq" style="margin:4px 0 0">Na base desde ${dt(x.primeiro_em)} · último registro ${dt(x.ultimo_evento_em)}</p></div><button class="b" type="button" data-fechar>Fechar</button></div>
+    <div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(x.telefone))}</b></div></div>
+    <div class="painel"><h2>Follow-up</h2><div class="form" style="margin-top:8px">
+      <label class="c">Revisitar em<input type="date" id="blRev" value="${esc(x.revisitar_em || '')}"></label>
+      <label class="c"><span><input type="checkbox" id="blNc"${x.nao_contatar ? ' checked' : ''}> Não contatar (pediu para não receber contato)</span></label>
+      <label class="c inteiro">Motivo do não contatar<input type="text" id="blNcMot" maxlength="200" value="${esc(x.nao_contatar_motivo || '')}" placeholder="Ex.: pediu por WhatsApp em 21/11"></label>
+      <div class="inteiro linha"><button class="b p" type="button" data-bl-fu="${esc(id)}"${S.blOcup ? ' disabled' : ''}>Salvar o follow-up</button><span class="erro" id="eBlFu"></span></div></div></div>
+    <div class="painel"><h2>Leads (${LD.length})</h2><div class="hist" style="margin-top:10px">${LD.length ? LD.map(lead).join('') : '<p class="mut">Nenhum lead em painel de corretor (só a classificar).</p>'}</div></div>
+    <div class="painel"><h2>Linha do tempo</h2><div class="hist" style="margin-top:10px">${EV.length ? EV.map(ev).join('') : '<p class="mut">Sem registros.</p>'}</div></div>
+  </div>`;
+}
+async function blAcao(id, dados, okMsg, errId) {
+  if (S.blOcup) return; S.blOcup = true; redesenharGaveta();
+  try {
+    const r = await window.VIVERE_PONTE.baseLeads('acao', id, dados);
+    if (r && r.pessoa) S.blP[id] = r.pessoa; else { delete S.blP[id]; S.blPErro[id] = ''; }
+    S.blConf = ''; S.blOcup = false; toast(okMsg); redesenharGaveta();
+    S.bl = null; S.blCarreg = false; blCarregar();
+    return true;
+  } catch (e) {
+    S.blOcup = false; redesenharGaveta();
+    const el = document.getElementById(errId); const m = 'Não foi possível: ' + ((e && e.message) || e);
+    if (el) el.textContent = m; else toast(m);
+    return false;
+  }
+}
+function blAbrirLead(painel, doc) {
+  S.verBase = true; S.verArq = false; render(); window.scrollTo(0, 0);
+  const acha = () => ((S.bl && S.bl.pessoas) || []).find((p) => (p.ld || []).some((x) => x.painel === painel && x.doc_id === doc));
+  const vai = () => { const p = acha(); if (p) abrir('base', p.id); else toast('Este lead ainda não está na base (a base se atualiza em instantes). Use a busca.'); };
+  if (S.bl) return vai();
+  let n = 0; const t = setInterval(() => { n++; if (S.bl || S.blErro || n > 40) { clearInterval(t); if (S.bl) vai(); } }, 250);
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-bl],[data-bl-sit],[data-bl-lead],[data-bl-conf],[data-bl-reat],[data-bl-red],[data-bl-fu],[data-bl-pes]'); if (!t || !S.gestor) return;
+  const d = t.dataset;
+  if (d.bl === 'abrir') { S.verBase = true; S.verArq = false; render(); window.scrollTo(0, 0); return; }
+  if (d.bl === 'voltar') { S.verBase = false; render(); window.scrollTo(0, 0); return; }
+  if (d.bl === 'recarregar') { S.bl = null; S.blErro = ''; S.blP = {}; blCarregar(); return render(); }
+  if (t.hasAttribute('data-bl-sit')) { S.blF.sit = d.blSit; S.pagGen = S.pagGen || {}; S.pagGen.base_leads = 0; return render(); }
+  if (t.hasAttribute('data-bl-lead')) { const [pn, ...rest] = String(d.blLead).split('|'); fechar(); return blAbrirLead(pn, rest.join('|')); }
+  if (t.hasAttribute('data-bl-pes')) { S.blPErro[d.blPes] = ''; return blPessoa(d.blPes, true); }
+  if (t.hasAttribute('data-bl-conf')) { S.blConf = d.blConf; return redesenharGaveta(); }
+  if (t.hasAttribute('data-bl-reat')) { const [pn, ...rest] = String(d.blReat).split('|'); return blAcao(d.blId, { acao: { tipo: 'reativar', painel: pn, doc_id: rest.join('|') } }, 'Lead reativado: voltou à lista do corretor.', 'eBlRed'); }
+  if (t.hasAttribute('data-bl-red')) {
+    const [pn, ...rest] = String(d.blRed).split('|'), cor = (document.getElementById('blRedCor') || {}).value || '', obs = String((document.getElementById('blRedObs') || {}).value || '').trim();
+    if (!cor) { const el = document.getElementById('eBlRed'); if (el) el.textContent = 'Escolha o corretor.'; return; }
+    return blAcao(d.blId, { acao: { tipo: 'redistribuir', painel: pn, doc_id: rest.join('|'), corretor: cor, obs } }, 'Lead redistribuído: entrou como Novo no painel escolhido.', 'eBlRed');
+  }
+  if (t.hasAttribute('data-bl-fu')) {
+    const nc = !!(document.getElementById('blNc') || {}).checked, mot = String((document.getElementById('blNcMot') || {}).value || '').trim(), rev = (document.getElementById('blRev') || {}).value || '';
+    if (nc && !mot) { const el = document.getElementById('eBlFu'); if (el) el.textContent = 'Informe o motivo do não contatar.'; return; }
+    return blAcao(d.blFu, { nao_contatar: nc, nao_contatar_motivo: mot, revisitar_em: rev }, 'Follow-up salvo.', 'eBlFu');
+  }
+});
+document.addEventListener('change', (e) => { const t = e.target; if (!t || !t.dataset || !t.dataset.blCor) return; S.blF.cor = t.value; S.pagGen = S.pagGen || {}; S.pagGen.base_leads = 0; render(); });
+document.addEventListener('input', (e) => { const t = e.target; if (!t || !t.dataset || !t.dataset.blQ) return; S.blF.q = t.value; clearTimeout(S.blQt);
+  S.blQt = setTimeout(() => { const p = t.selectionStart; S.pagGen = S.pagGen || {}; S.pagGen.base_leads = 0; render(); const n = document.querySelector('[data-bl-q]'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (x) {} } }, 300); });
+
 // ---------- Meus leads ----------
 function vLeads() {
+  if (S.verBase && S.gestor) return vBaseLeads();   // trocas-base-app
   if (S.verArq) return vArquivados();   // trocas-leads-arquivados
   let L = Object.entries(S.leads).map(([id, l]) => ({ id, ...l, _ult: ultimoReg(l), _av: avisosDe(id, l), _int: interesseDe(l) }));
   L.forEach((l) => { l._f = FC.funilDoInteresse(l._int); l._et = FC.etapaNoFunil(l.etapa, l._f); l._ab = FC.aberta(l.etapa, l._f); });
@@ -2263,7 +2414,7 @@ function vLeads() {
   const blocos = { previsao: () => blocoPrevisao(Ltodos.filter((l) => (!FU || l._f === S.funil) && (!S.filtroInt || l._int === S.filtroInt)), FU ? S.funil : null), interesse: () => chipsInt };
   const etapasVis = telaVis('leads_blocos', 'etapas') || (S.filtroEtapa !== 'abertos');
   return `<section class="sec">
-    <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha">${btnArq()}<button class="b" type="button" data-relabre="" aria-label="Relatórios e exportação">📊 Relatórios</button><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
+    <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha">${btnArq()}${S.gestor ? '<button class="b" type="button" data-bl="abrir" aria-label="Base de leads da Vivere">📇 Base de leads</button>' : ''}<button class="b" type="button" data-relabre="" aria-label="Relatórios e exportação">📊 Relatórios</button><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
     ${avisoPerfis()}${chipsFunil}${telaOrdem('leads_blocos').map((k) => (blocos[k] ? blocos[k]() : '')).join('')}
     ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca || !etapasVis ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
     ${tabela('leads', colsV, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: 'Nenhum lead neste filtro.', cartao: (r) => cartaoLeadMovel(r, FU) })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
@@ -4114,7 +4265,7 @@ function popupEmp(e) {
 // ---------- Gavetas ----------
 function abrir(tipo, id, semFoco) {
   S.aberto = { tipo, id };
-  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'pfconf' ? gavetaPfConf() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : tipo === 'rel' ? gavetaRel() : tipo === 'metasvid' ? gavetaMetasVid(id) : gavetaVitrine(id);
+  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'base' ? gavetaBase(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'pfconf' ? gavetaPfConf() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : tipo === 'rel' ? gavetaRel() : tipo === 'metasvid' ? gavetaMetasVid(id) : gavetaVitrine(id);
   const so = document.getElementById('sobre');
   so.innerHTML = `<div class="sobre" data-fundo>${html}</div>`;
   if (!semFoco) { const pri = so.querySelector('input,select,textarea,button'); if (pri) pri.focus(); }
@@ -4253,7 +4404,7 @@ document.addEventListener('click', async (ev) => {
     if (!ok) { delete t.dataset.confirma; t.textContent = '⚡ Captar este imóvel primeiro'; }
     return; }
   if (d.lead) { S.aba = 'leads'; render(); return abrir('lead', d.lead); }
-  if (d.abre) { const [tp, id] = d.abre.split(/:(.*)/s); if (tp === 'tarefa') return abrir('tarefa', id); if (tp === 'sol') { const so = S.sol[id]; if (so && !S.ehDono && statusDe(id, so) === 'rascunho' && so.tipo !== 'alteracao') return continuar(id); return abrir('sol', id); } if (tp === 'emp') { S.empFicha = 'geral'; return abrir('emp', id); } if (tp === 'cons') return abrir('cons', id); if (tp === 'meu') return abrir('meu', id); return abrir(tp === 'lead' ? 'lead' : 'vit', id); }
+  if (d.abre) { const [tp, id] = d.abre.split(/:(.*)/s); if (tp === 'tarefa') return abrir('tarefa', id); if (tp === 'sol') { const so = S.sol[id]; if (so && !S.ehDono && statusDe(id, so) === 'rascunho' && so.tipo !== 'alteracao') return continuar(id); return abrir('sol', id); } if (tp === 'emp') { S.empFicha = 'geral'; return abrir('emp', id); } if (tp === 'cons') return abrir('cons', id); if (tp === 'meu') return abrir('meu', id); if (tp === 'base' && S.gestor) return abrir('base', id); return abrir(tp === 'lead' ? 'lead' : 'vit', id); }
   if (d.continuar) return continuar(d.continuar);
   if (d.fotosimv) { S.novo = novoRegistro('fotos', { imovel_id: d.fotosimv }); return abrir('fotosimv'); }
   if (d.ia) return gerarIA(d.ia);
