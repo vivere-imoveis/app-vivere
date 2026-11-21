@@ -1497,9 +1497,69 @@ const DEM = DEM_NUCLEO({
   nota: 'O que os clientes estão procurando, registrado por você, pelos colegas e pela diretoria; todos veem todas. Cada demanda vale 30 dias (Renovar estende). Você edita, renova e encerra as suas; nas dos outros, use “Pedir alteração”. “Imóveis que atendem” mostra os anúncios do site e os seus imóveis que batem com a demanda. As demandas dos colegas chegam pela sincronização de hora em hora.',
 });
 const vDemandas = () => DEM.render();
+/* trocas-demandas-auto */
+// ---------- Demandas automáticas (21/11/2026, vis-demandas-automaticas-leads) ----------
+// Nascem do perfil dos leads abertos (confirmado; senão o sugerido), pela RPC demandas_automaticas (VIVERE_PONTE.demandasAuto).
+// Só o perfil e o corretor: sem nome nem telefone do cliente. Perfis iguais do mesmo corretor viram uma linha só e, para corretor,
+// a tela não mostra total nem paginação com contagem (regra do Cleiton de 10/11: corretor não vê a quantidade de leads; decisão de 21/11).
+S.da = null; S.daErro = ''; S.daCarreg = false; S.daF = { fin: '', minhas: false, q: '' }; S.daAberto = '';
+async function daCarregar() {
+  if (S.daCarreg) return; S.daCarreg = true; S.daErro = '';
+  try { const P = window.VIVERE_PONTE; if (!P || !P.demandasAuto) throw new Error('função indisponível nesta versão do app'); S.da = (await P.demandasAuto()) || { demandas: [] }; }
+  catch (e) { S.daErro = 'Não foi possível carregar as demandas automáticas: ' + ((e && e.message) || e); }
+  S.daCarreg = false; render();
+}
+const daDoc = (g) => Object.assign({}, g, { _id: g.id, atualizado_em: g.em || '' });
+const daValor = (g) => (DEM.valorTxt && DEM.valorTxt(daDoc(g))) || '—';
+const daComodos = (g) => [g.dorm_min ? g.dorm_min + '+ dorm.' : '', g.vagas_min ? g.vagas_min + '+ vaga' + (g.vagas_min > 1 ? 's' : '') : ''].filter(Boolean).join(' · ') || '—';
+function vDemAuto() {
+  const dir = !!(S.ehDono || S.gestor);
+  const intro = `<p class="s" style="margin:0 0 10px">O que os clientes dos corretores estão procurando, montado sozinho a partir do perfil dos leads em aberto (confirmado pelo corretor ou sugerido pela Vivian). Mostra só o perfil e o corretor responsável, sem dados do cliente; some quando o lead fecha, perde ou é arquivado. Para registrar uma procura à mão, use <button type="button" class="dm-lk" data-aba="demandas">Demandas extras</button>.</p>`;
+  if (S.da === null) { if (!S.daCarreg && !S.daErro) setTimeout(daCarregar, 0);
+    return `<section class="dm"><div class="dm-cab"><h2>Demandas automáticas</h2></div>${intro}${S.daErro ? `<div class="msg erro">${esc(S.daErro)} <button class="b" type="button" data-da="recarregar">Tentar de novo</button></div>` : '<div class="vazio">Carregando as demandas…</div>'}</section>`; }
+  let meu = S.info.slug || ''; if (!meu) { try { meu = ((window.VIVERE_PONTE && VIVERE_PONTE.estado && VIVERE_PONTE.estado()) || {}).painel || ''; } catch (e) { meu = ''; } }
+  const q = demTx(S.daF.q);
+  let L = (S.da.demandas || []).filter((g) => (!S.daF.fin || g.finalidade === S.daF.fin) && (!S.daF.minhas || g.painel === meu)
+    && (!q || demTx([g.corretor, g.finalidade, g.tipo, ...(g.bairros || [])].join(' ')).includes(q)));
+  const chip = (attr, on, txt) => `<button type="button" class="dm-chip"${on ? ' aria-pressed="true"' : ' aria-pressed="false"'} ${attr}>${txt}</button>`;
+  const chips = [chip('data-da-fin=""', !S.daF.fin, 'Todas'), ...['Compra', 'Locação anual', 'Temporada'].map((f) => chip(`data-da-fin="${esc(f)}"`, S.daF.fin === f, esc(f))),
+    meu ? chip('data-da-minhas="1"', S.daF.minhas, 'Dos meus leads') : ''].join('');
+  const busca = `<input type="search" class="dm-busca" id="da-q" data-da-q="1" placeholder="Bairro, tipo ou corretor" value="${esc(S.daF.q)}" aria-label="Buscar nas demandas automáticas" style="min-width:200px;flex:1 1 200px">`;
+  const site = (g) => { const A = DEM.atende(daDoc(g)); return A == null ? '…' : A.length; };
+  const bSite = (g) => { const n = site(g); return n === '…' || !n ? `<span class="mut peq">${n === '…' ? '…' : 'nenhum no site'}</span>` : `<button type="button" class="b" data-da-abre="${esc(g.id)}" aria-expanded="${S.daAberto === g.id}">${n} no site</button>`; };
+  const bAcap = (g) => g.n_acaptar ? `<a class="b" href="${esc(acapUrl())}" title="Imóveis livres do A CAPTAR que combinam com esta demanda (abre o A CAPTAR)">${+g.n_acaptar || 0} no A CAPTAR</a>` : '<span class="mut peq">nenhum no A CAPTAR</span>';
+  const procura = (g) => esc([g.finalidade, g.tipo || 'qualquer tipo'].join(' · '));
+  const selo = (g) => g.confirmado ? '<span class="dm-pill">confirmado</span>' : '<span class="dm-pill" title="Perfil sugerido pela Vivian; o corretor ainda vai confirmar">sugerido</span>';
+  const cols = [
+    { k: 'corretor', l: 'Corretor', h: (g) => esc(g.corretor || '—') + (dir && g.n_clientes > 1 ? ` <span class="mut peq">(${+g.n_clientes || 0} clientes)</span>` : '') },
+    { k: 'fin', l: 'Procura', v: (g) => g.finalidade + ' ' + (g.tipo || ''), h: procura },
+    { k: 'bairros', l: 'Bairros', v: (g) => (g.bairros || []).join(', '), h: (g) => esc((g.bairros || []).join(', ')) },
+    { k: 'valor', l: 'Valor', n: 1, v: (g) => +g.valor_max || +g.valor_min || null, h: (g) => esc(daValor(g)) },
+    { k: 'comodos', l: 'Cômodos', v: (g) => +g.dorm_min || null, h: (g) => esc(daComodos(g)) },
+    { k: 'perfil', l: 'Perfil', v: (g) => (g.confirmado ? 0 : 1), h: selo },
+    { k: 'site', l: 'Imóveis do site', ord: false, h: bSite },
+    { k: 'acap', l: 'A captar', n: 1, v: (g) => +g.n_acaptar || 0, h: bAcap },
+  ];
+  const cartao = (g) => `<div class="cm-l1"><b>${procura(g)}</b> ${selo(g)}</div><div class="cm-l2">${esc((g.bairros || []).join(', '))}</div><div class="cm-l2 mut">${esc(daValor(g))} · ${esc(daComodos(g))} · ${esc(g.corretor || '—')}${dir && g.n_clientes > 1 ? ' (' + (+g.n_clientes || 0) + ' clientes)' : ''}</div><div class="linha" style="gap:6px;margin-top:6px">${bSite(g)}${bAcap(g)}</div>`;
+  const ab = S.daAberto && L.find((g) => g.id === S.daAberto);
+  const det = ab ? (() => { const A = DEM.atende(daDoc(ab)) || []; return `<div class="cartao" style="margin:0 0 12px"><div class="linha" style="justify-content:space-between;gap:8px"><b>Imóveis do site que atendem: ${procura(ab)} · ${esc((ab.bairros || []).join(', '))}</b><button type="button" class="b" data-da-abre="">Fechar</button></div><div class="dm-its">${A.length ? A.map((x) => demItem(x.it, x)).join('') : '<span class="mut">Nenhum imóvel do site combina agora.</span>'}</div></div>`; })() : '';
+  return `<section class="dm"><div class="dm-cab"><h2>Demandas automáticas</h2><button type="button" class="b" data-da="recarregar">Atualizar</button></div>${intro}
+    <div class="linha" style="flex-wrap:wrap;gap:6px;margin:0 0 10px">${chips}${busca}</div>${det}
+    ${tabela('demAuto', cols, L, { cartao, padrao: { c: 'acap', d: -1 }, pag: dir ? undefined : 0, vazio: S.daF.fin || S.daF.minhas || q ? 'Nenhuma demanda com esses filtros.' : 'Ainda não há leads em aberto com perfil para virar demanda.' })}</section>`;
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-da],[data-da-fin],[data-da-minhas],[data-da-abre]'); if (!t) return;
+  if (t.dataset.da === 'recarregar') { S.da = null; S.daErro = ''; daCarregar(); return render(); }
+  if (t.hasAttribute('data-da-fin')) { S.daF.fin = t.dataset.daFin; return render(); }
+  if (t.hasAttribute('data-da-minhas')) { S.daF.minhas = !S.daF.minhas; return render(); }
+  if (t.hasAttribute('data-da-abre')) { S.daAberto = S.daAberto === t.dataset.daAbre ? '' : t.dataset.daAbre; render(); window.scrollTo(0, 0); }
+});
+document.addEventListener('input', (e) => { const t = e.target; if (!t || !t.dataset || !t.dataset.daQ) return; S.daF.q = t.value; clearTimeout(S.daQt);
+  S.daQt = setTimeout(() => { const p = t.selectionStart; render(); const n = document.querySelector('[data-da-q]'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (x) {} } }, 300); });
+
 
 // ---------- Abas ----------
-const ABAS = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['tarefas', 'Tarefas'], ['leads', 'Meus leads'], ['pesquisa', 'Pesquisar imóveis'], ['imoveis', 'Meus imóveis'], ['semresp', 'Imóveis sem responsável'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['oportunidades', 'Ofertas'], ['demandas', 'Demandas extras'], ['solicitacoes', 'Solicitações']]; // ordem do menu (03/11/2026; 🎯 A CAPTAR logo depois do Início desde 09/11/2026)
+const ABAS = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['tarefas', 'Tarefas'], ['leads', 'Meus leads'], ['pesquisa', 'Pesquisar imóveis'], ['imoveis', 'Meus imóveis'], ['semresp', 'Imóveis sem responsável'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['oportunidades', 'Ofertas'], ['demandas', 'Demandas extras'], ['demandas_auto', 'Demandas automáticas'], ['solicitacoes', 'Solicitações']]; // ordem do menu (03/11/2026; 🎯 A CAPTAR logo depois do Início desde 09/11/2026)
 const abasOrdenadas = () => ReordAbas.ordena(ABAS.map((a) => a[0]), S.ordemAbas).map((k) => ABAS.find((a) => a[0] === k));
 function desenharAbas() {
   if (ReordAbas.ativo()) return; // não redesenha no meio do arraste
@@ -1537,7 +1597,7 @@ const baImv = (m) => { const pr = m.proprietario || {}; return { txt: [m.ref, m.
   docs: [pr.celular, pr.cpf, m.cep], valores: [m.valor], nums: { dorm: m.dorm, suites: m.suites, banh: m.banh, vagas: m.vagas } }; };
 
 // sub-abas (03/11/2026): aba-mãe → [rótulo, filhas]; cada filha continua com a aba própria por baixo
-const SUBS_P = { oportunidades: ['Ofertas', [['demandas', 'Demandas extras']]], pesquisa: ['Pesquisar imóveis', [['imoveis', 'Meus imóveis'], ['semresp', 'Imóveis sem responsável'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa']]] };
+const SUBS_P = { oportunidades: ['Ofertas', [['demandas', 'Demandas extras'], ['demandas_auto', 'Demandas automáticas']]], pesquisa: ['Pesquisar imóveis', [['imoveis', 'Meus imóveis'], ['semresp', 'Imóveis sem responsável'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa']]] };
 const paiP = (k) => Object.keys(SUBS_P).find((m) => SUBS_P[m][1].some((x) => x[0] === k)) || '';
 function subOp() { const pai = SUBS_P[S.aba] ? S.aba : paiP(S.aba); if (!pai) return '';
   const n = (k) => k === 'demandas' ? DEM.novas() + DEM.pedAbertos() : 0;
@@ -1841,9 +1901,9 @@ function render() {
   if (!db) { el.innerHTML = `<div class="painel vazio">Não foi possível abrir os seus dados. Entre no claude.ai com o e-mail que recebeu o convite e abra este painel de novo.</div>`; return; }
   if (!S.prontos.has('leads') && !S.prontos.has('meus')) { el.innerHTML = '<div class="vazio">Carregando os seus dados…</div>'; return; }
   S.qInfo = '';
-  const aeQ = document.activeElement, fq = aeQ && aeQ.id === 'oplf-q' ? [aeQ.selectionStart, aeQ.selectionEnd] : null;
-  el.innerHTML = (S.gestor ? barraGestor() : '') + subOp() + ({ gestor: S.gestor ? vGestor : vInicio, inicio: vInicio, acaptar: vAcaptar, tarefas: vTarefas, leads: vLeads, oportunidades: vOport, demandas: vDemandas, imoveis: vImoveis, pesquisa: vPesquisa, empreendimentos: vEmp, mapa: vMapa, solicitacoes: vSolic }[S.aba] || vInicio)();
-  if (fq) { const q = document.getElementById('oplf-q'); if (q) { q.focus(); try { q.setSelectionRange(fq[0], fq[1]); } catch (_) {} } }
+  const aeQ = document.activeElement, fq = aeQ && (aeQ.id === 'oplf-q' || aeQ.id === 'da-q') ? [aeQ.selectionStart, aeQ.selectionEnd] : null;
+  el.innerHTML = (S.gestor ? barraGestor() : '') + subOp() + ({ gestor: S.gestor ? vGestor : vInicio, inicio: vInicio, acaptar: vAcaptar, tarefas: vTarefas, leads: vLeads, oportunidades: vOport, demandas: vDemandas, demandas_auto: vDemAuto, imoveis: vImoveis, pesquisa: vPesquisa, empreendimentos: vEmp, mapa: vMapa, solicitacoes: vSolic }[S.aba] || vInicio)();
+  if (fq) { const q = document.getElementById(aeQ.id); if (q) { q.focus(); try { q.setSelectionRange(fq[0], fq[1]); } catch (_) {} } }
   pintaBarra();
   montaMapa();
 }
