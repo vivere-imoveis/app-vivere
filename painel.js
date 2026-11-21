@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -380,6 +380,19 @@ try {
     });
   }
 
+  function pedeConfirma(titulo, texto, rotulo) {   // trocas-usabilidade-f2 (Lucas #14): confirmação antes de mover para a etapa de fechamento
+    return new Promise((ok) => {
+      const d = document.createElement('div'); d.className = 'vcrm-modal';
+      d.innerHTML = `<div class="vcrm-caixa" role="dialog" aria-modal="true" aria-label="${esc(titulo)}"><b>${esc(titulo)}</b>${texto ? `<p class="peq mut" style="margin:0">${esc(texto)}</p>` : ''}<div class="vcrm-bts"><button type="button" class="vcrm-b" data-x="0">Cancelar</button><button type="button" class="vcrm-b p" data-x="1">${esc(rotulo || 'Confirmar')}</button></div></div>`;
+      document.body.appendChild(d);
+      const tec = (e) => { if (e.key === 'Escape') { e.stopPropagation(); fim(false); } };
+      const fim = (v) => { d.remove(); document.removeEventListener('keydown', tec, true); ok(v); };
+      document.addEventListener('keydown', tec, true);
+      d.addEventListener('click', (e) => { const b = e.target.closest('[data-x]'); if (e.target === d) return fim(false); if (b) fim(b.dataset.x === '1'); });
+      const p = d.querySelector('[data-x="1"]'); if (p) p.focus();
+    });
+  }
+
   // ---------- eventos ----------
   let arrastando = null;
   function instalar(h) {
@@ -524,7 +537,7 @@ html.vk-agarrando,html.vk-agarrando *{cursor:grabbing!important}
 @media (max-width:640px){.vp-a{justify-content:flex-start}.vp-l{grid-template-columns:1fr 70px;grid-template-areas:"e n" "bar bar" "d d" "a a"}.vp-a{text-align:left}.vf-l{grid-template-columns:96px 1fr}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
-  window.VisoesCRM = { VISOES, ativas, alternar, seletor, kanban, pipeline, funil, degrausEtapas, agenda, montar, pedeMotivo, instalar };
+  window.VisoesCRM = { VISOES, ativas, alternar, seletor, kanban, pipeline, funil, degrausEtapas, agenda, montar, pedeMotivo, pedeConfirma, instalar };
 })();
 
 } catch (e) { setTimeout(function () { throw e; }); }
@@ -1063,7 +1076,7 @@ const acapNoCaptei = (lead) => !!(((S.acap || {}).captei || {})[lead]);
 // o diretor que abre o painel de outro não vê as travas dele como se fossem do corretor.
 const acapPn = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().split(/\s+/)[0].replace(/(.)\1+/g, '$1') || '';   // Kamily = Kamilly, Nicolas = Nicollas
 const acapDono = () => { if (S.gestor && S.verComo && S.verComo !== 'todos') return { slug: S.verComo, nome: gCurto(S.verComo) }; const i = S.info || {}; return { slug: i.slug || '', nome: i.saudacao || i.corretor || '' }; };
-const acapEhMinha = (x) => { if (!x) return false; const d = acapDono(); if (x.chave && d.slug) return x.chave === d.slug || (!!x.nome && acapPn(x.nome) === acapPn(d.nome)); if (x.nome && d.nome) return acapPn(x.nome) === acapPn(d.nome); return !!S.uid && x.uid === S.uid; };
+const acapEhMinha = (x) => { if (!x) return false; if (window.VIVERE_PONTE && x.uid && S.uid && !S.gestor && !S.ehDono) return x.uid === S.uid;   /* trocas-usabilidade-f2 (Lucas #10) */ const d = acapDono(); if (x.chave && d.slug) return x.chave === d.slug || (!!x.nome && acapPn(x.nome) === acapPn(d.nome)); if (x.nome && d.nome) return acapPn(x.nome) === acapPn(d.nome); return !!S.uid && x.uid === S.uid; };
 const acapDaFoto = () => { const v = Object.values((S.G || {}).acapg || {}).filter((x) => x && x.travas); return v.length ? v.reduce((a, x) => ({ ...a, ...x, travas: { ...(a.travas || {}), ...x.travas } }), {}) : null; };
 const acapNi = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
 const acapDoSlug = (slug) => { const tv = ((S.acap || {}).travas) || {}, nm = acapPn(gCurto(slug)), rep = gPaineis().filter((p) => acapPn(gCurto(p.slug)) === nm).length > 1, ni = acapNi(gNome(slug)); return Object.values(tv).filter((x) => x && x.uid && (x.chave ? x.chave === slug : (!!x.nome && (rep ? acapNi(x.nome) === ni : acapPn(x.nome) === nm)))).length; }; /* trocas-f5j */
@@ -1776,7 +1789,7 @@ const TF = (() => {
     if (d.tfAtrib !== undefined) return abrir('atrib', null);
     if (d.tfFiltro) { S.tfFiltro = d.tfFiltro; return render(); }
     if (d.tfExc) return excluir(d.tfExc, b);
-    if (d.tfCancatrib) return cancelarAtrib(d.tfCancatrib);
+    if (d.tfCancatrib) { if (!tocarDeNovo(b, 'Toque de novo para cancelar')) return; return cancelarAtrib(d.tfCancatrib); }   // trocas-usabilidade-f2 (Lucas #14)
   }, true);
   document.addEventListener('submit', (ev) => {
     if (ev.target.id === 'fTarefa') { ev.preventDefault(); salvar(ev.target); }
@@ -2615,6 +2628,7 @@ async function moverLead(id, etapa) {
   const l = S.leads[id], f = l ? funilDe(l) : ''; if (!l || !FC.def(f).etapas.includes(etapa)) return; const de = etapaDe(l); if (de === etapa && l.etapa === etapa) return;
   let motivo = '';
   if (etapa === 'Perdido') { motivo = await VisoesCRM.pedeMotivo(FC.def(f).motivos); if (!motivo) return; }
+  if (FC.ganho(etapa, f) && !FC.ganho(de, f) && !(await VisoesCRM.pedeConfirma(`Mover ${l.nome || 'este lead'} para ${etapa}?`, 'Marca o negócio como fechado; a mudança entra no histórico do lead.', `Mover para ${etapa}`))) return;   // trocas-usabilidade-f2 (Lucas #14)
   const h = [...histDe(l), { em: agora().slice(0, 16), tipo: 'Observação', texto: `Etapa: ${de} → ${etapa}${motivo ? ' (' + motivo + ')' : ''}.` }];
   const dados = { etapa, motivo: etapa === 'Perdido' ? motivo : '', data_fechamento: FC.ganho(etapa, f) ? (l.data_fechamento || hojeISO()) : '', historico: h, etapa_em: agora(), etapa_por: 'corretor', atualizado_em: agora(), origem: 'painel', ...(l.prob != null && l.prob !== '' ? { prob: null } : {}) };   // fatia 2: % ajustada vale só na etapa em que foi dada
   await gravar(() => db.collection('leads').doc(id).update(dados), `${l.nome}: ${etapa}.`);
@@ -3877,12 +3891,12 @@ function htmlProposta(r) {
       <label class="c" data-pp="lead">Perfil: finalidade<input id="ppFin" value="${esc(pf.finalidade || '')}"></label>
       <label class="c" data-pp="lead">Perfil: tipo<input id="ppPTipo" value="${esc(pf.tipo || '')}"></label>
       <label class="c" data-pp="lead">Perfil: bairros<input id="ppBairros" value="${esc(pf.bairros || '')}"></label>
-      <label class="c" data-pp="lead">Valor mínimo (R$)<input id="ppMin" ${VLR} value="${esc(fmtVlr(pf.vmin))}"></label>
-      <label class="c" data-pp="lead">Valor máximo (R$)<input id="ppMax" ${VLR} value="${esc(fmtVlr(pf.vmax))}"></label>
+      <label class="c" data-pp="lead"${pf.vmin ? ' data-iapre style="outline:2px solid var(--brass);outline-offset:3px;border-radius:6px"' : ''}>${pf.vmin ? '✦ ' : ''}Valor mínimo (R$)<input id="ppMin" ${VLR} value="${esc(fmtVlr(pf.vmin))}"></label>
+      <label class="c" data-pp="lead"${pf.vmax ? ' data-iapre style="outline:2px solid var(--brass);outline-offset:3px;border-radius:6px"' : ''}>${pf.vmax ? '✦ ' : ''}Valor máximo (R$)<input id="ppMax" ${VLR} value="${esc(fmtVlr(pf.vmax))}"></label>
       <label class="c inteiro" data-pp="lead">Perfil: observações<input id="ppObs" value="${esc(pf.obs || '')}"></label>
       <div class="inteiro" data-pp="imv" id="ppAlt" data-imv="${r.alvo === 'imovel' ? esc(r.imovel_id || '') : ''}">${htmlPedidoAlt(r)}</div>
     </div>
-    <div class="linha"><button class="b p" type="button" id="ppSalvar">Salvar</button><span class="mut peq">Campos vazios não apagam o que já está no lead.</span></div></div>`;
+    <div class="linha"><button class="b p" type="button" id="ppSalvar">Salvar</button><span class="mut peq">Campos vazios não apagam o que já está no lead.</span></div><p id="ppConfVal" class="falta peq" style="margin:0" role="status"></p></div>`;
 }
 // VOZ-SOLICITACAO (05/11/2026): mudança de dado dita na conversa vira pedido à diretoria (solicitacoes), além do histórico
 const CAMPOS_VOZ = CAMPOS_ALT.filter(([k, , t]) => t !== 'texto');
@@ -3894,7 +3908,7 @@ function htmlPedidoAlt(r) {
   const campo = ([k, l, t]) => `<label class="c">${esc(l)}${atual(k) != null && atual(k) !== '' ? ` <span class="mut peq">(hoje ${esc(fmtAlt(k, atual(k)))})</span>` : ''}${t === 'sel' ? `<select id="pa_${k}"><option value="">Não mudar</option>${['Ativo', 'Inativo'].map((o) => `<option ${o === a[k] ? 'selected' : ''}>${o}</option>`).join('')}</select>` : `<input id="pa_${k}" ${VLR_ALT.has(k) ? `${VLR} value="${esc(a[k] != null ? fmtVlr(a[k]) : '')}"` : `type="number" step="any" inputmode="decimal" value="${esc(a[k] ?? '')}"`} placeholder="não mudar">`}</label>`;
   return `<fieldset class="prop-alt"><legend>Pedir alteração à diretoria${ks.length ? ` · a IA achou ${ks.length} mudança${ks.length > 1 ? 's' : ''}` : ''}</legend>
     <p class="peq mut" style="margin:0 0 6px">Preencha só o que muda; vazio não pede nada. Vai para aprovação e nada muda no site antes disso.</p>
-    <div class="form">${CAMPOS_VOZ.filter(([k]) => ks.includes(k)).map(campo).join('')}</div>
+    ${ks.length ? '<p class="peq" style="margin:0 0 6px">✦ = valor que a IA tirou da conversa: confira cada um. Mudança de valor pede um 2º toque em Salvar.</p>' : ''}<div class="form">${CAMPOS_VOZ.filter(([k]) => ks.includes(k)).map((c) => campo(c).replace('<label class="c">', '<label class="c" data-iapre style="outline:2px solid var(--brass);outline-offset:3px;border-radius:6px">✦ ')).join('')}</div>
     ${ks.length < CAMPOS_VOZ.length ? `<details><summary class="peq">Outros dados</summary><div class="form" style="margin-top:8px">${CAMPOS_VOZ.filter(([k]) => !ks.includes(k)).map(campo).join('')}</div></details>` : ''}</fieldset>`;
 }
 function lerPedidoAlt(m) {
@@ -3918,6 +3932,8 @@ async function salvarProposta() {
   const reg = { em: agora().slice(0, 16), tipo, texto: resumo, origem: 'ia' };
   if (tp === 'imv') {
     const m = S.meus[id] || {}, alt = lerPedidoAlt(m), nAlt = Object.keys(alt).length;
+    if (alt.valor && alt.valor.para > 0 && alt.valor.para < 100) { toast('Valor do imóvel muito baixo. Escreva o valor cheio (1.500.000) ou "1,5 mi".'); return; }   // trocas-usabilidade-f2 (Lucas #12)
+    if (!confirmaValores(Object.entries(alt).filter(([k]) => VLR_ALT.has(k)).map(([k, x]) => `${ROT_ALT[k] || k}: ${fmtAlt(k, x.de)} → ${fmtAlt(k, x.para)}`))) return;
     const resumoAlt = Object.entries(alt).map(([k, x]) => `${ROT_ALT[k] || k}: ${fmtAlt(k, x.de)} → ${fmtAlt(k, x.para)}`).join('; ');
     if (nAlt) {
       const ok0 = await gravar(() => db.collection('solicitacoes').doc('s-' + Date.now().toString(36)).set({ imovel_id: id, ref: m.ref || '', alteracoes: alt, obs: resumo, status: 'pendente', criado_em: agora(), corretor: S.info.slug || '', origem: 'ia' }), 'Pedido de alteração enviado para aprovação.');
@@ -3932,6 +3948,8 @@ async function salvarProposta() {
   const perfil = { ...(base.perfil || {}) };
   const setP = (k, x, n) => { if (x !== '') perfil[k] = n ? Number(x) : x; };
   perfil.em = agora().slice(0, 16); perfil.por = 'corretor'; setP('finalidade', val('ppFin')); setP('tipo', val('ppPTipo')); setP('bairros', val('ppBairros')); setP('vmin', numVlr(val('ppMin')) ?? '', 1); setP('vmax', numVlr(val('ppMax')) ?? '', 1); setP('obs', val('ppObs'));
+  if ([perfil.vmin, perfil.vmax].some((x) => typeof x === 'number' && x > 0 && x < 100)) { toast('Valor do perfil muito baixo. Escreva o valor cheio (1.500.000) ou "1,5 mi".'); return; }   // trocas-usabilidade-f2 (trava 0-100)
+  if (!confirmaValores(['vmin', 'vmax'].filter((k) => typeof perfil[k] === 'number' && perfil[k] !== Number((base.perfil || {})[k] || 0)).map((k) => `${k === 'vmin' ? 'Valor mínimo' : 'Valor máximo'} do perfil: ${fmtAlt('valor', (base.perfil || {})[k])} → ${fmtAlt('valor', perfil[k])}`))) return;   // trocas-usabilidade-f2 (Lucas #12)
   const dados = { perfil, atualizado_em: agora(), origem: 'painel', historico: [...histDe(base), reg] };
   const etapa = val('ppEtapa'); if (etapa) { dados.etapa = etapa; if (etapa === 'Perdido') dados.motivo = val('ppMotivo'); }
   if (val('ppProx')) dados.prox_acao = val('ppProx');
@@ -4432,6 +4450,26 @@ function popupEmp(e) {
 }
 
 
+// ---------- Confirmações (21/11/2026, revisão do Lucas) — trocas-usabilidade-f2 ----------
+// #14: ação que apaga ou cancela pede um 2º toque no mesmo botão (vale por 5 s; depois o botão volta ao normal).
+function tocarDeNovo(bt, rotulo, aviso) {
+  if (!bt) return true;
+  if (bt.dataset.confirma === '1') { delete bt.dataset.confirma; return true; }
+  const orig = bt.textContent; bt.dataset.confirma = '1'; bt.textContent = rotulo; if (aviso) toast(aviso);
+  setTimeout(() => { if (bt.dataset.confirma === '1') { delete bt.dataset.confirma; bt.textContent = orig; } }, 5000);
+  return false;
+}
+// #12: mudança de valor vinda do "Confira e salve" mostra o antes → depois e só grava no 2º toque (com a mesma lista).
+function confirmaValores(lista) {
+  const bt = document.getElementById('ppSalvar'); if (!bt || !lista.length) return true;
+  const chave = lista.join('|');
+  if (bt.dataset.confirmaVal === chave) { delete bt.dataset.confirmaVal; return true; }
+  bt.dataset.confirmaVal = chave; bt.textContent = 'Confirmar e salvar';
+  const msg = 'Confira os valores: ' + lista.join('; ') + '. Toque em Confirmar e salvar para gravar.';
+  const st = document.getElementById('ppConfVal'); if (st) st.textContent = msg; else toast(msg);
+  return false;
+}
+
 // ---------- Gravação e usabilidade (21/11/2026, revisão do Lucas) — trocas-usabilidade-f1 ----------
 // #3: guarda o lead como estava ao abrir a gaveta; se outra pessoa mudou algum campo do formulário, Salvar avisa e pede um 2º toque.
 // #7: guarda os valores da gaveta ao abrir; tocar fora ou Esc com algo digitado pede um 2º toque (o botão Fechar continua fechando).
@@ -4620,11 +4658,11 @@ document.addEventListener('click', async (ev) => {
   if (d.continuar) return continuar(d.continuar);
   if (d.fotosimv) { S.novo = novoRegistro('fotos', { imovel_id: d.fotosimv }); return abrir('fotosimv'); }
   if (d.ia) return gerarIA(d.ia);
-  if (d.remlazer) { S.novo.fotos_lazer.splice(Number(d.remlazer), 1); S.novo.sujo = true; return atualizarArquivos(); }
-  if (d.remplaca) { S.novo.foto_placa.splice(Number(d.remplaca), 1); S.novo.sujo = true; return atualizarArquivos(); }
-  if (d.remfoto) { S.novo.fotos.splice(Number(d.remfoto), 1); S.novo.sujo = true; return atualizarArquivos(); }
+  if (d.remlazer) { if (!tocarDeNovo(t, '✓', 'Toque no ✓ para remover a foto.')) return; S.novo.fotos_lazer.splice(Number(d.remlazer), 1); S.novo.sujo = true; return atualizarArquivos(); }
+  if (d.remplaca) { if (!tocarDeNovo(t, '✓', 'Toque no ✓ para remover a foto.')) return; S.novo.foto_placa.splice(Number(d.remplaca), 1); S.novo.sujo = true; return atualizarArquivos(); }
+  if (d.remfoto) { if (!tocarDeNovo(t, '✓', 'Toque no ✓ para remover a foto.')) return; S.novo.fotos.splice(Number(d.remfoto), 1); S.novo.sujo = true; return atualizarArquivos(); }
   if (d.capa) { const [f] = S.novo.fotos.splice(Number(d.capa), 1); S.novo.fotos.unshift(f); S.novo.sujo = true; return atualizarArquivos(); }
-  if (d.remdoc) { S.novo.docs.splice(Number(d.remdoc), 1); S.novo.sujo = true; return atualizarArquivos(); }
+  if (d.remdoc) { if (!tocarDeNovo(t, 'Toque de novo para remover')) return; S.novo.docs.splice(Number(d.remdoc), 1); S.novo.sujo = true; return atualizarArquivos(); }
   if (d.decidir) { const [sid, stt] = d.decidir.split('|'); return decidir(sid, stt); }
   if (d.agenc) { abrir('meu', d.agenc, true); const t2 = document.getElementById('agTexto'); if (t2) { t2.scrollIntoView({ block: 'center' }); t2.focus({ preventScroll: true }); } return; }
   if (d.vermapa) { if (S.aberto) fechar(); S.pmFoco = d.vermapa; if (/^E:/.test(d.vermapa)) { S.pmEmp = true; MP_SIG = ''; } if (!S.meus[d.vermapa] && S.pmCam === 'meus') S.pmCam = 'todos'; S.aba = 'mapa'; try { sessionStorage.setItem('painel.aba', S.aba); } catch (e) {} render(); window.scrollTo(0, 0); return; }
