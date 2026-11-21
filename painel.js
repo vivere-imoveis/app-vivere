@@ -2587,7 +2587,7 @@ function vLeads() {
     <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha">${btnArq()}${S.gestor ? '<button class="b" type="button" data-bl="abrir" aria-label="Base de leads da Vivere">📇 Base de leads</button>' : ''}<button class="b" type="button" data-relabre="" aria-label="Relatórios e exportação">📊 Relatórios</button><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="">✦ Registrar conversa</button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
     ${avisoDemora()}${avisoPerfis()}${chipsFunil}${telaOrdem('leads_blocos').map((k) => (blocos[k] ? blocos[k]() : '')).join('')}
     ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca || !etapasVis ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
-    ${tabela('leads', colsV, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: 'Nenhum lead neste filtro.', cartao: (r) => cartaoLeadMovel(r, FU) })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
+    ${tabela('leads', colsV, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: S.demora ? 'Ainda carregando os seus leads…' : 'Nenhum lead neste filtro.', cartao: (r) => cartaoLeadMovel(r, FU) })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
   </section>`;
 }
 // ---------- Visões dos leads (30/10/2026): Kanban, Pipeline, Funil e Agenda ----------
@@ -4086,7 +4086,7 @@ async function aplicarRV(id, oque) {
   }
   const dados = { prox_acao: r.proxima_acao, atualizado_em: agora(), origem: 'painel' }; if (r.data_proxima_acao) dados.data_prox = r.data_proxima_acao;
   const ok = await gravar(() => db.collection('leads').doc(id).update(dados), 'Próxima ação aplicada.');
-  if (ok) { S.leads[id] = { ...S.leads[id], ...dados }; const a = document.getElementById('lProx'), d = document.getElementById('lData'); if (a) a.value = dados.prox_acao; if (d && dados.data_prox) d.value = dados.data_prox; atualizaRV(id); }
+  if (ok) { S.leads[id] = { ...S.leads[id], ...dados }; const a = document.getElementById('lProx'), d = document.getElementById('lData'); if (a) a.value = dados.prox_acao; if (d && dados.data_prox) d.value = dados.data_prox; atualizaRV(id); if (S.aberto && S.aberto.tipo === 'lead' && S.aberto.id === id) gavSnap('lead', id); }   // trocas-usabilidade-f1
 }
 
 // ---------- Voz: o que já dá para fazer no painel e com a Vivian no WhatsApp ----------
@@ -4539,6 +4539,7 @@ async function salvarLead(form) {
     if (mud.length && form.dataset.porCima !== '1') { form.dataset.porCima = '1'; err.textContent = `Este lead mudou desde que você abriu (${mud.join(', ')}). Feche e reabra para ver a versão nova, ou toque em Salvar de novo para gravar o que está na tela por cima.`; return; }
     if (etapa !== ((S.leads[id] || {}).etapa || 'Novo')) { dados.etapa_em = agora(); dados.etapa_por = 'corretor'; const de = etapaDe(S.leads[id] || {}); if (de !== etapa) dados.historico = [...histDe(S.leads[id] || {}), { em: agora().slice(0, 16), tipo: 'Observação', texto: `Etapa: ${de} → ${etapa}${etapa === 'Perdido' && val('lMotivo') ? ' (' + val('lMotivo') + ')' : ''}.` }]; }
     const ok = await gravar(() => db.collection('leads').doc(id).update(dados), 'Alterações salvas.');
+    delete form.dataset.porCima;   // trocas-usabilidade-f1
     if (ok) fechar();
   }
 }
@@ -5017,7 +5018,7 @@ render();
   }, erro);
   db.doc('controle/info').onSnapshot((d) => { S.info = d.exists ? d.data() : {}; render(); }, erro);
   db.doc('config/painel').onSnapshot((d) => { if (d.exists && (d.data() || {}).papel === 'gestor' && !S.gestor) ligarGestor(); }, () => {});
-  setTimeout(() => { if (!S.prontos.size) { S.demora = true; S.prontos.add('leads'); render(); } }, 10000);   // trocas-usabilidade-f1 (Lucas #15)
+  setTimeout(() => { if (!S.prontos.has('leads')) { S.demora = true; S.prontos.add('leads'); render(); } }, 10000);   // trocas-usabilidade-f1 (Lucas #15)
 })();
 window.VZ_CFG={ ids:['qAba'], idAbas:'qAba',
   abas:ABAS.map(([k,n])=>[k,n+' ('+(ROT_ABA_Q[k]||'')+')']),
