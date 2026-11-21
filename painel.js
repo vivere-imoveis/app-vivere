@@ -2290,7 +2290,7 @@ function vBaseLeads() {
 function gavetaBase(id) {
   const resumo = ((S.bl && S.bl.pessoas) || []).find((p) => p.id === id) || {};
   const x = S.blP[id];
-  if (!x) { setTimeout(() => blPessoa(id), 0);
+  if (!x) { if (!S.blPErro[id]) setTimeout(() => blPessoa(id), 0);
     return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Pessoa da base de leads"><div class="cab"><div><h3>${esc(resumo.nome || 'Pessoa')}</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>${S.blPErro[id] && S.blPErro[id] !== 'carregando' ? `<div class="msg erro">${esc(S.blPErro[id])} <button class="b" type="button" data-bl-pes="${esc(id)}">Tentar de novo</button></div>` : '<div class="vazio">Carregando a pessoa…</div>'}</div>`; }
   const cors = ((S.bl && S.bl.corretores) || []);
   const lead = (l) => {
@@ -2324,9 +2324,9 @@ async function blAcao(id, dados, okMsg, errId) {
   if (S.blOcup) return; S.blOcup = true; redesenharGaveta();
   try {
     const r = await window.VIVERE_PONTE.baseLeads('acao', id, dados);
-    if (r && r.pessoa) S.blP[id] = r.pessoa;
+    if (r && r.pessoa) S.blP[id] = r.pessoa; else { delete S.blP[id]; S.blPErro[id] = ''; }
     S.blConf = ''; S.blOcup = false; toast(okMsg); redesenharGaveta();
-    S.bl = null; blCarregar();
+    S.bl = null; S.blCarreg = false; blCarregar();
     return true;
   } catch (e) {
     S.blOcup = false; redesenharGaveta();
