@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src https://jucnlzznbwjthlqqgdlz.supabase.co; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex,nofollow">
+<title>Vivere · Chamado de manutenção</title>
+<link rel="icon" href="selo.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="chamado.css?v=20261121-1">
+</head>
+<body>
+<header class="topo">
+  <div class="wrap marca">
+    <span class="selo" role="img" aria-label="Vivere Imóveis Selecionados"></span>
+    <div class="bloco">
+      <h1>Vivere Imóveis Selecionados</h1>
+      <p class="nome">Chamado de manutenção</p>
+    </div>
+    <button class="btn-tema" id="btnTema" type="button" aria-label="Alternar tema claro ou escuro">◐ Tema</button>
+  </div>
+</header>
+<main class="wrap">
+  <section id="carregando" class="cartao"><p class="nota">Abrindo o formulário…</p></section>
+
+  <section id="erro" class="cartao" hidden>
+    <h2>Link indisponível</h2>
+    <p id="erroMsg" class="nota"></p>
+  </section>
+
+  <section id="form" class="cartao" hidden>
+    <p class="imovel"><span class="rot">Imóvel</span> <b id="ref"></b><span id="bairro"></span></p>
+    <p class="nota">Conte o que aconteceu. A Vivere recebe o chamado, avalia e retorna pelo contato que já tem com você.</p>
+
+    <label>Tipo do problema
+      <select id="tipo" required><option value="">Escolha</option></select>
+    </label>
+
+    <fieldset class="urg">
+      <legend>Urgência</legend>
+      <div id="urgencias" class="opcoes"></div>
+    </fieldset>
+
+    <label>O que aconteceu?
+      <textarea id="relato" rows="5" maxlength="2000" placeholder="Ex.: o chuveiro do banheiro social parou de esquentar desde ontem." required></textarea>
+      <span class="conta"><span id="nRelato">0</span>/2000</span>
+    </label>
+
+    <label><span>Onde no imóvel? <span class="opc">(opcional)</span></span>
+      <input id="local" maxlength="80" placeholder="Ex.: banheiro da suíte">
+    </label>
+
+    <label><span>Quando podemos ir ao imóvel? <span class="opc">(opcional)</span></span>
+      <input id="horario" maxlength="120" placeholder="Ex.: dias úteis depois das 14h">
+    </label>
+
+    <div class="fotos-bloco">
+      <span class="rot-campo"><span>Fotos <span class="opc">(até 4)</span></span></span>
+      <div id="fotos" class="fotos"></div>
+      <label class="btn btn-sec" id="addFoto">📷 Adicionar foto
+        <input id="arquivo" type="file" accept="image/*" multiple hidden>
+      </label>
+    </div>
+
+    <p class="aviso">Não escreva CPF, telefone nem dados bancários: a Vivere já tem o seu contato. Em caso de risco (gás, fogo, curto, alagamento), ligue antes para os bombeiros (193) e para a Vivere.</p>
+    <p id="msg" class="msg" role="alert" hidden></p>
+    <button id="enviar" class="btn" type="button">Enviar chamado</button>
+  </section>
+
+  <section id="ok" class="cartao" hidden>
+    <h2>Chamado enviado ✓</h2>
+    <p>Recebemos o seu chamado. Protocolo: <b id="protocolo"></b>.</p>
+    <p class="nota">A Vivere vai analisar e retornar pelo contato que já tem com você.</p>
+    <button id="outro" class="btn btn-sec" type="button">Abrir outro chamado</button>
+  </section>
+</main>
+<script src="chamado.js?v=20261121-1"></script>
+</body>
+</html>
