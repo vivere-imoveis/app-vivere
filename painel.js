@@ -3896,7 +3896,7 @@ function htmlProposta(r) {
       <label class="c inteiro" data-pp="lead">Perfil: observações<input id="ppObs" value="${esc(pf.obs || '')}"></label>
       <div class="inteiro" data-pp="imv" id="ppAlt" data-imv="${r.alvo === 'imovel' ? esc(r.imovel_id || '') : ''}">${htmlPedidoAlt(r)}</div>
     </div>
-    <div class="linha"><button class="b p" type="button" id="ppSalvar">Salvar</button><span class="mut peq">Campos vazios não apagam o que já está no lead.</span></div><p id="ppConfVal" class="falta peq" style="margin:0" role="status"></p></div>`;
+    <div class="linha"><button class="b p" type="button" id="ppSalvar">Salvar</button><span class="mut peq">Campos vazios não apagam o que já está no lead.${pf.vmin || pf.vmax ? ' ✦ = valor que a IA tirou da conversa: confira.' : ''}</span></div><p id="ppConfVal" class="falta peq" style="margin:0" role="status"></p></div>`;
 }
 // VOZ-SOLICITACAO (05/11/2026): mudança de dado dita na conversa vira pedido à diretoria (solicitacoes), além do histórico
 const CAMPOS_VOZ = CAMPOS_ALT.filter(([k, , t]) => t !== 'texto');
@@ -4463,7 +4463,7 @@ function tocarDeNovo(bt, rotulo, aviso) {
 function confirmaValores(lista) {
   const bt = document.getElementById('ppSalvar'); if (!bt || !lista.length) return true;
   const chave = lista.join('|');
-  if (bt.dataset.confirmaVal === chave) { delete bt.dataset.confirmaVal; return true; }
+  if (bt.dataset.confirmaVal === chave) { delete bt.dataset.confirmaVal; bt.textContent = 'Salvar'; const st0 = document.getElementById('ppConfVal'); if (st0) st0.textContent = ''; return true; }
   bt.dataset.confirmaVal = chave; bt.textContent = 'Confirmar e salvar';
   const msg = 'Confira os valores: ' + lista.join('; ') + '. Toque em Confirmar e salvar para gravar.';
   const st = document.getElementById('ppConfVal'); if (st) st.textContent = msg; else toast(msg);
