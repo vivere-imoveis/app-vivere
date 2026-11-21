@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -2223,8 +2223,9 @@ document.addEventListener('click', (ev) => {
 // Só o gestor (diretoria). Uma linha por pessoa (telefone), com os leads de cada corretor, a linha do tempo e o follow-up.
 // Lê e grava pelas RPCs base_leads_lista, base_leads_pessoa e base_leads_acao (VIVERE_PONTE.baseLeads); o banco barra quem não é diretoria.
 S.verBase = false; S.bl = null; S.blErro = ''; S.blCarreg = false; S.blF = { sit: '', cor: '', q: '' }; S.blP = {}; S.blPErro = {}; S.blConf = ''; S.blOcup = false;
-const BL_SIT = [['', 'Todos'], ['ativo', 'Com lead ativo'], ['arquivado', 'Só arquivados'], ['a_classificar', 'A classificar'], ['revisitar', 'Revisitar até 7 dias'], ['nao_contatar', 'Não contatar']];
-const BL_EV = { entrada: 'Entrada', atendimento: 'Atendimento', etapa: 'Etapa', interesse: 'Interesse', arquivado: 'Arquivado', desarquivado: 'Reativado', descartado: 'Descartado', distribuido: 'Distribuído', nao_contatar: 'Não contatar', contato_liberado: 'Contato liberado' };
+S.blAba = 'pessoas'; S.blSeg = { int: [], fin: '', sit: '', cor: '', bairros: '', desde: '', ate: '' }; S.blSegR = null; S.blSegCarreg = false; S.blSegErro = ''; S.blRmk = ''; S.blRmkNome = ''; S.blRmkMsg = '';   // trocas-followup-app
+const BL_SIT = [['', 'Todos'], ['ativo', 'Com lead ativo'], ['arquivado', 'Só arquivados'], ['a_classificar', 'A classificar'], ['revisitar', 'Revisitar até 7 dias'], ['nao_contatar', 'Não contatar'], ['reaproveitar', 'Reaproveitar'], ['combina', 'Combina com imóvel novo']];
+const BL_EV = { entrada: 'Entrada', atendimento: 'Atendimento', etapa: 'Etapa', interesse: 'Interesse', arquivado: 'Arquivado', desarquivado: 'Reativado', descartado: 'Descartado', distribuido: 'Distribuído', nao_contatar: 'Não contatar', contato_liberado: 'Contato liberado', lembrete: 'Lembrete de revisita', combina: 'Combina com imóvel novo', remarketing: 'Remarketing' };
 const blHoje = () => new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
 const blMais7 = () => new Date(Date.now() - 3 * 36e5 + 7 * 864e5).toISOString().slice(0, 10);
 function blSit(p) {
@@ -2257,12 +2258,15 @@ function vBaseLeads() {
   const intro = '<p class="mut peq" style="margin:4px 0 10px">Uma linha por pessoa (telefone), juntando os leads de todos os corretores. Abra a pessoa para ver a linha do tempo, reativar ou redistribuir um lead arquivado e marcar o follow-up (não contatar e revisitar em). Só a diretoria vê esta tela.</p>';
   if (S.bl === null) { if (!S.blCarreg && !S.blErro) setTimeout(blCarregar, 0);
     return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>📇 Base de leads</h2>${voltar}</div>${intro}${S.blErro ? `<div class="msg erro">${esc(S.blErro)} <button class="b" type="button" data-bl="recarregar">Tentar de novo</button></div>` : '<div class="vazio">Carregando a base…</div>'}</section>`; }
+  if (S.blAba === 'segmentos') return vBlSegmentos(voltar);   // trocas-followup-app
   const hoje = blHoje(), ate7 = blMais7(), q = demTx(S.blF.q);
   let L = (S.bl.pessoas || []).map((p) => Object.assign({}, p, { _sit: blSit(p), _cors: blCors(p), _nl: (p.ld || []).length }));
   L = L.filter((p) => {
     const f = S.blF.sit;
     if (f === 'revisitar' && !(p.revisitar_em && p.revisitar_em <= ate7)) return false;
     if (f === 'nao_contatar' && !p.nao_contatar) return false;
+    if (f === 'reaproveitar' && !p.reaproveitar) return false;
+    if (f === 'combina' && !(p.combina || []).length) return false;
     if (['ativo', 'arquivado', 'a_classificar'].includes(f) && p._sit !== f) return false;
     if (S.blF.cor && !(p.ld || []).some((x) => x.corretor_id === S.blF.cor || x.painel === S.blF.cor)) return false;
     return !q || demTx([p.nome, p.telefone, digitos(p.telefone), p._cors, p.interesse].join(' ')).includes(q);
@@ -2273,7 +2277,7 @@ function vBaseLeads() {
   const rev = (p) => p.revisitar_em ? `<span class="pill ${p.revisitar_em < hoje ? 'alta' : p.revisitar_em <= ate7 ? 'media' : ''}">${dt(p.revisitar_em)}</span>` : '<span class="mut">—</span>';
   const nc = (p) => p.nao_contatar ? ' <span class="pill alta" title="Pediu para não ser contatado (LGPD)">não contatar</span>' : '';
   const cols = [
-    { k: 'nome', l: 'Nome', h: (p) => `<b>${esc(p.nome || '—')}</b>${nc(p)}` },
+    { k: 'nome', l: 'Nome', h: (p) => `<b>${esc(p.nome || '—')}</b>${nc(p)}${blSinais(p)}` },
     { k: 'telefone', l: 'Telefone', v: (p) => digitos(p.telefone), h: (p) => esc(fone(p.telefone)) },
     { k: 'interesse', l: 'Interesse', v: (p) => (INT_POR[p.interesse] || {}).i, h: (p) => blInt(p.interesse) },
     { k: '_sit', l: 'Situação', h: blPillSit },
@@ -2282,9 +2286,9 @@ function vBaseLeads() {
     { k: 'ultimo_evento_em', l: 'Último registro', h: (p) => dt(p.ultimo_evento_em) },
     { k: 'revisitar_em', l: 'Revisitar em', h: rev },
   ];
-  const cartao = (p) => `<div class="cm-l1"><b>${esc(p.nome || '—')}</b> ${blPillSit(p)}${nc(p)}</div><div class="cm-l2">${esc(fone(p.telefone))} · ${blInt(p.interesse)}</div><div class="cm-l2 mut">${esc(p._cors || 'sem corretor')} · último registro ${dt(p.ultimo_evento_em)}${p.revisitar_em ? ' · revisitar ' + dt(p.revisitar_em) : ''}</div>`;
-  return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>📇 Base de leads</h2><div class="linha"><button class="b" type="button" data-bl="recarregar">Atualizar</button>${voltar}</div></div>${intro}
-    <div class="linha" style="flex-wrap:wrap;gap:6px;margin:0 0 10px">${BL_SIT.map(([v, t]) => chip(v, t)).join('')}${sel}${busca}</div>
+  const cartao = (p) => `<div class="cm-l1"><b>${esc(p.nome || '—')}</b> ${blPillSit(p)}${nc(p)}${blSinais(p)}</div><div class="cm-l2">${esc(fone(p.telefone))} · ${blInt(p.interesse)}</div><div class="cm-l2 mut">${esc(p._cors || 'sem corretor')} · último registro ${dt(p.ultimo_evento_em)}${p.revisitar_em ? ' · revisitar ' + dt(p.revisitar_em) : ''}</div>`;
+  return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>📇 Base de leads</h2><div class="linha"><button class="b" type="button" data-bl="recarregar">Atualizar</button>${voltar}</div></div>${intro}${blAbas()}
+    <div class="linha" style="flex-wrap:wrap;gap:6px;margin:0 0 10px">${BL_SIT.map(([v, t]) => chip(v, t + blContaChip(v))).join('')}${sel}${busca}</div>
     ${tabela('base_leads', cols, L, { padrao: { c: 'ultimo_evento_em', d: -1 }, abre: (p) => 'base:' + p.id, cartao, vazio: S.blF.sit || S.blF.cor || q ? 'Ninguém com esses filtros.' : 'A base ainda está vazia.' })}</section>`;
 }
 function gavetaBase(id) {
@@ -2310,7 +2314,7 @@ function gavetaBase(id) {
   const LD = x.leads_detalhe || [], EV = x.eventos || [];
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Pessoa da base de leads">
     <div class="cab"><div><p class="mut peq" style="margin:0">Base de leads · ${esc(blInt(x.interesse))}</p><h3>${esc(x.nome || '—')}</h3>${blPillSit(Object.assign({}, resumo, { ld: LD.map((l) => ({ arquivado: !!l.arquivado })) }))}${x.nao_contatar ? ' <span class="pill alta">não contatar</span>' : ''}<p class="mut peq" style="margin:4px 0 0">Na base desde ${dt(x.primeiro_em)} · último registro ${dt(x.ultimo_evento_em)}</p></div><button class="b" type="button" data-fechar>Fechar</button></div>
-    <div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(x.telefone))}</b></div></div>
+    <div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(x.telefone))}</b></div></div>${blGavSinais(resumo, x)}
     <div class="painel"><h2>Follow-up</h2><div class="form" style="margin-top:8px">
       <label class="c">Revisitar em<input type="date" id="blRev" value="${esc(x.revisitar_em || '')}"></label>
       <label class="c"><span><input type="checkbox" id="blNc"${x.nao_contatar ? ' checked' : ''}> Não contatar (pediu para não receber contato)</span></label>
@@ -2367,6 +2371,148 @@ document.addEventListener('click', (e) => {
 document.addEventListener('change', (e) => { const t = e.target; if (!t || !t.dataset || !t.dataset.blCor) return; S.blF.cor = t.value; S.pagGen = S.pagGen || {}; S.pagGen.base_leads = 0; render(); });
 document.addEventListener('input', (e) => { const t = e.target; if (!t || !t.dataset || !t.dataset.blQ) return; S.blF.q = t.value; clearTimeout(S.blQt);
   S.blQt = setTimeout(() => { const p = t.selectionStart; S.pagGen = S.pagGen || {}; S.pagGen.base_leads = 0; render(); const n = document.querySelector('[data-bl-q]'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (x) {} } }, 300); });
+
+// ---------- Follow-up e remarketing da base (21/11/2026, vis-base-leads-followup) — trocas-followup-app ----------
+// Reaproveitar: arquivados há 30+ dias sem retorno (campo reaproveitar e arquivado_ha_dias de base_leads_lista; o banco já tira o "não contatar").
+// Combina: imóvel novo do A CAPTAR que casa com o perfil de quem foi arquivado (campo combina, últimos 30 dias, imóvel ainda livre).
+// Segmentos: public.base_leads_segmento(filtros) e public.base_leads_remarketing(ids, campanha), só diretoria (o banco barra os demais).
+// Nada é enviado a cliente por aqui: "Marcar como enviado" só anota na linha do tempo depois que a diretoria mandou a campanha por fora.
+const BL_SEG_INT = INTERESSES.map((x) => [x[0], x[1]]).concat([['comprador_vendedor', 'Comprador e vendedor']]);
+const BL_SEG_FIN = [['', 'Todas'], ['Compra', 'Compra'], ['Locação anual', 'Locação anual'], ['Temporada', 'Temporada']];
+const BL_SEG_SIT = [['', 'Todas'], ['ativo', 'Com lead em painel'], ['a_classificar', 'A classificar']];
+function blContaChip(v) {
+  if (!S.bl || (v !== 'reaproveitar' && v !== 'combina')) return '';
+  const n = (S.bl.pessoas || []).filter((p) => (v === 'reaproveitar' ? p.reaproveitar : (p.combina || []).length)).length;
+  return ` (${n})`;
+}
+const blDias = (n) => `${n} dia${n === 1 ? '' : 's'}`;
+function blSinais(p) {
+  let h = '';
+  if (p.reaproveitar) h += ` <span class="pill media" title="Todos os leads arquivados há ${esc(blDias(p.arquivado_ha_dias || 0))}, sem retorno depois disso">reaproveitar · ${esc(blDias(p.arquivado_ha_dias || 0))}</span>`;
+  const n = (p.combina || []).length;
+  if (n) h += ` <span class="pill ok" title="Imóvel novo do A CAPTAR que combina com o perfil">combina: ${n} imóve${n === 1 ? 'l' : 'is'}</span>`;
+  return h;
+}
+const blPreco = (v) => { const n = Number(v); return n > 0 ? 'R$\u00a0' + n.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : ''; };
+function blGavSinais(resumo, x) {
+  const cmb = (resumo && resumo.combina) || [];
+  let h = '';
+  if (resumo && resumo.reaproveitar) h += `<div class="prop"><div class="t">Reaproveitar</div><div class="peq">Todos os leads desta pessoa estão arquivados há ${esc(blDias(resumo.arquivado_ha_dias || 0))}, sem retorno depois disso. Vale tentar de novo: reative com o mesmo corretor ou redistribua abaixo.</div></div>`;
+  if (cmb.length) h += `<div class="painel"><h2>Combina com imóvel novo (${cmb.length})</h2><p class="mut peq" style="margin:4px 0 8px">Imóveis que entraram no A CAPTAR nos últimos 30 dias e casam com o que esta pessoa procurava. O cliente não foi avisado: decida se vale reativar ou redistribuir o lead.</p><div class="hist">${cmb.map((c) => {
+    const cod = String(c.cod || c.ref || '');
+    const desc = [c.tipo, c.negocio, c.bairro, blPreco(c.preco)].filter(Boolean).map((s) => esc(String(s))).join(' · ');
+    return `<div class="i"><div class="q"><a class="b" href="${escUrl('index.html?cod=' + encodeURIComponent(cod))}" data-acapvai>${esc(cod || '—')}</a> ${desc}</div><div class="peq mut">Casou em ${dt(c.em)}</div></div>`; }).join('')}</div></div>`;
+  return h;
+}
+function blAbas() {
+  const bt = (k, txt) => `<button type="button" role="tab" data-bls-aba="${k}" aria-pressed="${S.blAba === k}" aria-selected="${S.blAba === k}">${txt}</button>`;
+  return `<div class="chips sub-op" role="tablist" aria-label="Base de leads" style="margin:0 0 12px">${bt('pessoas', 'Pessoas')}${bt('segmentos', 'Segmentos')}</div>`;
+}
+function blSegLer() {
+  const v = (id) => String((document.getElementById(id) || {}).value || '').trim();
+  if (!document.getElementById('blsFin')) return;
+  Object.assign(S.blSeg, { fin: v('blsFin'), sit: v('blsSit'), cor: v('blsCor'), bairros: v('blsBai'), desde: v('blsDe'), ate: v('blsAte') });
+}
+function blSegFiltros() {
+  const f = S.blSeg;
+  return { interesse: f.int.slice(), finalidade: f.fin, situacao: f.sit ? [f.sit] : [], corretor_id: f.cor,
+    bairros: f.bairros.split(',').map((s) => s.trim()).filter(Boolean), desde: f.desde, ate: f.ate };
+}
+async function blSegBuscar() {
+  if (S.blSegCarreg) return;
+  blSegLer();
+  if (S.blSeg.desde && S.blSeg.ate && S.blSeg.desde > S.blSeg.ate) { S.blSegErro = 'O período está invertido: a data inicial é depois da final.'; return render(); }
+  S.blSegCarreg = true; S.blSegErro = ''; S.blRmk = ''; S.blRmkMsg = ''; render();
+  try { const P = window.VIVERE_PONTE; if (!P || !P.baseLeadsSegmento) throw new Error('função indisponível nesta versão do app');
+    const r = await P.baseLeadsSegmento(blSegFiltros()); S.blSegR = Object.assign({ pessoas: [], total: 0, nao_contatar_fora: 0 }, r || {}, { filtros: blSegFiltros() }); S.pagGen = S.pagGen || {}; S.pagGen.base_seg = 0; }
+  catch (e) { S.blSegErro = 'Não foi possível montar o segmento: ' + ((e && e.message) || e); }
+  S.blSegCarreg = false; render();
+}
+const blCorNome = (id) => { const c = ((S.bl && S.bl.corretores) || []).find((x) => x.id === id); return c ? c.nome : id; };
+const blLista = (a) => (Array.isArray(a) ? a : []).filter(Boolean);
+function blSegLinhas() {
+  return ((S.blSegR && S.blSegR.pessoas) || []).map((p) => [p.nome || '', digitos(p.telefone), (INT_POR[p.interesse] || {}).rot || p.interesse || 'A definir',
+    blLista(p.finalidades).join(', '), blLista(p.bairros).join(', '), blLista(p.tipos).join(', '), blLista(p.corretores).map(blCorNome).join(', '),
+    dt(p.primeiro_em), dt(p.ultimo_evento_em)]);
+}
+const BL_SEG_CAB = ['Nome', 'Telefone', 'Interesse', 'Finalidades', 'Bairros', 'Tipos', 'Corretores', 'Na base desde', 'Último registro'];
+async function blSegCopiar() {
+  const txt = ['Nome\tTelefone'].concat(blSegLinhas().map((l) => l[0] + '\t' + l[1])).join('\n');
+  try { await navigator.clipboard.writeText(txt); toast('Lista copiada: ' + blSegLinhas().length + ' pessoas (nome e telefone).'); }
+  catch (e) { toast('Não foi possível copiar. Use o Baixar CSV.'); }
+}
+function blSegCsv() {
+  const RC = window.RelatoriosCRM; if (!RC) return toast('Exportação indisponível nesta versão do app.');
+  RC.baixar(RC.csv([{ titulo: 'Segmento', cab: BL_SEG_CAB, linhas: blSegLinhas() }]), RC.nomeArq(['Segmento base de leads', blHoje()], 'csv'));
+}
+async function blRmkConfirmar() {
+  if (S.blOcup || !S.blSegR) return;
+  const ids = (S.blSegR.pessoas || []).map((p) => p.id);
+  S.blOcup = true; render();
+  try { const r = await window.VIVERE_PONTE.baseLeadsRemarketing(ids, S.blRmkNome) || {};
+    const ja = r.ja_registrados_hoje || 0, nc = r.nao_contatar_fora || 0;
+    S.blRmkMsg = `Campanha “${S.blRmkNome}” anotada na linha do tempo de ${r.registrados || 0} pessoa${(r.registrados || 0) === 1 ? '' : 's'}.` + (ja ? ` ${ja} já tinha${ja === 1 ? '' : 'm'} esta campanha hoje.` : '') + (nc ? ` ${nc} em não contatar ficaram fora.` : '');
+    S.blRmk = ''; S.blP = {}; toast('Remarketing registrado.');
+  } catch (e) { S.blRmkMsg = 'Não foi possível registrar: ' + ((e && e.message) || e); }
+  S.blOcup = false; render();
+}
+function vBlSegmentos(voltar) {
+  const f = S.blSeg, R = S.blSegR, cors = (S.bl && S.bl.corretores) || [];
+  const opt = (L, v) => L.map(([k, txt]) => `<option value="${esc(k)}"${v === k ? ' selected' : ''}>${esc(txt)}</option>`).join('');
+  const chipI = ([k, txt]) => `<button type="button" class="dm-chip" aria-pressed="${f.int.includes(k)}" data-bls-int="${esc(k)}">${esc(txt)}</button>`;
+  const form = `<div class="painel"><h2>Filtros</h2>
+    <div class="linha" role="group" aria-label="Interesse" style="flex-wrap:wrap;gap:6px;margin:8px 0">${BL_SEG_INT.map(chipI).join('')}</div>
+    <div class="form">
+      <label class="c">Finalidade<select id="blsFin">${opt(BL_SEG_FIN, f.fin)}</select></label>
+      <label class="c">Situação<select id="blsSit">${opt(BL_SEG_SIT, f.sit)}</select></label>
+      <label class="c">Corretor<select id="blsCor"><option value="">Todos os corretores</option>${cors.map((c) => `<option value="${esc(c.id)}"${f.cor === c.id ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>
+      <label class="c">Bairros<input type="text" id="blsBai" maxlength="300" value="${esc(f.bairros)}" placeholder="Separe por vírgula: Jurerê, Canasvieiras"></label>
+      <label class="c">Na base desde<input type="date" id="blsDe" value="${esc(f.desde)}"></label>
+      <label class="c">Até<input type="date" id="blsAte" value="${esc(f.ate)}"></label>
+      <div class="inteiro linha" style="flex-wrap:wrap;gap:6px"><button class="b p" type="button" data-bls="buscar"${S.blSegCarreg ? ' disabled' : ''}>${S.blSegCarreg ? 'Montando…' : 'Montar o segmento'}</button><button class="b" type="button" data-bls="limpar">Limpar filtros</button></div>
+    </div>${S.blSegErro ? `<div class="msg erro" style="margin-top:8px">${esc(S.blSegErro)}</div>` : ''}</div>`;
+  let res = '';
+  if (R) {
+    const n = (R.pessoas || []).length, nc = R.nao_contatar_fora || 0, muitos = n > 1000;
+    let rmk = '';
+    if (S.blRmk === 'nome') rmk = `<div class="form" style="margin-top:8px"><label class="c inteiro">Nome da campanha<input type="text" id="blRmkNome" maxlength="120" value="${esc(S.blRmkNome)}" placeholder="Ex.: Lançamento Jurerê novembro"></label>
+      <div class="inteiro linha" style="flex-wrap:wrap;gap:6px"><button class="b p" type="button" data-bls="rmk-seguir">Continuar</button><button class="b" type="button" data-bls="rmk-cancelar">Cancelar</button><span class="erro" id="eBlRmk"></span></div></div>`;
+    else if (S.blRmk === 'conf') rmk = `<div class="prop" style="margin-top:8px"><div class="peq">Anotar o envio da campanha <b>“${esc(S.blRmkNome)}”</b> na linha do tempo de <b>${n} pessoa${n === 1 ? '' : 's'}</b>? Isto só registra que a diretoria já mandou a campanha por fora: nada é enviado ao cliente daqui.</div>
+      <div class="linha" style="flex-wrap:wrap;gap:6px;margin-top:6px"><button class="b p" type="button" data-bls="rmk-confirmar"${S.blOcup ? ' disabled' : ''}>Confirmar o registro</button><button class="b" type="button" data-bls="rmk-cancelar">Cancelar</button></div></div>`;
+    const acoes = n ? `<div class="linha" style="flex-wrap:wrap;gap:6px;margin:8px 0"><button class="b" type="button" data-bls="copiar">Copiar lista</button><button class="b" type="button" data-bls="csv">Baixar CSV</button><button class="b" type="button" data-bls="rmk"${muitos || S.blRmk ? ' disabled' : ''}${muitos ? ' title="No máximo 1000 pessoas por registro: estreite os filtros"' : ''}>Marcar como enviado</button></div>${muitos ? '<p class="mut peq">Mais de 1000 pessoas: estreite os filtros para registrar o envio.</p>' : ''}` : '';
+    const cols = [
+      { k: 'nome', l: 'Nome', h: (p) => `<b>${esc(p.nome || '—')}</b>` },
+      { k: 'telefone', l: 'Telefone', v: (p) => digitos(p.telefone), h: (p) => esc(fone(p.telefone)) },
+      { k: 'interesse', l: 'Interesse', v: (p) => ((INT_POR[p.interesse] || {}).i ?? 99), h: (p) => blInt(p.interesse) },
+      { k: '_fin', l: 'Finalidade', v: (p) => blLista(p.finalidades).join(', '), h: (p) => esc(blLista(p.finalidades).join(', ') || '—') },
+      { k: '_bai', l: 'Bairros', v: (p) => blLista(p.bairros).join(', '), h: (p) => esc(blLista(p.bairros).slice(0, 3).join(', ') + (blLista(p.bairros).length > 3 ? ' +' + (blLista(p.bairros).length - 3) : '') || '—') },
+      { k: '_cor', l: 'Corretor', v: (p) => blLista(p.corretores).map(blCorNome).join(', '), h: (p) => esc(blLista(p.corretores).map(blCorNome).join(', ') || '—') },
+      { k: 'ultimo_evento_em', l: 'Último registro', h: (p) => dt(p.ultimo_evento_em) },
+    ];
+    const cartao = (p) => `<div class="cm-l1"><b>${esc(p.nome || '—')}</b> <span class="mut peq">${blInt(p.interesse)}</span></div><div class="cm-l2">${esc(fone(p.telefone))}${blLista(p.finalidades).length ? ' · ' + esc(blLista(p.finalidades).join(', ')) : ''}</div><div class="cm-l2 mut">${esc(blLista(p.bairros).slice(0, 3).join(', ') || 'sem bairro')} · ${esc(blLista(p.corretores).map(blCorNome).join(', ') || 'sem corretor')} · último registro ${dt(p.ultimo_evento_em)}</div>`;
+    res = `<div class="painel"><h2>${n} pessoa${n === 1 ? '' : 's'} no segmento</h2><p class="mut peq" style="margin:4px 0 0">${nc ? `${nc} em não contatar ficaram fora. ` : ''}Resultado montado às ${esc(String(R.em || '').slice(11, 16) || '—')}.</p>${acoes}${rmk}${S.blRmkMsg ? `<div class="msg" style="margin-top:8px">${esc(S.blRmkMsg)}</div>` : ''}</div>
+      ${tabela('base_seg', cols, R.pessoas || [], { padrao: { c: 'ultimo_evento_em', d: -1 }, abre: (p) => 'base:' + p.id, cartao, vazio: 'Ninguém com esses filtros.' })}`;
+  }
+  return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>📇 Base de leads</h2><div class="linha">${voltar}</div></div>
+    <p class="mut peq" style="margin:4px 0 10px">Monte uma lista para remarketing pelos filtros. Quem está em não contatar nunca entra. Depois de mandar a campanha por fora, use "Marcar como enviado" para anotar na linha do tempo de cada pessoa.</p>${blAbas()}${form}${res}</section>`;
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-bls],[data-bls-aba],[data-bls-int]'); if (!t || !S.gestor) return;
+  const d = t.dataset;
+  if (t.hasAttribute('data-bls-aba')) { blSegLer(); S.blAba = d.blsAba === 'segmentos' ? 'segmentos' : 'pessoas'; render(); return; }
+  if (t.hasAttribute('data-bls-int')) { blSegLer(); const k = d.blsInt, a = S.blSeg.int; S.blSeg.int = a.includes(k) ? a.filter((x) => x !== k) : a.concat([k]); return render(); }
+  const op = d.bls;
+  if (op === 'buscar') return blSegBuscar();
+  if (op === 'limpar') { S.blSeg = { int: [], fin: '', sit: '', cor: '', bairros: '', desde: '', ate: '' }; S.blSegErro = ''; return render(); }
+  if (op === 'copiar') return blSegCopiar();
+  if (op === 'csv') return blSegCsv();
+  if (op === 'rmk') { blSegLer(); S.blRmk = 'nome'; S.blRmkMsg = ''; render(); const n = document.getElementById('blRmkNome'); if (n) n.focus(); return; }
+  if (op === 'rmk-cancelar') { S.blRmk = ''; return render(); }
+  if (op === 'rmk-seguir') { const v = String((document.getElementById('blRmkNome') || {}).value || '').trim();
+    if (!v) { const el = document.getElementById('eBlRmk'); if (el) el.textContent = 'Informe o nome da campanha.'; return; }
+    blSegLer(); S.blRmkNome = v.slice(0, 120); S.blRmk = 'conf'; return render(); }
+  if (op === 'rmk-confirmar') return blRmkConfirmar();
+});
 
 // ---------- Meus leads ----------
 function vLeads() {
