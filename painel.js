@@ -2428,6 +2428,15 @@ async function blSegBuscar() {
   catch (e) { S.blSegErro = 'Não foi possível montar o segmento: ' + ((e && e.message) || e); }
   S.blSegCarreg = false; render();
 }
+const blSegVelho = () => !!S.blSegR && JSON.stringify(blSegFiltros()) !== JSON.stringify(S.blSegR.filtros);   // filtros mudaram depois da última busca (crítico)
+function blSegDesc(f) {
+  const p = [];
+  if ((f.interesse || []).length) p.push(f.interesse.map((k) => (BL_SEG_INT.find((x) => x[0] === k) || [k, k])[1]).join(', '));
+  if (f.finalidade) p.push(f.finalidade); if ((f.situacao || []).length) p.push((BL_SEG_SIT.find((x) => x[0] === f.situacao[0]) || ['', f.situacao[0]])[1]);
+  if (f.corretor_id) p.push(blCorNome(f.corretor_id)); if ((f.bairros || []).length) p.push(f.bairros.join(', '));
+  if (f.desde || f.ate) p.push('na base ' + (f.desde ? 'desde ' + dt(f.desde) : '') + (f.desde && f.ate ? ' ' : '') + (f.ate ? 'até ' + dt(f.ate) : ''));
+  return p.length ? p.join(' · ') : 'sem filtros (toda a base)';
+}
 const blCorNome = (id) => { const c = ((S.bl && S.bl.corretores) || []).find((x) => x.id === id); return c ? c.nome : id; };
 const blLista = (a) => (Array.isArray(a) ? a : []).filter(Boolean);
 function blSegLinhas() {
@@ -2437,7 +2446,8 @@ function blSegLinhas() {
 }
 const BL_SEG_CAB = ['Nome', 'Telefone', 'Interesse', 'Finalidades', 'Bairros', 'Tipos', 'Corretores', 'Na base desde', 'Último registro'];
 async function blSegCopiar() {
-  const txt = ['Nome\tTelefone'].concat(blSegLinhas().map((l) => l[0] + '\t' + l[1])).join('\n');
+  const cel = (v) => { v = String(v || '').replace(/[\t\r\n]+/g, ' '); return /^[=+\-@]/.test(v) ? "'" + v : v; };
+  const txt = ['Nome\tTelefone'].concat(blSegLinhas().map((l) => cel(l[0]) + '\t' + cel(l[1]))).join('\n');
   try { await navigator.clipboard.writeText(txt); toast('Lista copiada: ' + blSegLinhas().length + ' pessoas (nome e telefone).'); }
   catch (e) { toast('Não foi possível copiar. Use o Baixar CSV.'); }
 }
@@ -2473,13 +2483,14 @@ function vBlSegmentos(voltar) {
     </div>${S.blSegErro ? `<div class="msg erro" style="margin-top:8px">${esc(S.blSegErro)}</div>` : ''}</div>`;
   let res = '';
   if (R) {
-    const n = (R.pessoas || []).length, nc = R.nao_contatar_fora || 0, muitos = n > 1000;
+    const n = R.total != null ? R.total : (R.pessoas || []).length, nc = R.nao_contatar_fora || 0, muitos = n > 1000, velho = blSegVelho();
+    let hora = '—'; try { if (R.em) hora = new Date(R.em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }); } catch (e) {}
     let rmk = '';
     if (S.blRmk === 'nome') rmk = `<div class="form" style="margin-top:8px"><label class="c inteiro">Nome da campanha<input type="text" id="blRmkNome" maxlength="120" value="${esc(S.blRmkNome)}" placeholder="Ex.: Lançamento Jurerê novembro"></label>
       <div class="inteiro linha" style="flex-wrap:wrap;gap:6px"><button class="b p" type="button" data-bls="rmk-seguir">Continuar</button><button class="b" type="button" data-bls="rmk-cancelar">Cancelar</button><span class="erro" id="eBlRmk"></span></div></div>`;
-    else if (S.blRmk === 'conf') rmk = `<div class="prop" style="margin-top:8px"><div class="peq">Anotar o envio da campanha <b>“${esc(S.blRmkNome)}”</b> na linha do tempo de <b>${n} pessoa${n === 1 ? '' : 's'}</b>? Isto só registra que a diretoria já mandou a campanha por fora: nada é enviado ao cliente daqui.</div>
+    else if (S.blRmk === 'conf') rmk = `<div class="prop" style="margin-top:8px"><div class="peq">Anotar o envio da campanha <b>“${esc(S.blRmkNome)}”</b> na linha do tempo de <b>${n} pessoa${n === 1 ? '' : 's'}</b> (filtros: ${esc(blSegDesc(R.filtros || {}))})? Isto só registra que a diretoria já mandou a campanha por fora: nada é enviado ao cliente daqui.</div>
       <div class="linha" style="flex-wrap:wrap;gap:6px;margin-top:6px"><button class="b p" type="button" data-bls="rmk-confirmar"${S.blOcup ? ' disabled' : ''}>Confirmar o registro</button><button class="b" type="button" data-bls="rmk-cancelar">Cancelar</button></div></div>`;
-    const acoes = n ? `<div class="linha" style="flex-wrap:wrap;gap:6px;margin:8px 0"><button class="b" type="button" data-bls="copiar">Copiar lista</button><button class="b" type="button" data-bls="csv">Baixar CSV</button><button class="b" type="button" data-bls="rmk"${muitos || S.blRmk ? ' disabled' : ''}${muitos ? ' title="No máximo 1000 pessoas por registro: estreite os filtros"' : ''}>Marcar como enviado</button></div>${muitos ? '<p class="mut peq">Mais de 1000 pessoas: estreite os filtros para registrar o envio.</p>' : ''}` : '';
+    const acoes = n ? `<div class="linha" style="flex-wrap:wrap;gap:6px;margin:8px 0"><button class="b" type="button" data-bls="copiar"${velho ? ' disabled' : ''}>Copiar lista</button><button class="b" type="button" data-bls="csv"${velho ? ' disabled' : ''}>Baixar CSV</button><button class="b" type="button" data-bls="rmk"${muitos || S.blRmk || velho ? ' disabled' : ''}${muitos ? ' title="No máximo 1000 pessoas por registro: estreite os filtros"' : ''}>Marcar como enviado</button></div>${muitos ? '<p class="mut peq">Mais de 1000 pessoas: estreite os filtros para registrar o envio.</p>' : ''}` : '';
     const cols = [
       { k: 'nome', l: 'Nome', h: (p) => `<b>${esc(p.nome || '—')}</b>` },
       { k: 'telefone', l: 'Telefone', v: (p) => digitos(p.telefone), h: (p) => esc(fone(p.telefone)) },
@@ -2490,7 +2501,7 @@ function vBlSegmentos(voltar) {
       { k: 'ultimo_evento_em', l: 'Último registro', h: (p) => dt(p.ultimo_evento_em) },
     ];
     const cartao = (p) => `<div class="cm-l1"><b>${esc(p.nome || '—')}</b> <span class="mut peq">${blInt(p.interesse)}</span></div><div class="cm-l2">${esc(fone(p.telefone))}${blLista(p.finalidades).length ? ' · ' + esc(blLista(p.finalidades).join(', ')) : ''}</div><div class="cm-l2 mut">${esc(blLista(p.bairros).slice(0, 3).join(', ') || 'sem bairro')} · ${esc(blLista(p.corretores).map(blCorNome).join(', ') || 'sem corretor')} · último registro ${dt(p.ultimo_evento_em)}</div>`;
-    res = `<div class="painel"><h2>${n} pessoa${n === 1 ? '' : 's'} no segmento</h2><p class="mut peq" style="margin:4px 0 0">${nc ? `${nc} em não contatar ficaram fora. ` : ''}Resultado montado às ${esc(String(R.em || '').slice(11, 16) || '—')}.</p>${acoes}${rmk}${S.blRmkMsg ? `<div class="msg" style="margin-top:8px">${esc(S.blRmkMsg)}</div>` : ''}</div>
+    res = `<div class="painel"><h2>${n} pessoa${n === 1 ? '' : 's'} no segmento</h2><p class="mut peq" style="margin:4px 0 0">${nc ? `${nc} em não contatar ficaram fora. ` : ''}Montado às ${esc(hora)} · ${esc(blSegDesc(R.filtros || {}))}.</p>${R ? `<div class="msg" id="blSegVelho" style="margin-top:8px${velho ? '' : ';display:none'}">Os filtros mudaram depois desta busca. Toque em Montar o segmento para atualizar a lista antes de copiar, baixar ou marcar como enviado.</div>` : ''}${acoes}${rmk}${S.blRmkMsg ? `<div class="msg" style="margin-top:8px">${esc(S.blRmkMsg)}</div>` : ''}</div>
       ${tabela('base_seg', cols, R.pessoas || [], { padrao: { c: 'ultimo_evento_em', d: -1 }, abre: (p) => 'base:' + p.id, cartao, vazio: 'Ninguém com esses filtros.' })}`;
   }
   return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>📇 Base de leads</h2><div class="linha">${voltar}</div></div>
@@ -2504,6 +2515,7 @@ document.addEventListener('click', (e) => {
   const op = d.bls;
   if (op === 'buscar') return blSegBuscar();
   if (op === 'limpar') { S.blSeg = { int: [], fin: '', sit: '', cor: '', bairros: '', desde: '', ate: '' }; S.blSegErro = ''; return render(); }
+  if (['copiar', 'csv', 'rmk', 'rmk-seguir', 'rmk-confirmar'].includes(op)) { blSegLer(); if (blSegVelho()) { S.blRmk = ''; toast('Os filtros mudaram depois da última busca: toque em Montar o segmento antes.'); return render(); } }
   if (op === 'copiar') return blSegCopiar();
   if (op === 'csv') return blSegCsv();
   if (op === 'rmk') { blSegLer(); S.blRmk = 'nome'; S.blRmkMsg = ''; render(); const n = document.getElementById('blRmkNome'); if (n) n.focus(); return; }
@@ -2513,6 +2525,16 @@ document.addEventListener('click', (e) => {
     blSegLer(); S.blRmkNome = v.slice(0, 120); S.blRmk = 'conf'; return render(); }
   if (op === 'rmk-confirmar') return blRmkConfirmar();
 });
+
+function blSegVivo(e) {
+  const t = e.target; if (!t || !t.id || !/^bls(Fin|Sit|Cor|Bai|De|Ate)$/.test(t.id) || !S.gestor) return;
+  blSegLer();
+  // sem render (perderia o clique em "Montar o segmento"): só trava os botões e mostra o aviso
+  const v = blSegVelho();
+  document.querySelectorAll('[data-bls="copiar"],[data-bls="csv"],[data-bls="rmk"]').forEach((x) => { if (v) x.disabled = true; else if (x.dataset.bls !== 'rmk' || (!S.blRmk && !((S.blSegR && S.blSegR.total) > 1000))) x.disabled = false; });
+  const av = document.getElementById('blSegVelho'); if (av) av.style.display = v ? '' : 'none';
+}
+document.addEventListener('input', blSegVivo); document.addEventListener('change', blSegVivo);
 
 // ---------- Meus leads ----------
 function vLeads() {
