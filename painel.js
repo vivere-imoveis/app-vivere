@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -876,10 +876,15 @@ function pagTamApp() { try { return +localStorage.getItem('painel.pagTam') === 1
 // ---------- Regras dos leads ----------
 const histDe = (l) => Array.isArray(l.historico) ? l.historico : [];
 const ultimoReg = (l) => { const h = histDe(l).map((x) => x.em).filter(Boolean).sort(); return h.length ? h[h.length - 1] : null; };
+// trocas-usabilidade-f3 (Lucas #4): hora real de chegada = criado_em da linha do lead no banco (a ponte do app põe em _chegada_em);
+// vale só no mesmo dia da entrada (lead que veio numa carga de outro dia segue com meio-dia, como antes).
+const chegadaReal = (l) => { const c = l && l._chegada_em ? new Date(l._chegada_em) : null; return c && !isNaN(c) && c.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }) === l.entrada ? c : null; };
+const chegadaLead = (l) => chegadaReal(l) || new Date(l.entrada + 'T12:00');
+const horaChegada = (l) => { const c = chegadaReal(l); return c ? ' · chegou às ' + c.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) : ''; };
 function avisosDe(id, l) {
   const out = [], hoje = hojeISO(), f = funilDe(l), et = etapaDe(l), ab = abertaL(l), ult = ultimoReg(l);
   const pz = PZ();
-  if (et === FC.def(f).etapas[0] && !ult && l.entrada && l.entrada >= INICIO_CRM && (Date.now() - new Date(l.entrada + 'T12:00')) > pz.primeiro_contato_h * 36e5) out.push({ p: 'alta', t: 'Primeiro contato atrasado', o: 'Fazer o primeiro contato e registrar' });
+  if (et === FC.def(f).etapas[0] && !ult && l.entrada && l.entrada >= INICIO_CRM && (Date.now() - chegadaLead(l)) > pz.primeiro_contato_h * 36e5) out.push({ p: 'alta', t: 'Primeiro contato atrasado', o: 'Fazer o primeiro contato e registrar' + horaChegada(l) });
   if (ab && l.data_prox && l.data_prox < hoje) out.push({ p: 'alta', t: 'Próxima ação vencida', o: `${l.prox_acao || 'Ação'} era para ${dt(l.data_prox)}` });
   if (ab && l.data_prox === hoje) out.push({ p: 'media', t: 'Ação para hoje', o: l.prox_acao || 'Ação marcada para hoje' });
   if (ab && !l.prox_acao && !l.data_prox) out.push({ p: 'media', t: 'Sem próxima ação', o: 'Definir a próxima ação e a data' });
@@ -917,7 +922,15 @@ function opsDoLead(lead) {
   const marcadas = (st) => Object.entries(marcas).filter(([, m]) => m.st === st).map(([id, m]) => ({ id, ...m, it: ctx.porId.get(id) })).sort((a, b) => String(b.em).localeCompare(String(a.em)));
   return { p, ia, novas, ofertados: marcadas('ofertado'), descartados: marcadas('descartado'), capt: captDoPerfil(p, 6) };
 }
-function leadsComOfertas() { if (!S.prontos.has('vitrine')) return []; return Object.entries(S.leads).filter(([, l]) => abertaL(l) && ladoDe(l) !== 'tem').filter(([id, l]) => { const o = opsDoLead(leadN(id, l)); return o.novas.length || nCaptAcao(o); }); }
+// trocas-usabilidade-f3 (Lucas #9): o cruzamento de cada lead com a vitrine fica guardado e só se refaz quando o lead
+// (pelo conteúdo que o cruzamento usa, leadN), o contexto das ofertas (ctxOp) ou o dos captados (ctxCapt) mudam.
+const OPS_MEMO = new Map();
+function opsCache(id, l) {
+  const n = leadN(id, l), sig = JSON.stringify(n), cx = ctxOp(), cc = S.prontos.has('capt') ? ctxCapt() : null, m = OPS_MEMO.get(id);
+  if (m && m.sig === sig && m.cx === cx && m.cc === cc) return m.r;
+  const r = opsDoLead(n); OPS_MEMO.set(id, { sig, cx, cc, r }); return r;
+}
+function leadsComOfertas() { if (!S.prontos.has('vitrine')) return []; return Object.entries(S.leads).filter(([, l]) => abertaL(l) && ladoDe(l) !== 'tem').filter(([id, l]) => { const o = opsCache(id, l); return o.novas.length || nCaptAcao(o); }); }
 
 /* ---------- Captação em dois lados (01/11/2026, decisão do Cleiton) ----------
    🔎 PROCURA (locatário, comprador e os clientes comuns) × 🏠 TEM (locador, vendedor, operador de renda).
@@ -1049,7 +1062,7 @@ function interessadosCapt() {
   const k = [S.leads, S.capt, S.vitrine, S.catalogo, S.meus];
   if (INTC.m && INTC.k.every((v, i) => v === k[i])) return INTC.m;
   const m = new Map();
-  Object.entries(S.leads).forEach(([id, l]) => { if (!abertaL(l) || ladoDe(l) === 'tem') return; const o = opsDoLead(leadN(id, l)); (o.capt || []).forEach((x) => { const a = m.get(x.it.id) || []; a.push({ id, nome: l.nome || 'Sem nome' }); m.set(x.it.id, a); }); });
+  Object.entries(S.leads).forEach(([id, l]) => { if (!abertaL(l) || ladoDe(l) === 'tem') return; const o = opsCache(id, l); (o.capt || []).forEach((x) => { const a = m.get(x.it.id) || []; a.push({ id, nome: l.nome || 'Sem nome' }); m.set(x.it.id, a); }); });
   INTC = { k, m }; return m;
 }
 // aluguel em valor cheio (R$ 1.900), venda abreviada (R$ 1,2 mi)
@@ -1906,6 +1919,9 @@ document.addEventListener('click', (ev) => {
 }, true);
 (function () { const st = document.createElement('style'); st.id = 'css-acaptar-aba'; st.textContent = '.btn-acap{display:inline-flex;align-items:center;gap:6px;text-decoration:none;border-color:var(--brass);color:var(--ink)}.btn-acap:hover{background:var(--soft)}.btn-acap .ba-t{font-weight:600;letter-spacing:.06em}.btn-acap .ba-n{font-size:12px;color:var(--muted);white-space:nowrap;padding-left:6px;border-left:1px solid var(--line)}.btn-acap .ba-n b{color:var(--ok-selo);font-weight:700}.btn-acap .ba-m b{color:var(--brass)}.topo-mini .tm-acap{display:none}@media (max-width:700px){.marca{row-gap:8px}.btn-acap{order:5;flex:1 1 100%;justify-content:center;padding:8px 12px}.topo-mini .tm-acap{display:inline-flex;align-items:center;gap:2px;flex:none;border:1px solid var(--brass);background:var(--panel);color:var(--ink);border-radius:999px;padding:6px 10px;font:500 13px var(--body);text-decoration:none;white-space:nowrap}.topo-mini .tm-acap b{font-weight:700;color:var(--ok-selo)}.topo-mini .tm-acap b+b{color:var(--brass)}}.acap-cts .cartao{text-align:left;font:inherit;color:inherit;cursor:pointer}.acap-cts .cartao:hover{border-color:var(--brass)}.acap-fil{margin:12px 0 10px}.acap-como{margin:4px 0 12px;max-width:80ch}.pill.acap-lv{background:var(--ok-bg);color:var(--ok-selo)}.pill.acap-cp{background:var(--soft);color:var(--brass)}.acap-cod{font:600 11px/1.5 var(--body)!important;letter-spacing:.06em;color:var(--brass)!important;margin-top:2px}.acap-ft{display:block;width:72px;aspect-ratio:4/3;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--soft)}.acap-ft.sem{display:grid;place-items:center;font-size:22px}.acap-ft.g{width:96px;flex:none}.acap-lista .lista-m{container-type:inline-size}.acap-cg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;font-size:13px;font-variant-numeric:tabular-nums}.acap-cg>div{min-width:0}.acap-cg .r{display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}.acap-lista td .b{white-space:nowrap}.acap-ac{align-items:center;gap:6px 10px}.acap-ac .b{margin-left:auto}@container (min-width:520px){.acap-cg{grid-template-columns:repeat(4,minmax(0,1fr))}.acap-ft.g{width:132px}}@container (max-width:420px){.acap-ac .b{margin-left:0;flex:1 1 100%;justify-content:center}.acap-ft.g{width:84px}}'; document.head.appendChild(st); })();
 
+// trocas-usabilidade-f3 (Lucas #9): várias coleções chegando juntas (abertura, releitura) viram um desenho só
+let RL_EM = null;
+function renderLogo() { if (RL_EM) return; RL_EM = setTimeout(() => { RL_EM = null; render(); }, 40); }
 function render() {
   if (S.aba === 'semresp') { S.aba = 'imoveis'; try { sessionStorage.setItem('painel.aba', 'imoveis'); sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} location.href = 'index.html?aba=semresp'; return; } // 19/11/2026: abre no app
   if (S.aba === 'acaptar') { S.aba = 'inicio'; try { sessionStorage.setItem('painel.aba', 'inicio'); sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} location.href = acapUrl(); }
@@ -2650,7 +2666,7 @@ function gavetaLead(id) {
   const novo = !id, l = novo ? { etapa: 'Novo', perfil: {}, historico: [], entrada: hojeISO() } : S.leads[id];
   if (!l) return '';
   const p = l.perfil || {};
-  const op = novo ? null : opsDoLead(leadN(id, l));
+  const op = novo ? null : opsCache(id, l);
   const refs = S.vitrine.map((v) => v.ref).filter(Boolean);
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillFunil(l) + pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>${autorLin(l, 'mut peq', 1)}`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
@@ -2798,7 +2814,7 @@ function listaOpP(L, cardOp, busca) {
 function vOport() {
   if (!S.prontos.has('vitrine')) return '<div class="vazio">Carregando os imóveis…</div>';
   if (S.opLado === 'tem') return vOportTem();
-  const base = Object.entries(S.leads).filter(([, l]) => ladoDe(l) !== 'tem').map(([id, l]) => ({ id, l, o: opsDoLead(leadN(id, l)) }));
+  const base = Object.entries(S.leads).filter(([, l]) => ladoDe(l) !== 'tem').map(([id, l]) => ({ id, l, o: opsCache(id, l) }));
   const busca = !!qDe();
   const F = { ofertas: (x) => abertaL(x.l) && (x.o.novas.length || nCaptAcao(x.o)), abertos: (x) => abertaL(x.l), sem_perfil: (x) => abertaL(x.l) && !x.o.p, todos: () => true };
   const cont = (k) => base.filter(F[k]).length;
@@ -5023,8 +5039,8 @@ render();
   const erro = () => { toast('A conexão com os dados caiu. Recarregue a página.'); };
   const col = (nome, alvo) => db.collection(nome).onSnapshot((snap) => {
     const o = {}; snap.docs.forEach((d) => { if (d.exists) o[d.id] = d.data(); });
-    if (S.gestor && G_ALVOS.has(alvo)) { if (alvo === 'leads') S.demora = false; S.prontos.add(alvo); return render(); }
-    S[alvo] = o; if (alvo === 'leads') { separarArq(); S.demora = false; } S.prontos.add(alvo); render();
+    if (S.gestor && G_ALVOS.has(alvo)) { if (alvo === 'leads') S.demora = false; S.prontos.add(alvo); return renderLogo(); }
+    S[alvo] = o; if (alvo === 'leads') { separarArq(); S.demora = false; } S.prontos.add(alvo); renderLogo();
     if (alvo === 'perfilIA' && S.aberto && S.aberto.tipo === 'lead') atualizaPF(S.aberto.id);
     if (alvo === 'leadResp' && S.aberto && S.aberto.tipo === 'lead') atualizaLR(S.aberto.id);
     if (alvo === 'leads' && S.aberto && S.aberto.tipo === 'lead' && S.leads[S.aberto.id]) { const hl = document.getElementById('histLista'); if (hl) hl.innerHTML = htmlHist(S.leads[S.aberto.id]); }
@@ -5033,8 +5049,8 @@ render();
   col('perfil_ia', 'perfilIA');
   col('lead_resposta', 'leadResp');   // 1ª resposta pronta (lead-resposta, F2 18/11/2026): só o servidor grava   // perfil do lead pela IA (lead-perfil, F2 17/11/2026): só o servidor grava
   col('leads', 'leads'); col('meus_imoveis', 'meus'); col('catalogo', 'catalogo'); col('solicitacoes', 'sol'); col('decisoes', 'decisoes'); col('cadastro_drive', 'cadDrive'); col('eventos_agenciamento', 'eventos'); col('empreendimentos', 'empDocs'); col('fotos', 'fotosDocs'); col('demandas', 'dem'); col('demandas_pedidos', 'demPed'); col('equipe_cartoes', 'eqc'); col('captados', 'capt'); col('tarefas', 'tarefas'); col('atribuicoes', 'atrib');
-  db.doc('controle/prazos').onSnapshot((d) => { S.prazos = d.exists ? d.data() : {}; render(); }, erro);
-  db.doc('acaptar/estado').onSnapshot((d) => { S.acapProprio = d.exists ? d.data() : null; S.acap = S.acapProprio || acapDaFoto(); render(); }, () => {});
+  db.doc('controle/prazos').onSnapshot((d) => { S.prazos = d.exists ? d.data() : {}; renderLogo(); }, erro);
+  db.doc('acaptar/estado').onSnapshot((d) => { S.acapProprio = d.exists ? d.data() : null; S.acap = S.acapProprio || acapDaFoto(); renderLogo(); }, () => {});
   (async () => { let u = null; try { u = await window.claude.use('user'); S.ehDono = u ? await u.isOwner() : false; S.uid = u ? await u.id() : null; } catch (e) { S.ehDono = !!S.ehDono; } render();
     if (!S.uid) return;
     db.doc(`data/users/${S.uid}/preferencias`).onSnapshot((d) => {
