@@ -1,8 +1,8 @@
 {
- "hub_versao": "1795310167-cc41",
+ "hub_versao": "1795318134-403e",
  "index_original_sha16": "49b3c9e4fcf5c0e7",
  "nucleos": 7,
- "montado_em": "2026-11-21T23:10-03:00",
+ "montado_em": "2026-11-22T00:29-03:00",
  "arquivos": {
   "hub-web.js": "3fc6bbb960035157",
   "index.html": "7ed15ebd1ce30c10",
@@ -80,7 +80,7 @@
   "modulos/mapa-ruas-9-6.js": "4f404a3cf65e4a4e",
   "modulos/mapa.js": "53173f2511598919",
   "modulos/marketing-dados.js": "df91339bfbc03b23",
-  "modulos/marketing.js": "538620d74e914dcc",
+  "modulos/marketing.js": "d8a7ca447b8c476b",
   "modulos/metas-corretores.js": "a64f7e7cfe881e49",
   "modulos/orcamento.js": "603687339daca111",
   "modulos/parceiros.js": "5de6790a9ec265eb",
@@ -106,5 +106,6 @@
   "nucleo/nucleo-5.js": "2ebf5e303ee7a497",
   "nucleo/nucleo-6.js": "19bd0efa85ba6032",
   "nucleo/nucleo-7.js": "91aed514d05266ca"
- }
+ },
+ "obs": "modulos/marketing-dossies.js fica fora da cópia web (repositório público): os dossiês vêm do banco (marketing_dossies), pelo nível de acesso."
 }
