@@ -1,6 +1,6 @@
 /* Navegação compacta do HUB VIVERE no celular e no tablet (22/11/2026, tarefa vis-app-carregamento-transicoes).
    Mesmo padrão do painel dos corretores (nav-celular.js do app). Até 1023 px (body.tc-on):
-   - topo de 1 linha: selo e nome, lupa, tema e ☰ (o ☰ abre a gaveta "Mais");
+   - topo de 1 linha: selo e nome, tema e ☰ (o ☰ abre a gaveta "Mais");
    - barra fixa embaixo: Início, CRM, Locação, Financeiro e Mais, com os selos das áreas;
    - gaveta "Mais": as outras áreas (Gestão, Construções), os atalhos (Metas, ocultar valores, fonte da base, menu
      lateral), os painéis dos corretores e o resumo das coletas.
@@ -8,6 +8,7 @@
    ou na gaveta clica o botão original. As subabas da área continuam no lugar. A partir de 1024 px nada muda além do
    resumo das coletas (pintaColetas, núcleo) e da busca na mesma linha das coletas. ?nav=0 desliga no aparelho.
    2026-11-22.2: barra de baixo e gaveta (pedido do Cleiton às 00h44: o ☰ não levava às áreas).
+   2026-11-22.5: sem a busca geral do topo e topo do computador numa linha (pedido das 01h13).
    2026-11-22.3: os cartões grandes do topo só no Início, logo abaixo dos menus (pedido das 00h57), em todos os formatos. */
 (function () {
   'use strict';
@@ -31,8 +32,11 @@
     /* 2026-11-22.3: os cartões grandes do topo (#kpis) ficam só no Início, logo abaixo dos menus */
     'body.tc-kpi-fora #kpis{display:none!important}',
     '#kpis.tc-kpi-baixo{margin-top:14px}',
-    /* computador: busca e resumo das coletas dividem a 2ª linha */
-    '@media (min-width:1024px){html body header.topo>.busca{order:10;flex:1 1 320px;max-width:none;margin-left:0}html body header.topo>.coletas{order:11;margin-left:0;flex:none}}',
+    /* 2026-11-22.5 (pedido do Cleiton, 01h13): sem a busca geral no topo (cada aba já tem a busca dela) e topo do computador
+       numa linha só: selo e nome, Metas, Painéis, menu lateral, tema, olho, fonte da base e, à direita, o resumo das coletas */
+    'html body header.topo>.busca{display:none!important}',
+    '@media (min-width:1024px){html body header.topo{gap:8px 10px;padding-bottom:10px;align-items:center}html body header.topo>.marca{gap:10px;margin-right:4px}html body header.topo>.marca .selo{width:38px;height:38px}html body header.topo>.marca h1{font-size:18px}html body header.topo>.marca p{font-size:11.5px}html body header.topo>.coletas{order:11;margin-left:auto;flex:none}}',
+    '@media (min-width:1024px) and (max-width:1199px){html body header.topo>.marca p{display:none}html body header.topo>.coletas .col-h{display:none}}',
     /* botões novos do topo: só no celular e no tablet */
     'html body header.topo>.tp-btn{display:none}',
     /* ---------- até 1023 px ---------- */
@@ -43,12 +47,10 @@
     'html body.tc-on header.topo>.marca h1{font-size:15px;letter-spacing:.2em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     'html body.tc-on header.topo>.marca p{display:none}',
     'html body.tc-on header.topo>.tp-btn{display:inline-flex;position:relative}',
-    'html body.tc-on header.topo>#tp-lupa{order:-9!important}html body.tc-on header.topo>#tema-btn{order:-8!important}html body.tc-on header.topo>#tp-mais{order:-7!important}',
+    'html body.tc-on header.topo>#tema-btn{order:-8!important}html body.tc-on header.topo>#tp-mais{order:-7!important}',
     'html body.tc-on header.topo>:is(.lk-metas,.lk-paineis,#btnPrivado,#fonte-base,#ml-troca,.coletas){display:none!important}',
-    'html body.tc-on header.topo:not(.tp-busca)>.busca{display:none!important}',
-    'html body.tc-on header.topo>.busca{order:1!important;flex:1 1 100%;max-width:none;margin:0}',
     'html body.tc-on nav#abas{display:none!important}',
-    '#tp-mais svg,#tp-lupa svg{width:18px;height:18px}',
+    '#tp-mais svg{width:18px;height:18px}',
     '.tc-ponto{position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--bad)}',
     /* barra de baixo */
     '.tc-barra{display:none}',
@@ -89,7 +91,7 @@
     lateral: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>'
   };
   var mq = window.matchMedia('(max-width: 1023px)');
-  var t, abas, barra, lupa, mais, aberta = null;
+  var t, abas, barra, mais, aberta = null;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function grupo(k) { return abas && abas.querySelector('button[data-grupo="' + k + '"]'); }
@@ -170,20 +172,13 @@
   function inicia() {
     t = document.querySelector('header.topo'); abas = document.getElementById('abas');
     if (!t || !abas || document.getElementById('tp-mais')) return;
-    lupa = botao('tp-lupa', 'Buscar no HUB', SVG.lupa);
     mais = botao('tp-mais', 'Mais áreas e atalhos', SVG.menu); mais.setAttribute('aria-haspopup', 'dialog');
-    var tema = document.getElementById('tema-btn');
-    t.insertBefore(lupa, tema && tema.parentNode === t ? tema : null);
     t.appendChild(mais);
+    // rótulos curtos no topo (o título do botão guarda a descrição longa)
+    var lm = t.querySelector('a.lk-metas'); if (lm && !lm.closest('.lk-paineis')) lm.textContent = 'Metas ↗';
+    var lp = t.querySelector('.lk-paineis > summary'); if (lp) lp.textContent = 'Painéis ▾';
     barra = document.createElement('nav'); barra.className = 'tc-barra'; barra.setAttribute('aria-label', 'Áreas principais do HUB');
     document.body.appendChild(barra);
-    var q = document.getElementById('busca-q');
-    lupa.addEventListener('click', function () {
-      var liga = !t.classList.contains('tp-busca') || !!(q && q.value);   // com texto digitado a busca fica aberta
-      t.classList.toggle('tp-busca', liga); lupa.setAttribute('aria-expanded', String(liga));
-      if (liga && q) q.focus();
-    });
-    if (q) q.addEventListener('input', function () { if (q.value) { t.classList.add('tp-busca'); lupa.setAttribute('aria-expanded', 'true'); } });
     mais.addEventListener('click', abrir);
     document.addEventListener('click', clique);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fechar(); });
@@ -191,10 +186,10 @@
     new MutationObserver(agenda).observe(abas, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-selected'] });
     var col = document.getElementById('coletas');
     if (col) new MutationObserver(agenda).observe(col, { attributes: true, attributeFilter: ['class'] });
-    var modo = function () { document.body.classList.toggle('tc-on', mq.matches); if (!mq.matches) { fechar(); t.classList.remove('tp-busca'); } };
+    var modo = function () { document.body.classList.toggle('tc-on', mq.matches); if (!mq.matches) fechar(); };
     if (mq.addEventListener) mq.addEventListener('change', modo); else mq.addListener(modo);
     modo(); pinta(); kpis();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inicia); else inicia();
-  window.TopoCompacto = { versao: '2026-11-22.4' };
+  window.TopoCompacto = { versao: '2026-11-22.5' };
 })();
