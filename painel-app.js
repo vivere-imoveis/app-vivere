@@ -251,3 +251,45 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
 })();
+
+/* Menu no topo do computador (1024 px ou mais, quando a pessoa escolhe o topo no ☰): Minha senha e Acessos aparecem no fim da
+   linha das abas, como abas (22/11/2026, decisão do Cleiton: "Pôr no fim das abas"). Antes, só na lateral e no Mais do celular.
+   São só espelhos: o clique aciona os botões originais (btnSenhaApp, btnAcessosApp), que abrem a aba dentro do painel. Não têm
+   data-aba, para o menu lateral, a barra do celular e a troca de abas do painel não os contarem. */
+(function () {
+  'use strict';
+  var ITENS = [['btnSenhaApp', 'senha', 'cadeado', 'Minha senha'], ['btnAcessosApp', 'acessos', 'escudo', 'Acessos']];
+  function topoPc() { var b = document.body; return innerWidth >= 1024 && b && !b.classList.contains('ml-on') && !b.classList.contains('nc-on'); }
+  function atual() { return window.ABA_APP && ABA_APP.atual ? ABA_APP.atual() : ''; }
+  var mexendo = false;
+  function ajusta() {
+    var abas = document.getElementById('abas'); if (!abas || mexendo) return;
+    mexendo = true;
+    try {
+      var ligar = topoPc();
+      ITENS.forEach(function (x) {
+        var orig = document.getElementById(x[0]), esp = abas.querySelector('button.aba-esp[data-esp="' + x[1] + '"]');
+        if (!ligar || !orig) { if (esp) esp.remove(); return; }
+        if (!esp) {
+          esp = document.createElement('button'); esp.type = 'button'; esp.className = 'aba-esp'; esp.dataset.esp = x[1];
+          esp.setAttribute('aria-label', x[3]); esp.title = x[3];
+          esp.innerHTML = (window.VIVERE_ICONES && VIVERE_ICONES.html ? '<span class="ab-ic" aria-hidden="true">' + VIVERE_ICONES.html(x[2]) + '</span>' : '') + '<span class="ab-t">' + x[3] + '</span>';
+          esp.addEventListener('click', function () { var o = document.getElementById(x[0]); if (o) o.click(); });
+        }
+        if (esp.parentNode !== abas || esp !== abas.lastElementChild && !esp.nextElementSibling.classList.contains('aba-esp')) abas.appendChild(esp);
+        var sel = atual() === x[1] ? 'true' : 'false';
+        if (esp.getAttribute('aria-selected') !== sel) esp.setAttribute('aria-selected', sel);
+      });
+    } finally { mexendo = false; }
+  }
+  function liga() {
+    var abas = document.getElementById('abas'); if (!abas) return;
+    new MutationObserver(function () { ajusta(); }).observe(abas, { childList: true });
+    new MutationObserver(function () { ajusta(); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    addEventListener('resize', ajusta);
+    document.addEventListener('vivere:aba-app', ajusta);
+    var n = 0, t = setInterval(function () { ajusta(); if (++n > 20) clearInterval(t); }, 500);   // os botões originais nascem depois do 1º desenho
+    ajusta();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
+})();

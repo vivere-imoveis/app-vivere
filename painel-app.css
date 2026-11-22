@@ -366,3 +366,13 @@ html.com-aba-app .abas button[aria-selected="true"]{color:var(--muted)!important
   #conteudo .linha:has(> [data-arqver]) .so-pc{display:none}
   #conteudo .linha:has(> [data-arqver]) .so-cel{display:inline}
 }
+/* Minha senha e Acessos no fim das abas do menu no topo do computador (painel-app.js, 22/11/2026): o mesmo estilo das abas do
+   topo (cópia das 3 regras de redesenho.css com .aba-esp no lugar de [data-aba]); até 1279 px, só o ícone */
+@media (min-width:1024px){
+  body:not(.ml-on) .abas button.aba-esp{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex!important;align-items:center;gap:8px;min-height:40px;padding:0 12px!important;border-radius:10px 10px 0 0;font:500 14.5px/1 var(--display)!important;letter-spacing:.01em!important;text-transform:none!important;color:var(--muted);border-bottom:2px solid transparent!important;white-space:nowrap;flex:none!important;width:auto!important;background:none!important;box-shadow:none!important}
+  body:not(.ml-on) .abas button.aba-esp:hover{color:var(--ink);background:var(--soft)!important}
+  body:not(.ml-on) .abas button.aba-esp[aria-selected="true"]{color:var(--ink);background:var(--soft)!important;border-bottom-color:var(--brass)!important}
+  #abas>button.aba-esp .ab-ic{display:inline-flex}
+  #abas>button.aba-esp .ab-ic svg{width:16px;height:16px}
+}
+@media (min-width:1024px) and (max-width:1279px){#abas>button.aba-esp .ab-t{display:none}}
