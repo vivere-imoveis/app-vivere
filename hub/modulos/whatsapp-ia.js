@@ -101,16 +101,16 @@
   }
 
   // ------------------------------------------------------------ números autorizados
-  function vistaNumeros() {
-    const C = cors();
-    const topo = `<p class="nota">Só estes números conversam com o agente; mensagem de qualquer outro número é recusada antes de chegar à IA. O número inteiro fica guardado só no banco do agente; aqui aparecem os 4 últimos dígitos. Incluir ou retirar um corretor: pedir ao Claude, com o número, numa sessão da Vivere.</p>`;
-    if (!C.length) return topo + H.vazio(pronto(C_COR) ? 'Nenhum número autorizado ainda.' : 'Carregando…');
-    const ultima = {}; convs().forEach((c) => { if (!ultima[c.corretor_id] || c.dia > ultima[c.corretor_id]) ultima[c.corretor_id] = c.dia; });
-    return topo + `<div class="tabela"><table><thead><tr><th>Nome</th><th>Papel</th><th>Equipe</th><th>Número</th><th>Situação</th><th>Última conversa</th></tr></thead><tbody>${C.map((c) => `<tr>
+  function vistaNumeros() {   // 22/11/2026 (pedido do Cleiton): número inteiro e a quem pertence; vem do banco da Vivian (public.corretores) pela função privado.wia_hub_numeros
+    const C = cors().sort((a, b) => (a.ativo === false) - (b.ativo === false));
+    const nA = C.filter((c) => c.ativo !== false).length;
+    const topo = `<p class="nota">Só os números com acesso ativo conversam com a Vivian; mensagem de qualquer outro número é recusada antes de chegar à IA. ${nA} com acesso, ${C.length - nA} sem acesso. Incluir, trocar ou retirar um número: pedir ao Claude numa sessão da Vivere. A lista se atualiza sozinha quando o cadastro muda.</p>`;
+    if (!C.length) return topo + H.vazio(pronto(C_COR) ? 'Nenhum número cadastrado ainda.' : 'Carregando…');
+    const fone = (c) => c.telefone ? `<span class="sens">${esc(c.telefone)}</span>${(c.telefones_extra || []).map((t) => `<br><span class="sens s">${esc(t)}</span>`).join('')}` : c.final ? '•••• ' + esc(String(c.final).slice(-4)) : '<span class="s" style="color:var(--warn)">a cadastrar</span>';
+    return topo + `<div class="tabela"><table><thead><tr><th>Nome</th><th>Papel</th><th>Equipe</th><th>Número</th><th>Situação</th></tr></thead><tbody>${C.map((c) => `<tr>
       <td>${esc(c.nome)}</td><td>${esc(c.papel === 'diretoria' ? 'Diretoria' : 'Corretor')}</td><td>${esc(c.equipe || '—')}</td>
-      <td>${c.final ? '•••• ' + esc(String(c.final).replace(/\D/g, '').slice(-4)) : '<span class="s" style="color:var(--warn)">a cadastrar</span>'}</td>
-      <td>${c.ativo === false ? '<span class="pill">Sem acesso</span>' : c.final ? '<span class="pill ok">Autorizado</span>' : '<span class="pill warn">Aguarda número</span>'}${c.desde ? `<span class="s">desde ${dt(c.desde)}</span>` : ''}</td>
-      <td>${ultima[c._id] ? dt(ultima[c._id]) : '<span class="s">—</span>'}</td></tr>`).join('')}</tbody></table></div>`;
+      <td>${fone(c)}</td>
+      <td>${c.ativo === false ? '<span class="pill">Sem acesso</span>' : '<span class="pill ok">Autorizado</span>'}${c.desde ? `<span class="s"> desde ${dt(c.desde)}</span>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
   }
 
   // ------------------------------------------------------------ histórico de conversas
@@ -195,7 +195,7 @@
     const nav = `<div class="filtros" role="group" aria-label="Partes da aba">${VISTAS.map(([k, t]) => `<button class="btn" data-wa-vista="${k}" aria-pressed="${F.vista === k}">${t}${cont[k] ? ` <span class="pill ${k === 'expira' ? 'bad' : 'warn'}">${cont[k]}</span>` : ''}</button>`).join('')}</div>`;
     return `<h2>Agente de IA no WhatsApp</h2><p class="nota">Número próprio da Vivere na API oficial do WhatsApp, conversa 1:1 com cada corretor. O agente responde sozinho às consultas (imóveis, leads, empreendimentos, oportunidades); avisos e cobranças passam pela sua aprovação no piloto. Proprietário só para o corretor agenciador; nada financeiro, fiscal ou tributário da Vivere.</p>
       <p style="display:flex;gap:8px 12px;flex-wrap:wrap;align-items:center;margin:0 0 14px"><a class="btn" href="https://claude.ai/artifact/UWq6TXqyoBPdiGZNV2aQiw" target="_blank" rel="noopener noreferrer">🔵💬 Abrir a CENTRAL DA VIVIAN</a><span class="nota" style="margin:0">conversas, regras, cadernos e uso da Vivian em tempo real (só o Cleiton)</span></p>
-      ${cardsSituacao()}<p class="nota">Os quadros se atualizam sozinhos pelo banco a cada 15 minutos. Conversas, números, regras e cadernos ficam na CENTRAL DA VIVIAN, ao vivo (botão acima).</p>`;
+      ${cardsSituacao()}<p class="nota">Os quadros se atualizam sozinhos pelo banco a cada 15 minutos. Conversas, regras e cadernos ficam na CENTRAL DA VIVIAN, ao vivo (botão acima).</p><h2>Números autorizados</h2>${vistaNumeros()}`;
   }
 
   H.registrar({

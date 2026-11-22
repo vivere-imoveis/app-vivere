@@ -1,5 +1,5 @@
 {
- "hub_versao": "1795353660-f7e8",
+ "hub_versao": "1795353972-b7db",
  "index_original_sha16": "ver list_files",
  "nucleos": 7,
  "montado_em": "2026-11-22T09:40-03:00",
@@ -101,7 +101,7 @@
   "modulos/vendor/leaflet-1.9.4.js": "db49d009c841f5ca",
   "modulos/vendor/leaflet.markercluster-1.5.3.js": "1e4e1d22972a3926",
   "modulos/vistorias.js": "10ec5bc8b219e7e7",
-  "modulos/whatsapp-ia.js": "3425031d7f97faf0",
+  "modulos/whatsapp-ia.js": "40144c865d007d64",
   "nucleo/nucleo-1.js": "6bdf5597ca821306",
   "nucleo/nucleo-2.js": "9b652a30ae103ad8",
   "nucleo/nucleo-3.js": "c2454fd87a51b326",
