@@ -15,7 +15,7 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const cfg = () => ((H.S[CF] || {}).geral) || {};
   const CDN = () => cfg().cdn || 'https://www.viverenapraia.com.br/imagens/imoveis/';
-  const url = (f) => CDN() + (/\.[a-z]{3,4}$/i.test(f) ? f : f + '.jpg');
+  const url = (f) => /^https:\/\//.test(f) ? f : CDN() + (/\.[a-z]{3,4}$/i.test(f) ? f : f + '.jpg'); /* 22/11/2026: foto do site novo (endereço completo) */
   // 17/11/2026 (vis-hub-app-carregamento-rapido, escolha do Cleiton: carregar só ao abrir a aba): a galeria (~0,7 MB) e as capas
   // (~2,3 MB, lidas do banco do artefato) só são pedidas quando uma tela usa foto (Imóveis, Cadastros, perfil). Antes vinham na abertura do HUB.
   let PEDIU = false;

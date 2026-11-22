@@ -486,3 +486,7 @@ td[data-l="Telefone"] .cel,td[data-l="Outro telefone"] .cel{white-space:nowrap}
 
 /* metas por corretor (fatia 7 do CRM, 17/11/2026) */
 .mt-bloco{display:grid;gap:8px}.mt-grade{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))}.mt-lin{display:grid;gap:4px;min-width:0}.mt-lin .num{white-space:nowrap}.mt-det{display:inline}.mt-det summary{display:inline;cursor:pointer;text-decoration:underline}.mt-placar summary{cursor:pointer}.mt-placar .tabela{margin-top:6px}
+/* 22/11/2026 (pedido do Cleiton): fim dos menus em linhas cheias — cada botão no tamanho natural, mais próximos, quebrando linha normalmente */
+nav.abas>button,nav.sub>button,.abas>button,.menu-cheio>button,.menu-cheio>a.btn{flex:0 0 auto!important}
+nav.abas,nav.sub,.abas,.filtros,.chips,.ordenar-movel{column-gap:4px!important;row-gap:4px!important}
+.quebra-menu{display:none!important}

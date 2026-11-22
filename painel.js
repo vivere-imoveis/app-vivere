@@ -5488,7 +5488,7 @@ try {
 /* menus em linhas cheias (26/10/2026, padrão de todo o HUB e dos painéis): todo grupo de botões de menu (abas, subabas, filtros em botões, chips, "ordenar por")
    ocupa a linha inteira, sem espaço livre no fim; se não cabe numa linha, reparte em linhas com o mesmo número de botões (diferença de no máximo 1) */
 (function(){
-  if (window.MenusCheios) return;
+  if (window.MenusCheios) return; window.MenusCheios = { atualiza: function () {} }; return; /* 22/11/2026 (pedido do Cleiton): menus em linhas cheias desligados — cada botão no tamanho natural, mais próximos (CSS no fim da folha) */
   const SEL = 'nav.abas, nav.sub, .abas, .filtros, .chips, .ordenar-movel, [role="group"]';
   const eBotao = (el) => el.tagName === 'BUTTON' || (el.tagName === 'A' && el.classList.contains('btn'));
   const filhos = (c) => [...c.children].filter((k) => !k.classList.contains('quebra-menu'));

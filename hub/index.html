@@ -425,7 +425,7 @@ html[data-privado="1"] .btn-privado .olho-fechado{display:block}
 <script src="nucleo/nucleo-2.js?v=9b652a30" charset="utf-8"></script>
 <script src="nucleo/nucleo-3.js?v=c2454fd8" charset="utf-8"></script>
 
-<script src="nucleo/nucleo-4.js?v=eabfb5bd" charset="utf-8"></script>
+<script src="nucleo/nucleo-4.js?v=34912011" charset="utf-8"></script>
 
 <style>
 /* títulos e menus em cards (30/10/2026, pedido do Cleiton): seções com título + subtítulo num card; áreas e abas como cards */
@@ -658,6 +658,10 @@ body.ml-on.ml-min #ml .ml-g{justify-content:center;padding:8px 0}
 body.ml-on.ml-min #ml .ml-g .badge{position:absolute;margin:0 0 18px 26px;font-size:9px;min-width:12px;padding:0 3px}
 body.ml-on.ml-min #ml .ml-topo{justify-content:center}
 .ml-troca{font-size:16px}
+/* 22/11/2026 (pedido do Cleiton): fim dos menus em linhas cheias — cada botão no tamanho natural, mais próximos, quebrando linha normalmente */
+nav.abas>button,nav.sub>button,.abas>button,.menu-cheio>button,.menu-cheio>a.btn{flex:0 0 auto!important}
+nav.abas,nav.sub,.abas,.filtros,.chips,.ordenar-movel{column-gap:4px!important;row-gap:4px!important}
+.quebra-menu{display:none!important}
 </style>
 <script id="icones-vivere" src="nucleo/nucleo-6.js?v=19bd0efa" charset="utf-8"></script>
 <script src="nucleo/nucleo-7.js?v=b72a2264" charset="utf-8"></script>
