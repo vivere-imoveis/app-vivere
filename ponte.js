@@ -156,13 +156,13 @@
   /* ---------- Leitura: primeiro o índice (pequeno), depois só o que mudou ---------- */
   // carregamento F1e (21/11/2026): depois da 1ª página cheia, as seguintes vão 4 de cada vez (antes, uma depois da outra:
   // o índice do gestor tinha 10 páginas e os captados 9, ~150 ms cada em fila). A ordem do resultado é a mesma.
-  async function paginas(montar) {
-    var r = await montar().range(0, PAGINA - 1);
-    if (r.error) throw r.error;
-    var tudo = r.data || [];
-    if (tudo.length < PAGINA) return tudo;
-    for (var de = PAGINA; ; de += PAGINA * 4) {
-      var rs = await Promise.all([0, 1, 2, 3].map(function (k) { return montar().range(de + k * PAGINA, de + (k + 1) * PAGINA - 1); }));
+  /* 22/11/2026 (carregamento): leitura que já se sabe grande (visão do gestor: todos os painéis) pede as 4 primeiras páginas
+     juntas (junto = 4), sem esperar a 1ª — uma ida a menos ao banco. No PAINEL DO GESTOR (claude.ai) cada ida passa pelo
+     conector e custa ~0,7 s; no app, ~0,25 s. As leituras pequenas seguem com 1 página na 1ª ida. */
+  async function paginas(montar, junto) {
+    var tudo = [], n = junto || 1;
+    for (var de = 0; ; de += PAGINA * n, n = 4) {
+      var rs = await Promise.all(Array.apply(null, Array(n)).map(function (_, k) { return montar().range(de + k * PAGINA, de + (k + 1) * PAGINA - 1); }));
       for (var k = 0; k < rs.length; k++) {
         if (rs[k].error) throw rs[k].error;
         tudo = tudo.concat(rs[k].data || []);
@@ -276,9 +276,10 @@
   function depoisDeLer() { if (!gPerdeu) return; gPerdeu = false; setTimeout(function () { sincronizar(GEST).catch(function () { }); }, 2000); }
   async function lerGestor() {
     var primeira = !pronto[GEST], fontes = Object.keys(GFONTE), m = mem[GEST] || (mem[GEST] = {}), mudou = {};
-    var r0 = await deTodos(sb.from('painel_docs').select('painel,dados').eq('colecao', 'controle').eq('doc_id', 'info'));
-    if (r0.error) throw r0.error;
-    var indice = await paginas(function () { return deTodos(sb.from('painel_docs').select('painel,colecao,doc_id,versao').in('colecao', fontes)).order('painel').order('colecao').order('doc_id'); });
+    /* 22/11/2026 (carregamento): controle/info e o uso dos 7 dias saem junto com o índice (antes, um depois do outro) */
+    var pUso = lerUso();
+    var r0P = deTodos(sb.from('painel_docs').select('painel,dados').eq('colecao', 'controle').eq('doc_id', 'info'));
+    var indice = await paginas(function () { return deTodos(sb.from('painel_docs').select('painel,colecao,doc_id,versao').in('colecao', fontes)).order('painel').order('colecao').order('doc_id'); }, 4);
     var vivos = {}, falta = {}, total = {};
     indice.forEach(function (x) {
       var g = GFONTE[x.colecao]; if (!g || !painelReal(x.painel)) return;
@@ -294,7 +295,7 @@
     await Promise.all(Object.keys(falta).map(async function (g) {
       var col = GMAPA[g], ids = falta[g].filter(function (v, i, a) { return a.indexOf(v) === i; }), linhas;
       var base = function () { return deTodos(sb.from('painel_docs').select('painel,doc_id,dados,versao,criado_em').eq('colecao', col)); };
-      if (ids.length > 60 || falta[g].length * 2 > total[g]) linhas = await paginas(function () { return base().order('painel').order('doc_id'); });
+      if (ids.length > 60 || falta[g].length * 2 > total[g]) linhas = await paginas(function () { return base().order('painel').order('doc_id'); }, Math.min(4, Math.max(1, Math.ceil((total[g] || 0) / PAGINA))));
       else linhas = await paginas(function () { return base().in('doc_id', ids).order('painel').order('doc_id'); });
       var c = m[g];
       linhas.forEach(function (l) {
@@ -303,7 +304,8 @@
         if (!a || a.v < l.versao) { c[id] = { v: l.versao, d: comDono(comChegada(col, l.dados, l.criado_em), l.painel, l.doc_id) }; mudou[g] = 1; }
       });
     }));
-    var lp = listaPaineis(r0.data || [], await lerUso()), cp = m.g_paineis || (m.g_paineis = {});
+    var r0 = await r0P; if (r0.error) throw r0.error;
+    var lp = listaPaineis(r0.data || [], await pUso), cp = m.g_paineis || (m.g_paineis = {});
     var mudouLista = false;
     Object.keys(cp).forEach(function (p) { if (!lp[p]) { delete cp[p]; mudouLista = true; } });
     Object.keys(lp).forEach(function (p) {
