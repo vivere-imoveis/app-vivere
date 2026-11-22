@@ -27,6 +27,16 @@
       m.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); volta(); location.href = m.href; });
       tema.parentNode.insertBefore(m, tema);
     }
+    /* 21/11/2026 (hub-web-diretoria F3): botão do HUB VIVERE na web, só para quem tem a marca acessos.hub (e o gestor) */
+    var P0 = window.VIVERE_PONTE, est0 = P0 && P0.estado ? P0.estado() : {};
+    if (est0.hub && !document.getElementById('btnHubApp')) {
+      var hb = document.createElement('a');
+      hb.id = 'btnHubApp'; hb.className = 'btn-tema btn-acap'; hb.href = 'hub/'; hb.title = 'Abrir o HUB VIVERE (só leitura). Abre outra página do app.'; hb.setAttribute('aria-label', hb.title);
+      hb.innerHTML = (window.VIVERE_ICONES && VIVERE_ICONES.html ? '<span class="ba-ic" aria-hidden="true">' + VIVERE_ICONES.html('casa') + '</span>' : '') + '<span class="ba-t">HUB</span>';
+      hb.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); volta(); location.href = hb.href; });
+      tema.parentNode.insertBefore(hb, tema);
+      if (window.MenuLateral) MenuLateral.atualiza();
+    }
     var sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
     var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
     var h = '<span class="ba-ic" aria-hidden="true">🎯</span><span class="ba-t">A CAPTAR</span>' + (n ? '<span class="ba-n"><b>' + n + '</b> livre' + (n === '1' ? '' : 's') + '</span>' : '');
@@ -40,6 +50,7 @@
       var P = window.VIVERE_PONTE, est = P && P.estado ? P.estado() : {}, sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
       var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
       return [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n }, { id: 'acm', t: 'Estudo de Mercado', ic: 'grafico', href: 'index.html?aba=acm' }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha' },
+        est.hub ? { id: 'hub', t: 'HUB VIVERE', ic: 'casa', href: 'hub/' } : null,
         est.papel === 'gestor' ? { id: 'acessos', t: 'Acessos', ic: 'escudo', href: 'index.html?aba=acessos' } : null];
     },
     abre: function (href) { volta(); location.href = href; }
