@@ -51,6 +51,8 @@ body.nc-on .toast { bottom: calc(76px + env(safe-area-inset-bottom)) !important;
 .nc-grade button { appearance: none; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 10px; padding: 10px 6px 8px; display: grid; justify-items: center; gap: 4px; font: 500 12px/1.25 var(--body, system-ui); text-align: center; position: relative; cursor: pointer; min-height: 62px; }
 .nc-grade button[aria-current="page"] { border-color: var(--brass); }
 .nc-grade .nc-selo { top: 4px; right: 4px; }
+.nc-grade > button:last-child:nth-child(3n+1) { grid-column: span 3; }   /* linha sempre cheia */
+.nc-grade > button:last-child:nth-child(3n+2) { grid-column: span 2; }
 @media (prefers-reduced-motion: no-preference) {
   .nc-gav { animation: nc-sobe 220ms cubic-bezier(.2, .7, .2, 1); }
   @keyframes nc-sobe { from { transform: translateY(24px); opacity: .4; } to { transform: none; opacity: 1; } }

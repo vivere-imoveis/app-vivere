@@ -21,6 +21,7 @@
   function icone(el) { var i = el && el.querySelector('i.ic'); if (i) return i.outerHTML; var s = el && el.querySelector('svg'); return s ? s.outerHTML : SVG.ponto; }
   function selo(el) { var n = el && el.querySelector('.n, .bp-n, .ba-n b'); var t = n ? n.textContent.trim() : ''; return /^\d+$/.test(t) && t !== '0' ? '<span class="nc-selo">' + esc(t) + '</span>' : ''; }
   function rotulo(el) {
+    var t = el.querySelector('.bp-t, .ba-t, .bv-t'); if (t) return t.textContent.replace(/\s+/g, ' ').trim();
     var c = el.cloneNode(true); c.querySelectorAll('svg, .n, .ic, .bp-ic, .ba-ic, .ba-n').forEach(function (x) { x.remove(); });
     return c.textContent.replace(/\s+/g, ' ').trim();
   }
@@ -52,9 +53,9 @@
       var k = b.getAttribute('data-aba');
       return '<button type="button" data-nc="' + esc(k) + '"' + (k === at ? ' aria-current="page"' : '') + '><span class="nc-i">' + icone(b) + '</span><span>' + esc(rotulo(b)) + '</span>' + selo(b) + '</button>';
     }).join('') + '</div>';
-    var at2 = ATALHOS.map(function (id) { return document.getElementById(id); }).filter(Boolean);
+    var at2 = ATALHOS.map(function (id) { return document.getElementById(id); }).filter(function (el) { return el && !(el.id === 'btnAcapApp' && orig('acaptar')); });   // A CAPTAR já está nas abas
     if (at2.length) h += '<h2>Atalhos</h2><div class="nc-grade">' + at2.map(function (el) {
-      var r = el.id === 'btnPrivado' ? (el.getAttribute('aria-pressed') === 'true' ? 'Mostrar valores' : 'Ocultar valores') : el.id === 'btnInicio' ? 'Início do app' : rotulo(el).replace(/^[◐☀☾]\s*/, '');
+      var r = el.id === 'btnPrivado' ? (el.getAttribute('aria-pressed') === 'true' ? 'Mostrar valores' : 'Ocultar valores') : el.id === 'btnInicio' ? 'Início do app' : el.id === 'btnTema' ? 'Tema: ' + rotulo(el).replace(/^[◐☀☾]\s*/, '') : rotulo(el);
       return '<button type="button" data-nc-at="' + el.id + '"><span class="nc-i">' + icone(el) + '</span><span>' + esc(r) + '</span>' + selo(el) + '</button>';
     }).join('') + '</div>';
     g.innerHTML = h;
@@ -74,7 +75,7 @@
   }
 
   function liga() {
-    try { var q = /[?&]nav=([01])\b/.exec(location.search); if (q) localStorage.setItem('vivere.nav', q[1]); if (localStorage.getItem('vivere.nav') !== '1') return; } catch (e) { return; }   // TESTE: só com ?nav=1 até conferir
+    try { var q = /[?&]nav=([01])\b/.exec(location.search); if (q) localStorage.setItem('vivere.nav', q[1]); if (localStorage.getItem('vivere.nav') === '0') return; } catch (e) {}   // ligado para todos; ?nav=0 desliga no aparelho
     abas = document.getElementById('abas');
     var marca = document.querySelector('header.topo .marca');
     if (!abas || !marca) return;
