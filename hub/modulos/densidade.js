@@ -5,13 +5,13 @@
 (() => {
   if (window.Densidade) return;
   const css = `
-.g-num{grid-template-columns:repeat(auto-fit,minmax(132px,1fr))!important;gap:8px!important}
+#conteudo .g-num.g-num{grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px} /* sem !important: o GradesCheias (inline) ainda equilibra as linhas */
 .g-num>.tot{grid-column:auto!important}
 .g-num>*{padding:8px 10px!important;min-height:0!important;display:flex!important;flex-direction:column;justify-content:center;gap:1px}
 .g-num>* .g-n{font-size:22px!important;line-height:1.1!important;margin:1px 0!important}
 .g-num>* .g-r{font-size:10.5px!important;letter-spacing:.06em!important;line-height:1.25!important;margin:0!important}
 .g-num>* .g-s{font-size:11.5px!important;line-height:1.25!important;margin:0!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-@media (max-width:600px){.g-num{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+@media (max-width:600px){#conteudo .g-num.g-num{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
  .g-num>*{padding:7px 8px!important}.g-num>* .g-n{font-size:19px!important}.g-num>* .g-s{font-size:11px!important}}`;
   const st = document.createElement('style'); st.id = 'densidade-css'; st.textContent = css; document.head.appendChild(st);
   const RAIZ = '#conteudo';
