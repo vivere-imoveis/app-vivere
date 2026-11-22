@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -5497,7 +5497,7 @@ window.VIVERE_RD = { prazos: () => abrir('prazos') };
   poe(); document.addEventListener('DOMContentLoaded', poe);
   document.addEventListener('DOMContentLoaded', () => {   // depois do painel-app.js e do pendencias.js, que montam a lista
     const E0 = window.MENU_LATERAL_EXTRAS;
-    window.MENU_LATERAL_EXTRAS = { itens: () => ((E0 && E0.itens ? E0.itens() || [] : [])).concat([{ id: 'prazos', t: 'Prazos da Vivere', ic: 'livro', href: '#prazos' }]),
+    window.MENU_LATERAL_EXTRAS = { itens: () => ((E0 && E0.itens ? E0.itens() || [] : [])).concat([{ id: 'prazos', t: 'Prazos da Vivere', ic: 'livro', href: '#prazos', apos: 'tarefas' }]),
       abre: (h) => (h === '#prazos' ? abrir('prazos') : E0 && E0.abre ? E0.abre(h) : (location.href = h)) };
     if (window.MenuLateral) MenuLateral.atualiza();
   });

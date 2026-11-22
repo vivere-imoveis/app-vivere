@@ -66,7 +66,7 @@
       gs.map((b) => { const sel = b.getAttribute('aria-selected') === 'true', t = txt(b);
         return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>` +
           (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}">${icone(s.dataset.aba, txt(s)).replace(' fim', '')}<span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : '') + exIn.filter((x) => x.apos === b.dataset.aba).map((x) => btnEx(x, true)).join(''); }).join('') +
-      (exFora.length ? `<div class="ml-sep">No app</div>` + exFora.map((x) => btnEx(x, false)).join('') : '');
+      exFora.map((x) => btnEx(x, false)).join('');   // 22/11/2026 (pedido do Cleiton): sem o título "No app"; esses ficam por último
     mede();
   }
   /* 14/11/2026 (pedido do Cleiton): a lateral tem a largura do maior título, sem sobra em branco; o conteúdo acompanha. */
