@@ -1,5 +1,5 @@
 /* Entrada suave do app (21/11/2026, tarefa vis-app-carregamento-transicoes F2).
-   Só vale com html.ent-on (ligado por entrada.js; ?entrada=1 liga e ?entrada=0 desliga enquanto não for o padrão).
+   Só vale com html.ent-on (ligado por entrada.js; padrão desde 22/11/2026, ?entrada=0 desliga no aparelho).
    Uma coreografia só: esqueleto enquanto carrega; ao abrir e ao trocar de aba, os blocos entram de cima para baixo
    e da esquerda para a direita; os números dos cartões contam até o valor. Atualização na mesma aba não anima. */
 

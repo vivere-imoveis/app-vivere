@@ -1,0 +1,84 @@
+/* Navegação compacta do painel (22/11/2026, pedido do Cleiton: "menus demais em cima no celular; textos mais compactos
+   no celular, tablet e computador"). Par do nav-celular.js.
+   Celular (até 700 px, body.nc-on): cabeçalho de uma linha (selo, nome, busca, ☰), barra fixa embaixo (Início, Leads,
+   Tarefas, Ofertas, Mais) e a gaveta "Mais" com as outras abas e os atalhos. O menu original continua lá (escondido):
+   a barra e a gaveta só espelham os botões dele, então nada muda na navegação por dentro.
+   Tablet (701 a 1099 px): atalhos só com ícone e textos menores. Computador: atalhos e cartões mais enxutos. */
+
+/* ---------- celular ---------- */
+body.nc-on header.topo { position: sticky; top: 0; z-index: 40; }
+body.nc-on header.topo .wrap { padding-block: 8px !important; }
+body.nc-on .volta-inicio,
+body.nc-on header.topo nav.abas,
+body.nc-on #btnTema, body.nc-on #btnPrivado, body.nc-on #ml-troca,
+body.nc-on #btnAcapApp, body.nc-on #btnAcmApp, body.nc-on #btnHubApp, body.nc-on #btnPendApp, body.nc-on #btnVistApp,
+body.nc-on .topo-mini { display: none !important; }
+body.nc-on .marca { flex-wrap: nowrap !important; align-items: center !important; gap: 10px !important; row-gap: 0 !important; }
+body.nc-on .marca .selo { width: 30px !important; height: 30px !important; flex: 0 0 30px; }
+body.nc-on .marca .bloco { flex: 1 1 auto; min-width: 0; }
+body.nc-on .marca .bloco h1 { font-size: 10px !important; letter-spacing: .12em; margin: 0 !important; line-height: 1.2; }
+body.nc-on .marca .bloco .nome { font-size: 15px !important; margin: 0 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nc-ic { display: none; }
+body.nc-on .nc-ic { display: inline-grid; place-items: center; width: 38px; height: 38px; flex: 0 0 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); position: relative; padding: 0; cursor: pointer; }
+body.nc-on .nc-ic svg { width: 18px; height: 18px; }
+body.nc-on .nc-ic[aria-expanded="true"] { border-color: var(--brass); }
+.nc-selo { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--bad); color: #fff; font: 700 10px/18px system-ui, sans-serif; text-align: center; }
+
+/* busca: escondida até tocar na lupa */
+body.nc-on #barraQ { display: none; }
+body.nc-on.nc-busca #barraQ { display: block; margin-top: 8px; }
+body.nc-on #barraQ details { display: none; }
+
+/* barra de baixo */
+.nc-barra { display: none; }
+body.nc-on .nc-barra { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; background: var(--panel); border-top: 1px solid var(--line); padding: 4px 2px calc(6px + env(safe-area-inset-bottom)); }
+.nc-barra button { appearance: none; border: 0; background: none; color: var(--muted); display: grid; justify-items: center; gap: 1px; padding: 6px 2px 2px; font: 500 11px var(--body, system-ui); position: relative; cursor: pointer; min-width: 0; }
+.nc-barra button svg, .nc-barra button .ic svg { width: 21px; height: 21px; }
+.nc-barra button .ic { display: grid; place-items: center; height: 24px; }
+.nc-barra button[aria-current="page"] { color: var(--ink); }
+.nc-barra button[aria-current="page"] .ic { color: var(--brass); }
+.nc-barra .nc-selo { top: 0; right: auto; left: calc(50% + 6px); }
+body.nc-on { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
+body.nc-on .toast { bottom: calc(76px + env(safe-area-inset-bottom)) !important; }
+
+/* gaveta "Mais" */
+.nc-veu { position: fixed; inset: 0; background: rgba(0, 0, 0, .38); z-index: 60; }
+.nc-gav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 61; max-height: 82vh; overflow: auto; background: var(--panel); border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; padding: 8px 14px calc(16px + env(safe-area-inset-bottom)); box-shadow: 0 -12px 32px rgba(0, 0, 0, .22); }
+.nc-gav .puxa { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 2px auto 8px; }
+.nc-gav h2 { font: 600 12px var(--body, system-ui); letter-spacing: .02em; color: var(--muted); margin: 10px 2px 6px; text-transform: none; }
+.nc-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.nc-grade button { appearance: none; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 10px; padding: 10px 6px 8px; display: grid; justify-items: center; gap: 4px; font: 500 12px/1.25 var(--body, system-ui); text-align: center; position: relative; cursor: pointer; min-height: 62px; }
+.nc-grade button svg { width: 19px; height: 19px; }
+.nc-grade button[aria-current="page"] { border-color: var(--brass); }
+.nc-grade .nc-selo { top: 4px; right: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  .nc-gav { animation: nc-sobe 220ms cubic-bezier(.2, .7, .2, 1); }
+  @keyframes nc-sobe { from { transform: translateY(24px); opacity: .4; } to { transform: none; opacity: 1; } }
+}
+
+/* textos mais compactos no celular */
+body.nc-on .cartao .r { font-size: 10px !important; letter-spacing: .06em; }
+body.nc-on .cartao .v { font-size: 22px !important; }
+body.nc-on .cartao .s { font-size: 11px !important; line-height: 1.3; }
+body.nc-on #conteudo .sec > div:first-child p { margin: 0 !important; }
+body.nc-on #conteudo .sec > div:first-child p + p { font-size: 20px !important; }
+body.nc-on #conteudo .linha > .b { padding: 6px 10px; font-size: 13px; }
+body.nc-on .painel h2 { font-size: 13px !important; }
+body.nc-on .aviso { padding-block: 7px !important; }
+
+/* ---------- tablet (701 a 1099 px) ---------- */
+@media (min-width: 701px) and (max-width: 1099px) {
+  #btnAcapApp .ba-n, #btnAcmApp .ba-t, #btnHubApp .ba-t, #btnVistApp .bv-t { display: none !important; }
+  header.topo .btn-tema { padding: 6px 9px !important; font-size: 12px !important; }
+  header.topo nav.abas button { font-size: 12.5px !important; padding: 6px 9px !important; }
+  .cartao .r { font-size: 10px !important; }
+  .cartao .s { font-size: 11.5px !important; }
+  #barraQ details summary { font-size: 12px; }
+}
+
+/* ---------- computador ---------- */
+@media (min-width: 1100px) {
+  header.topo .btn-tema { padding: 6px 11px !important; font-size: 12.5px !important; }
+  .cartao .s { font-size: 12px; }
+  #barraQ details summary { font-size: 12px; }
+}

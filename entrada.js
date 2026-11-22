@@ -1,5 +1,5 @@
 /* Entrada suave do app (21/11/2026, tarefa vis-app-carregamento-transicoes F2). Par do entrada.css.
-   Enquanto não for o padrão: ?entrada=1 liga neste aparelho (fica guardado) e ?entrada=0 desliga.
+   Ligada para todos desde 22/11/2026; ?entrada=0 desliga no aparelho (fica guardado) e ?entrada=1 religa.
    - Esqueleto: o "Carregando…" do #conteudo vira cartões vazios com um fio de latão passando.
    - Cascata: na 1ª tela com dados, ao trocar de aba e ao trocar o "Ver como", os blocos visíveis entram em ordem de leitura
      (de cima para baixo, da esquerda para a direita), no máximo 24, 38 ms um do outro. Atualização na mesma tela não anima.
@@ -10,8 +10,8 @@
   var CHAVE = 'vivere.entrada';
   try {
     var q = /[?&]entrada=([01])\b/.exec(location.search);
-    if (q) { if (q[1] === '1') localStorage.setItem(CHAVE, '1'); else localStorage.removeItem(CHAVE); }
-    if (localStorage.getItem(CHAVE) !== '1') return;
+    if (q) { if (q[1] === '0') localStorage.setItem(CHAVE, '0'); else localStorage.removeItem(CHAVE); }
+    if (localStorage.getItem(CHAVE) === '0') return;   // padrão ligado desde 22/11/2026 (OK do Cleiton); ?entrada=0 desliga no aparelho
   } catch (e) { return; }
   var calmo = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   document.documentElement.classList.add('ent-on');
