@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -3055,6 +3055,11 @@ function vImoveis() {
   const M0 = todos.filter((m) => (!fm.fin || m.fin === fm.fin) && (!fm.sit || (fm.sit === 'ativo') === !!m.ativo) && (!fm.fx || fxAgenc(m) === fm.fx))
     .sort((a, b) => { const x = a[st.c], y = b[st.c]; if (x == null || x === '') return 1; if (y == null || y === '') return -1; return (typeof x === 'number' || typeof x === 'boolean' ? (x - y) : String(x).localeCompare(String(y), 'pt-BR', { numeric: true })) * st.d; });
   const fM = BA.filtra(M0, qDe(), baImv), M = fM.lista; qInfo(fM, 'imóveis');
+  // trocas-paginacao-meus (22/11/2026): 50 ou 100 por página; filtro, ordem ou busca novos voltam à 1ª página
+  const ppM = pagTamApp(), sigM = JSON.stringify([fm, st, qDe()]); S.pagGen = S.pagGen || {}; if (S.pagSigM !== sigM) { S.pagSigM = sigM; S.pagGen.meus_imv = 0; }
+  const nPgM = Math.max(1, Math.ceil(M.length / ppM)), pgM = Math.min(S.pagGen.meus_imv || 0, nPgM - 1); S.pagGen.meus_imv = pgM;
+  const iniM = pgM * ppM, MV = M.length > 50 ? M.slice(iniM, iniM + ppM) : M;
+  const navM = (baixo) => M.length > 50 ? `<div class="pag pag-meus${baixo ? ' baixo' : ''}"><span class="mut peq">${iniM + 1}–${Math.min(iniM + ppM, M.length)} de ${M.length} · página ${pgM + 1} de ${nPgM}</span><button class="b" type="button" data-pag="meus_imv|-1" ${pgM === 0 ? 'disabled' : ''} aria-label="Página anterior">‹</button><button class="b" type="button" data-pag="meus_imv|1" ${pgM >= nPgM - 1 ? 'disabled' : ''} aria-label="Próxima página">›</button><span class="pp-app" role="group" aria-label="Itens por página"><span class="mut peq">Por página</span>${[50, 100].map((n) => `<button class="b" type="button" data-pagtam="${n}" aria-pressed="${ppM === n}">${n}</button>`).join('')}</span></div>` : '';
   const pendDe = (id) => Object.entries(S.sol).filter(([sid, s]) => s.imovel_id === id && statusDe(sid, s) === 'pendente').length;
   const fins = [...new Set(todos.map((m) => m.fin).filter(Boolean))];
   let h = `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>Meus imóveis agenciados</h2><button class="b p" type="button" id="novoImovel">+ Cadastrar imóvel</button></div>
@@ -3064,7 +3069,8 @@ function vImoveis() {
   <p class="mut peq" style="margin:0">${M.length} de ${todos.length} imóveis</p>`;
   if (!todos.length) h += '<div class="painel vazio">Nenhum imóvel agenciado por você no site ainda.</div>';
   else if (!M.length) h += '<div class="painel vazio">Nenhum imóvel com essa busca.</div>';
-  for (const m of M) {
+  h += navM(false);
+  for (const m of MV) {
     const pr = m.proprietario || {}, pd = pendDe(m.id);
     h += `<article class="painel imv">
       <div class="com-capa abre-meu" data-abre="meu:${esc(m.id)}" title="Abrir a ficha completa">${capaHtml(m.id, m)}<div class="txt"><div class="cab"><button class="ref ref-abre" type="button" data-abre="meu:${esc(m.id)}" style="font-size:18px" aria-label="Abrir a ficha de ${esc(m.ref)}">${esc(m.ref)}</button><span>${esc(m.tipo || '')} · ${esc(m.fin || '')}</span><span class="pill ${m.ativo ? 'ok' : ''}">${m.ativo ? 'Ativo no site' : 'Inativo'}</span>${hitBA(m)}${pd ? `<span class="pill media">${pd} pedido${pd > 1 ? 's' : ''} aguardando</span>` : ''}${m.ativo ? seloAgenc(m.id) : ''}${seloDivulg(m)}</div>
@@ -3076,7 +3082,7 @@ function vImoveis() {
       <div class="linha acoes-imv"><button class="b p" type="button" data-alterar="${esc(m.id)}"><span class="so-pc">Solicitar alteração</span><span class="so-cel">Alterar</span></button><button class="b" type="button" data-fotosimv="${esc(m.id)}"><span class="so-pc">Adicionar fotos</span><span class="so-cel">+ Fotos</span></button><button class="b" type="button" data-agenc="${esc(m.id)}"><span class="so-pc">Atualizar agenciamento</span><span class="so-cel">Atualizar agenc.</span></button>${btnsMapa(m.id, m)}${m.link ? `<a class="b" href="${escUrl(m.link)}" target="_blank" rel="noopener">Ver no site</a>` : ''}<span class="mut peq data-imv">Cadastrado ${dt(m.cad).slice(0, 10)} · atualizado ${dt(m.atu).slice(0, 10)}</span></div>
     </article>`;
   }
-  return h + '</section>';
+  return h + navM(true) + '</section>';
 }
 const CAMPOS_ALT = [['valor', 'Valor (R$)', 'number'], ['cond', 'Condomínio (R$)', 'number'], ['iptu', 'IPTU (R$)', 'number'], ['area', 'Área privativa (m²)', 'number'], ['area_total', 'Área total (m²)', 'number'], ['dorm', 'Dormitórios', 'number'], ['suites', 'Suítes', 'number'], ['banh', 'Banheiros', 'number'], ['vagas', 'Vagas', 'number'], ['situacao', 'Situação no site', 'sel'], ['descricao', 'Descrição do anúncio', 'texto']];
 const VLR_ALT = new Set(['valor', 'cond', 'iptu']);
@@ -4702,7 +4708,7 @@ document.addEventListener('click', async (ev) => {
   if (d.ordm) { const st = S.sort.meus; S.sort.meus = { c: d.ordm, d: st.c === d.ordm ? -st.d : (['_end', 'bairro', 'ref'].includes(d.ordm) ? 1 : -1) }; return render(); }
   if (d.fm !== undefined) { const [k, v] = d.fm.split('|'); S.fm[k] = S.fm[k] === v ? '' : v; return render(); }
   if (d.pagtam) { try { localStorage.setItem('painel.pagTam', d.pagtam); } catch (e) {} S.pagVit = 0; S.pagM2 = {}; S.pagGen = {}; S.opPg = 0; return render(); }
-  if (d.pag) { const [k, s] = d.pag.split('|'); if (/^m2[VA]/.test(k)) { S.pagM2 = S.pagM2 || {}; S.pagM2[k] = Math.max(0, (S.pagM2[k] || 0) + Number(s)); return render(); } if (k === 'vit') { S.pagVit = Math.max(0, S.pagVit + Number(s)); render(); document.querySelector('.tabela')?.scrollIntoView({ block: 'start' }); } else { S.pagGen = S.pagGen || {}; S.pagGen[k] = Math.max(0, (S.pagGen[k] || 0) + Number(s)); render(); } return; }
+  if (d.pag) { const [k, s] = d.pag.split('|'); if (/^m2[VA]/.test(k)) { S.pagM2 = S.pagM2 || {}; S.pagM2[k] = Math.max(0, (S.pagM2[k] || 0) + Number(s)); return render(); } if (k === 'vit') { S.pagVit = Math.max(0, S.pagVit + Number(s)); render(); document.querySelector('.tabela')?.scrollIntoView({ block: 'start' }); } else { S.pagGen = S.pagGen || {}; S.pagGen[k] = Math.max(0, (S.pagGen[k] || 0) + Number(s)); render(); if (k === 'meus_imv') document.querySelector('.pag-meus')?.scrollIntoView({ block: 'start' }); } return; }
   if (d.int !== undefined) { S.filtroInt = S.filtroInt === d.int ? '' : d.int; return render(); }
   if (d.funil) { S.funil = d.funil; S.filtroInt = ''; S.filtroEtapa = 'abertos'; try { localStorage.setItem('painel.funil', d.funil); } catch (e) {} return render(); }
   if (d.negnovo) return abrirNegocioLigado(d.negnovo);
