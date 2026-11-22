@@ -1,0 +1,41 @@
+/* Entrada suave do app (21/11/2026, tarefa vis-app-carregamento-transicoes F2).
+   Só vale com html.ent-on (ligado por entrada.js; ?entrada=1 liga e ?entrada=0 desliga enquanto não for o padrão).
+   Uma coreografia só: esqueleto enquanto carrega; ao abrir e ao trocar de aba, os blocos entram de cima para baixo
+   e da esquerda para a direita; os números dos cartões contam até o valor. Atualização na mesma aba não anima. */
+
+/* esqueleto no lugar do "Carregando…" */
+html.ent-on .vazio.ent-esq { padding: 4px 0 0; color: transparent; text-align: left; display: grid; gap: 12px; min-height: 60vh; }
+html.ent-on .ent-esq > span { display: block; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); position: relative; overflow: hidden; }
+html.ent-on .ent-esq .e-tit { height: 46px; width: min(340px, 70%); border: 0; background: transparent; }
+html.ent-on .ent-esq .e-tit::before, html.ent-on .ent-esq .e-tit::after { content: ""; position: absolute; left: 0; border-radius: 6px; background: var(--soft); }
+html.ent-on .ent-esq .e-tit::before { top: 0; height: 12px; width: 45%; }
+html.ent-on .ent-esq .e-tit::after { top: 20px; height: 22px; width: 100%; }
+html.ent-on .ent-esq .e-cards { border: 0; background: transparent; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; overflow: visible; }
+html.ent-on .ent-esq .e-cards i { display: block; height: 86px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); position: relative; overflow: hidden; }
+html.ent-on .ent-esq .e-bloco { height: 180px; }
+html.ent-on .ent-esq .e-bloco.b2 { height: 120px; }
+/* o fio de latão que passa: o único enfeite, e só enquanto carrega */
+html.ent-on .ent-esq .e-cards i::after, html.ent-on .ent-esq .e-bloco::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0, color-mix(in srgb, var(--brass) 16%, transparent) 50%, transparent 100%);
+  animation: ent-fio 1.6s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+html.ent-on .ent-esq .e-cards i:nth-child(2)::after { animation-delay: .08s; }
+html.ent-on .ent-esq .e-cards i:nth-child(3)::after { animation-delay: .16s; }
+html.ent-on .ent-esq .e-cards i:nth-child(4)::after { animation-delay: .24s; }
+html.ent-on .ent-esq .e-bloco::after { animation-delay: .32s; }
+html.ent-on .ent-esq .e-bloco.b2::after { animation-delay: .4s; }
+@keyframes ent-fio { to { transform: translateX(100%); } }
+@media (max-width: 700px) {
+  html.ent-on .ent-esq .e-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  html.ent-on .ent-esq .e-cards i { height: 64px; }
+}
+
+/* cascata: cada bloco entra com fade e sobe 8 px; o atraso vem do entrada.js (--ent-i) */
+html.ent-on .ent-vem { animation: ent-sobe 300ms cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--ent-i, 0) * var(--ent-passo, 38ms)); }
+@keyframes ent-sobe { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html.ent-on .ent-vem { animation: none; }
+  html.ent-on .ent-esq .e-cards i::after, html.ent-on .ent-esq .e-bloco::after { animation: none; display: none; }
+}
