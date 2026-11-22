@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -900,14 +900,18 @@ function avisosDe(id, l) {
 const todosAvisos = () => Object.entries(S.leads).flatMap(([id, l]) => avisosDe(id, l)).concat(avisosAgenc()).sort((a, b) => ({ alta: 0, media: 1, baixa: 2 }[a.p] - { alta: 0, media: 1, baixa: 2 }[b.p]));
 // ---------- Oportunidades (26/10/2026): motor comum com o HUB ----------
 let OPC = { v: null, c: null, m: null, ctx: null };
+const OPC_W = new WeakMap();   // trocas-carregamento-f1c: um contexto por recorte de imóveis (Todos e cada corretor)
 function ctxOp() {
   if (OPC.v === S.vitrine && OPC.c === S.catalogo && OPC.m === S.meus && OPC.ctx) return OPC.ctx;
+  const ow = S.meus && typeof S.meus === 'object' ? OPC_W.get(S.meus) : null;
+  if (ow && ow.v === S.vitrine && ow.c === S.catalogo) { OPC = ow; return OPC.ctx; }
   const cat = S.catalogo || {}, fora = [], emps = [];
   Object.entries(cat).forEach(([k, d]) => { if (k.startsWith('fora')) fora.push(...(d.itens || [])); if (k.startsWith('emp')) emps.push(...(d.itens || [])); });
   Object.entries(S.meus).forEach(([id, m]) => { if (!m.ativo) fora.push({ ...m, id }); });
   const cx = OP.contexto(S.vitrine, fora, emps);
   cx.itens = cx.itens.filter((x) => x.origem === 'site');   // Nicolas (26/10/2026): só anúncios ativos no site; porId segue completo para o histórico
   OPC = { v: S.vitrine, c: S.catalogo, m: S.meus, ctx: cx };
+  if (S.meus && typeof S.meus === 'object') OPC_W.set(S.meus, OPC);
   return OPC.ctx;
 }
 const leadN = (id, l) => ({ id, nome: l.nome, telefone: l.telefone, campanha: l.campanha, imovel_interesse: l.imovel_interesse, perfil: l.perfil, perfil_sugerido: l.perfil_sugerido, historico: histDe(l), etapa: l.etapa || 'Novo', oport: l.oport || {}, captacao: l.captacao || null });
@@ -924,9 +928,11 @@ function opsDoLead(lead) {
 }
 // trocas-usabilidade-f3 (Lucas #9): o cruzamento de cada lead com a vitrine fica guardado e só se refaz quando o lead
 // (pelo conteúdo que o cruzamento usa, leadN), o contexto das ofertas (ctxOp) ou o dos captados (ctxCapt) mudam.
-const OPS_MEMO = new Map();
+const OPS_MEMO_W = new WeakMap();   // trocas-carregamento-f1c: uma memória por contexto (Todos e cada corretor não se apagam mais)
 function opsCache(id, l) {
-  const n = leadN(id, l), sig = JSON.stringify(n), cx = ctxOp(), cc = S.prontos.has('capt') ? ctxCapt() : null, m = OPS_MEMO.get(id);
+  const n = leadN(id, l), sig = JSON.stringify(n), cx = ctxOp(), cc = S.prontos.has('capt') ? ctxCapt() : null;
+  let OPS_MEMO = OPS_MEMO_W.get(cx); if (!OPS_MEMO) OPS_MEMO_W.set(cx, OPS_MEMO = new Map());
+  const m = OPS_MEMO.get(id);
   if (m && m.sig === sig && m.cx === cx && m.cc === cc) return m.r;
   const r = opsDoLead(n); OPS_MEMO.set(id, { sig, cx, cc, r }); return r;
 }
@@ -1039,12 +1045,16 @@ async function abrirNegocioLigado(id) {
 }
 (function () { const st = document.createElement('style'); st.textContent = '.pill.int-tem{background:var(--ok-bg);color:var(--ok-selo);white-space:nowrap}.pill.int-procura{background:var(--soft);color:var(--ink);white-space:nowrap}.pill.int-def{background:transparent;border:1px dashed var(--line);color:var(--muted);white-space:nowrap}.int-chips{margin:0 0 10px}'; document.head.appendChild(st); })();
 let CAPTC = { d: null, ctx: null };
+const CAPTC_W = new WeakMap();   // trocas-carregamento-f1c
 function ctxCapt() {
   if (CAPTC.ctx && CAPTC.d === S.capt) return CAPTC.ctx;
+  const cw = S.capt && typeof S.capt === 'object' ? CAPTC_W.get(S.capt) : null;
+  if (cw) { CAPTC = cw; return CAPTC.ctx; }
   const L = Object.entries(S.capt || {}).filter(([, c]) => c && c.ativo !== false && c.bairro).map(([id, c]) => ({ id: 'C:' + (c.lead || id), lead: c.lead || id, ref: 'A captar', origem: 'captado',
     fin: c.fin || '', tipo: c.tipo || '', bairro: c.bairro, valor: +c.valor || null, dorm: c.dorm != null && c.dorm !== '' ? +c.dorm : null, area: +c.area || null, papel: c.papel || '',
     lead_painel: c.lead_painel || '', estrelas: Math.max(0, Math.min(5, +c.estrelas || 0)), int_n: +c.interessados_n || 0, situacao: c.situacao || 'livre', coletado_em: c.coletado_em || '', end: endCapt(c), foto_id: /^[0-9a-f]{32}$/.test(String(c.foto_id || '')) ? String(c.foto_id) : '' }));
   CAPTC = { d: S.capt, ctx: { itens: L, porId: new Map(L.map((x) => [x.id, x])), empPorId: new Map(), empDaCampanha: () => null } };
+  if (S.capt && typeof S.capt === 'object') CAPTC_W.set(S.capt, CAPTC);
   return CAPTC.ctx;
 }
 // só perfil com bairro: sem bairro, o cruzamento casaria com todos os captados. Captado sem tipo fica de fora, e comercial ou rural
@@ -1951,13 +1961,17 @@ const gPaineis = () => Object.entries(S.G.paineis || {}).map(([slug, p]) => ({ .
   .sort((a, b) => (a.ordem ?? 99) - (b.ordem ?? 99) || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
 const gNome = (slug) => { const p = (S.G.paineis || {})[slug]; return p ? (p.nome || slug) : slug; };
 const gCurto = (slug) => { const p = (S.G.paineis || {})[slug]; return (p && p.curto) || String(gNome(slug)).split(' ')[0]; };
+const GF_MEMO = new Map();   // trocas-carregamento-f1c: mesmo recorte enquanto S.G[alvo] não muda
 function gFiltra(alvo, v) {
+  const fonte = S.G[alvo], gk = alvo + '|' + v, gm = GF_MEMO.get(gk);
+  if (gm && gm.f === fonte) return gm.o;
   const o = {};
   Object.entries(S.G[alvo] || {}).forEach(([id, d]) => {
     if (!d || (v !== 'todos' && d._dono !== v)) return;
     let k = d._id || id; if (o[k]) k = d._dono + '__' + k;   // no "Todos", id repetido entre painéis ganha o dono na frente
     o[k] = d;
   });
+  GF_MEMO.set(gk, { f: fonte, o });
   return o;
 }
 function aplicarVer() {
