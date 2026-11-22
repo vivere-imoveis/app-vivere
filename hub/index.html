@@ -423,7 +423,7 @@ html[data-privado="1"] .btn-privado .olho-fechado{display:block}
 <script src="nucleo/nucleo-1.js?v=6bdf5597" charset="utf-8"></script>
 <!-- reordena-abas:fim -->
 <script src="nucleo/nucleo-2.js?v=9b652a30" charset="utf-8"></script>
-<script src="nucleo/nucleo-3.js?v=c2454fd8" charset="utf-8"></script>
+<script src="nucleo/nucleo-3.js?v=3a80c8f0" charset="utf-8"></script>
 
 <script src="nucleo/nucleo-4.js?v=34912011" charset="utf-8"></script>
 
@@ -662,6 +662,8 @@ body.ml-on.ml-min #ml .ml-topo{justify-content:center}
 nav.abas>button,nav.sub>button,.abas>button,.menu-cheio>button,.menu-cheio>a.btn{flex:0 0 auto!important}
 nav.abas,nav.sub,.abas,.filtros,.chips,.ordenar-movel{column-gap:4px!important;row-gap:4px!important}
 .quebra-menu{display:none!important}
+/* transicao-suave (22/11/2026): entrada curta do conteúdo ao trocar de aba */
+@media (prefers-reduced-motion:no-preference){#conteudo.vista-nova{animation:pc-entra .16s ease-out}@keyframes pc-entra{from{opacity:.35;transform:translateY(4px)}}}
 </style>
 <script id="icones-vivere" src="nucleo/nucleo-6.js?v=19bd0efa" charset="utf-8"></script>
 <script src="nucleo/nucleo-7.js?v=b72a2264" charset="utf-8"></script>

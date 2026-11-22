@@ -1834,10 +1834,16 @@ function render(){ agendado=false;
   const chaveDet=(d,n)=>{ const s=d.querySelector(':scope>summary'); return (d.id||'')+'|'+(s?s.textContent.trim().slice(0,80):'')+'|'+n; };
   const detAntes=new Map(); if(cont){ const vis={}; cont.querySelectorAll('details').forEach(d=>{ const b=chaveDet(d,0); vis[b]=(vis[b]||0)+1; detAntes.set(chaveDet(d,vis[b]),d.open); }); }
   pintaColetas(); pintaPaineis(); pintaKpis(); pintaAbas(); pintaTema(); pintaBarraAba(); if(BQ.q){ BQ.res=buscaHUB(BQ.q); if(BQ.sel>=BQ.res.length) BQ.sel=0; pintaBusca(); }
-  document.getElementById('conteudo').innerHTML=`<section class="painel" role="tabpanel" aria-label="${esc(rotAba(aba)||'')}">${subOp()}${PAIN[aba]()}</section>`;
+  { /* transicao-suave (22/11/2026, pedido do Cleiton): dado igual vindo do banco não redesenha; mesma aba mantém a posição; troca de aba entra suave e volta ao começo */
+    const html=`<section class="painel" role="tabpanel" aria-label="${esc(rotAba(aba)||'')}">${subOp()}${PAIN[aba]()}</section>`, c=document.getElementById('conteudo'), mesma=c._vista===aba;
+    if(!(mesma&&c._hc===html&&performance.now()-(window.__hubAcao||0)>1500)){ const y=scrollY; c.innerHTML=html; c._hc=html;
+      if(mesma){ if(Math.abs(scrollY-y)>1) scrollTo(0,y); }
+      else if(c._vista!==undefined){ const t=c.getBoundingClientRect().top+scrollY-90; if(scrollY>t) scrollTo(0,Math.max(0,t)); if(!matchMedia('(prefers-reduced-motion: reduce)').matches){ c.classList.remove('vista-nova'); void c.offsetWidth; c.classList.add('vista-nova'); } }
+      c._vista=aba; } }
   if(detAntes.size&&cont){ const vis={}; cont.querySelectorAll('details').forEach(d=>{ const b=chaveDet(d,0); vis[b]=(vis[b]||0)+1; const k=chaveDet(d,vis[b]); if(detAntes.has(k)&&d.open!==detAntes.get(k)) d.open=detAntes.get(k); }); }
   if(fid){ const el=document.getElementById(fid); if(el){ el.focus(); if(sel&&el.setSelectionRange) try{ el.setSelectionRange(sel[0],sel[1]); }catch(_){} } } }
 function pede(){ if(!agendado){agendado=true; requestAnimationFrame(render);} }
+['click','submit','change','keydown'].forEach(t=>document.addEventListener(t,()=>{ window.__hubAcao=performance.now(); },true));   // transicao-suave: redesenho logo após ação da pessoa segue como sempre
 
 // barra de rolagem lateral também em cima de toda tabela mais larga que a tela (padrão do HUB)
 function barrasTopo(){
