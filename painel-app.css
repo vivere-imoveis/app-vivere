@@ -244,3 +244,25 @@ thead th{font:500 11px var(--display);letter-spacing:.14em;text-transform:upperc
   body.ml-on{transition:padding-left .24s cubic-bezier(.2,.7,.2,1)}
   #ml .ml-g,#ml .ml-s,#ml .ml-x{transition:background-color .15s ease,border-color .15s ease}
 }
+/* Meus imóveis no computador: 2 cartões por linha (densidade, 22/11/2026). O cartão de ponta a ponta deixava ~40% da linha
+   vazia à direita; o último, se sobrar sozinho, ocupa a linha inteira (sem buraco no fim). Celular e tablet: como antes. */
+@media (min-width:1100px){
+  .sec:has(> article.imv){grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
+  .sec:has(> article.imv) > :not(article.imv){grid-column:1/-1}
+  .sec > article.imv{margin:0;align-content:space-between}
+  .sec > article.imv:last-of-type:nth-of-type(odd){grid-column:1/-1}
+  .sec > article.imv .acoes-imv{gap:6px}
+  .sec > article.imv .acoes-imv .so-pc{display:none}
+  .sec > article.imv .acoes-imv .so-cel{display:inline}
+  .sec > article.imv .acoes-imv .b{padding:6px 11px;font-size:13px}
+}
+/* Ofertas: o resumo (leads, na pauta, a captar, por origem) numa linha só quando cabe (densidade, 22/11/2026) */
+#conteudo .opl-res{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 18px;padding:8px 12px}
+/* sub-abas de Imóveis no celular: botões menores e sem ícone, para caber em menos linhas (densidade, 22/11/2026) */
+@media (max-width:560px){
+  #conteudo .chips.sub-op{gap:4px 4px!important}
+  #conteudo .chips.sub-op button{min-height:30px!important;padding:4px 9px!important;font-size:12.5px!important;gap:0!important}
+  #conteudo .chips.sub-op button .ic{display:none!important}
+}
+/* Ofertas: legenda mais compacta no celular (densidade, 22/11/2026) */
+@media (max-width:560px){#conteudo .op-leg{font-size:12px;line-height:1.4;padding:8px 10px;gap:4px}}
