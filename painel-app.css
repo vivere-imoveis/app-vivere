@@ -279,3 +279,11 @@ thead th{font:500 11px var(--display);letter-spacing:.14em;text-transform:upperc
 /* "Ver como" no tablet e no celular: o seletor e o "Ao vivo · só leitura" na mesma linha quando cabem (densidade, 22/11/2026) */
 body .g-barra .g-sel.g-sel{flex:1 1 220px!important;width:auto!important;min-width:0;padding:5px 8px!important;font-size:15px!important}
 body .g-barra>span:last-child{white-space:nowrap}
+/* Meus leads no celular: previsão do mês mais compacta (densidade, 22/11/2026) */
+@media (max-width:560px){
+  #conteudo .prev-mes{padding:10px 12px}
+  #conteudo .prev-mes summary{font-size:13px;line-height:1.35}
+  #conteudo .prev-mes .cartoes{gap:6px}
+  #conteudo .prev-mes .cartao{padding:7px 9px}
+  #conteudo .prev-mes .cartao .v{font-size:19px}
+}
