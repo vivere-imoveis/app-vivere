@@ -358,3 +358,11 @@ html.com-aba-app .abas button[aria-selected="true"]{color:var(--muted)!important
 #aba-app [data-pend="fechar"],#aba-app [data-vfechar]{display:none!important}
 #aba-app #vistSobre .sobre{position:static;inset:auto;z-index:auto;background:none;display:block}
 #aba-app #vistSobre .gaveta{width:100%;max-width:none;height:auto;overflow:visible;padding:0 0 40px;animation:none;background:none}
+/* Meus leads no tablet (561 a 1023 px): barra do gestor (7 botões) numa linha só, com os rótulos curtos do celular ("Base",
+   "Conversa") e botões mais justos (22/11/2026; antes, 2 linhas) */
+@media (min-width:561px) and (max-width:1023px){
+  #conteudo .linha:has(> [data-arqver]){gap:6px!important}
+  #conteudo .linha:has(> [data-arqver]) > .b{padding:5px 10px!important;font-size:13px!important;gap:4px!important}
+  #conteudo .linha:has(> [data-arqver]) .so-pc{display:none}
+  #conteudo .linha:has(> [data-arqver]) .so-cel{display:inline}
+}
