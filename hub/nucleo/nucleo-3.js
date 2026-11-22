@@ -1987,14 +1987,14 @@ document.addEventListener('keydown',e=>{ if(e.target.id==='ba-q'&&e.key==='Escap
       st.textContent+='\n'+corpo.split('\n').filter(l=>/table\.car-cards/.test(l)).map(l=>l.replace(/\.tabela:has\(>table\.car-cards\)/g,'.tabela.ta-cartao').replace(/(^|[\s,])table\.car-cards/g,'$1.tabela.ta-cartao>table.car-cards')).join('\n')+'\n.tabela.ta-cartao>table.car-cards>tbody{display:flex!important;flex-direction:column;gap:8px}'+'\nhtml .tabela.ta-cartao>table.car-cards>tbody>tr{grid-template-columns:repeat(6,minmax(0,1fr))!important;grid-template-areas:"cod imo imo pes pes cob" "alu pra gar rea cor fon"!important;gap:4px 14px!important;padding:8px 12px!important}'; }
     document.head.appendChild(st); }
   const PROPRIA=(t)=>t.matches('.cl-cards,.car-cards,.enc-cards')||t.hasAttribute('data-sem-cartao')||(t.closest('.tabela.tem-cm')&&t.closest('.tabela').parentElement.querySelector(':scope > .lista-m'));
-  const curta=(s)=>String(s||'').replace(/[▲▼↕]/g,'').replace(/\s+/g,' ').trim();
-  function rotulos(t){ const hr=t.tHead&&t.tHead.rows[0]; if(!hr) return []; const R=[]; [...hr.cells].forEach(c=>{ for(let i=0;i<(c.colSpan||1);i++) R.push(curta(c.textContent)); }); return R; }
+  const curta=(s)=>String(s||'').replace(/[▲▼↕]/g,'').replace(/\s+/g,' ').trim(); const thTxt=(e)=>{ const k=e.cloneNode(true); k.querySelectorAll('br').forEach(b=>b.replaceWith(' ')); return k.textContent; }; /* 22/11/2026: rótulo do cartão com o <br> do cabeçalho virando espaço ("Negócios no mês", não "Negóciosno mês") */
+  function rotulos(t){ const hr=t.tHead&&t.tHead.rows[0]; if(!hr) return []; const R=[]; [...hr.cells].forEach(c=>{ for(let i=0;i<(c.colSpan||1);i++) R.push(curta(thTxt(c))); }); return R; }
   // 02/11/2026: a barra de rolagem do topo (.rolagem-topo, barrasTopo) fica entre a linha "Ordenar por" e a tabela; sem pular por cima dela,
   // as duas rotinas se recriavam em laço (centenas de linhas "Ordenar por" antes da tabela, Anúncios do site sem imóveis à vista)
   function ordLinha(t,R){ const tab=t.closest('.tabela')||t; const ref=(tab.previousElementSibling&&tab.previousElementSibling.classList.contains('rolagem-topo'))?tab.previousElementSibling:tab; let nav=ref.previousElementSibling;
     if(!(nav&&nav.classList.contains('ord-movel-auto'))){ if(nav&&nav.classList.contains('ordenar-movel')) return; nav=document.createElement('div'); nav.className='filtros ord-movel-auto'; ref.parentNode.insertBefore(nav,ref); }
     const hs=[...t.tHead.rows[0].cells]; const sig=hs.map(h=>h.textContent+'|'+(h.dataset.dir||'')).join('#'); if(nav.dataset.sig===sig) return; nav.dataset.sig=sig;
-    const bt=hs.map((h,i)=>{ const n=curta(h.textContent); if(!n||!h.classList.contains('ord')) return ''; const d=h.dataset.dir; return `<button type="button" class="btn" data-ta-ord="${i}">${n.replace(/[<>&"]/g,'')}${d==='asc'?' ▲':d==='desc'?' ▼':' ↕'}</button>`; }).join('');
+    const bt=hs.map((h,i)=>{ const n=curta(thTxt(h)); if(!n||!h.classList.contains('ord')) return ''; const d=h.dataset.dir; return `<button type="button" class="btn" data-ta-ord="${i}">${n.replace(/[<>&"]/g,'')}${d==='asc'?' ▲':d==='desc'?' ▼':' ↕'}</button>`; }).join('');
     nav.innerHTML=bt?`<span class="s">Ordenar por</span>${bt}`:''; nav._tab=t; }
   /* 02/11/2026 (pedido do Cleiton, revoga a F5a): no computador, cartão só com a janela menor que metade da largura da tela; acima disso, lista.
      Lista larga que não cabe: as células quebram linha sem partir palavra (ta-ajusta); se ainda não couber, cartão horizontal (1 por linha). */

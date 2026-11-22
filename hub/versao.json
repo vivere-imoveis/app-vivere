@@ -1,12 +1,12 @@
 {
- "hub_versao": "1795364556-011f",
+ "hub_versao": "1795366006-0c6a",
  "index_original_sha16": "ver list_files",
  "nucleos": 7,
  "montado_em": "2026-11-22T09:40-03:00",
  "fora_por_serem_dados": [],
  "arquivos": {
   "hub-web.js": "f91fa1fe6b5ae230",
-  "index.html": "aebd834205bcccf3",
+  "index.html": "804d85075c450d23",
   "modulos/acm.js": "11d14bfb53c61b00",
   "modulos/app-vivere.js": "931a658f03d65dbe",
   "modulos/base-leads.js": "50324a52b7163808",
@@ -104,12 +104,14 @@
   "modulos/whatsapp-ia.js": "40144c865d007d64",
   "nucleo/nucleo-1.js": "6bdf5597ca821306",
   "nucleo/nucleo-2.js": "9b652a30ae103ad8",
-  "nucleo/nucleo-3.js": "3a80c8f0bba0bc11",
+  "nucleo/nucleo-3.js": "697e40e2214f1042",
   "nucleo/nucleo-4.js": "349120117af86574",
   "nucleo/nucleo-5.js": "2ebf5e303ee7a497",
   "nucleo/nucleo-6.js": "19bd0efa85ba6032",
-  "nucleo/nucleo-7.js": "b72a22642a72f359"
+  "nucleo/nucleo-7.js": "b72a22642a72f359",
+  "modulos/densidade.js": "174e274d8e6e8e1b"
  },
  "obs_hub_redesenho_f1": "edições do hub_redesenho_f1.py aplicadas direto nesta cópia (mesmos textos do edit_version no artefato); index_original_sha16 do artefato novo abaixo",
- "ajuste_manual": "2026-11-22: menus no tamanho natural, foto do site novo no ficha-imovel e transição suave entre abas (mesmas trocas no artefato)"
+ "ajuste_manual": "2026-11-22: menus no tamanho natural, foto do site novo no ficha-imovel e transição suave entre abas (mesmas trocas no artefato)",
+ "ajuste_densidade_tabelas": "2026-11-22 13h47: densidade.js 174e274d (cartões de tabela compactos no celular, tabelas soltas embrulhadas) e nucleo-3 com o <br> do cabeçalho virando espaço; mesmas trocas no artefato"
 }
