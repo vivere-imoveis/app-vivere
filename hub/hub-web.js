@@ -13,6 +13,12 @@
   var PAGINA = 500, VOLTAS = 60;
   var SO_LEITURA = 'Esta versão do HUB na web é só leitura. Para alterar, use o HUB no Claude.';
 
+  if (!window.supabase || !window.supabase.createClient) { // biblioteca do login não carregou: avisa em vez de ficar em branco
+    var falhou = function () { document.body.insertAdjacentHTML('afterbegin', '<p style="padding:20px;font:16px system-ui">Não deu para abrir o HUB agora (sem conexão). Recarregue a página.</p>'); };
+    if (document.body) falhou(); else document.addEventListener('DOMContentLoaded', falhou);
+    window.claude = { use: function () { return new Promise(function () { }); } };
+    return;
+  }
   var sb = window.supabase.createClient(SB_URL, SB_CHAVE, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
   var ctx = { uid: null, usuario: null, colecoes: null, semAcesso: {}, recusas: 0 };
   var nunca = function () { return new Promise(function () { }); };
