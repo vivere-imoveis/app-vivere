@@ -48,7 +48,7 @@
   /* 22/11/2026 (pedido do Cleiton: "tudo dentro de um único aplicativo"): A CAPTAR, Estudo de Mercado e Imóveis sem
      responsável rodam NATIVOS dentro do painel (mesmos módulos do app: acaptar.js, acm.js, semresp.js, carregados na hora,
      com o CSS do app restrito à janela em app-nativo.css). Vale no app e no PAINEL DO GESTOR do claude.ai. */
-  var NATIVO = { acaptar: ['ACAPTAR', 'acaptar.js'], acm: ['ACM', 'acm.js'], semresp: ['SEMRESP', 'semresp.js'] };
+  var NATIVO = { acaptar: ['ACAPTAR', 'acaptar.js'], acm: ['ACM', 'acm.js'], semresp: ['SEMRESP', 'semresp.js'], senha: ['SENHA', 'senha.js'], acessos: ['ACESSOS', 'acessos.js'] }; /* 22/11/2026: Minha senha e Acessos também nativos (no Gestor pela ponte do conector) */
   var carregados = {};
   function carrega(src, css) {
     if (carregados[src]) return carregados[src];
@@ -81,6 +81,7 @@
       var q = new URLSearchParams((href.split('?')[1]) || '');
       if (aba === 'acm') await window.ACM.tela(raiz, ctx, { ref: q.get('ref') || '', estudo: q.get('estudo') || '' });
       else if (aba === 'acaptar') await window.ACAPTAR.tela(raiz, ctx, q.get('cod') || '');
+      else if (aba === 'senha') { ctx.email = (P.eu && P.eu.email) || ''; window.SENHA.tela(raiz, ctx, {}); }
       else await window[cfg[0]].tela(raiz, ctx);
     } catch (e) {
       raiz.innerHTML = '<div class="vazio">Não deu para abrir ' + escH(t) + ' aqui: ' + escH(e && e.message || e) + '</div>';
@@ -142,9 +143,9 @@
     itens: function () {
       var P = window.VIVERE_PONTE, est = P && P.estado ? P.estado() : {}, sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
       var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
-      var L = [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n, dentro: true }, { id: 'acm', t: 'Estudo de Mercado', ic: 'grafico', href: 'index.html?aba=acm', apos: 'oportunidades', dentro: true }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha', dentro: DENTRO },
+      var L = [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n, dentro: true }, { id: 'acm', t: 'Estudo de Mercado', ic: 'grafico', href: 'index.html?aba=acm', apos: 'oportunidades', dentro: true }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha', dentro: true },
         est.hub ? { id: 'hub', t: 'HUB VIVERE', ic: 'casa', href: 'hub/', dentro: DENTRO, grupo: 'gestao' } : null,
-        est.papel === 'gestor' ? { id: 'acessos', t: 'Acessos', ic: 'escudo', href: 'index.html?aba=acessos', dentro: DENTRO, grupo: 'gestao' } : null];
+        est.papel === 'gestor' ? { id: 'acessos', t: 'Acessos', ic: 'escudo', href: 'index.html?aba=acessos', dentro: true, grupo: 'gestao' } : null];
       /* 22/11/2026: no PAINEL DO GESTOR (claude.ai) cada atalho do app vira link de verdade (url), que abre fora */
       if (!DENTRO) L.forEach(function (x) { if (x && nativo(x.href)) { x.href = '#' + abaDe(x.href); return; } if (x) x.url = /^hub\//.test(x.href) ? 'https://claude.ai/artifact/LR3j38He26qquNQHKunkMx' : 'https://vivere-imoveis.github.io/app-vivere/' + x.href; });
       return L;

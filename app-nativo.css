@@ -51,6 +51,16 @@ html[data-privado="1"] #app-nativo [data-sens]{filter:blur(6px);user-select:none
 #app-nativo table.ac tr.desligado td{opacity:.6}
 #app-nativo .ordenar{display:none;flex-wrap:wrap;gap:6px;margin-bottom:10px;font-size:13px;color:var(--muted);align-items:center}
 #app-nativo .ordenar button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:4px 10px;font:13px var(--body);cursor:pointer}
+@container (max-width:900px){#app-nativo .ordenar{display:flex}
+#app-nativo table.ac,#app-nativo table.ac tbody{display:block;border:0;background:none}
+#app-nativo table.ac thead{display:none}
+#app-nativo table.ac tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+#app-nativo table.ac td{border:0;padding:0}
+#app-nativo table.ac td.c-nome{grid-column:1/-1}
+#app-nativo table.ac td.c-acoes{grid-column:1/-1}
+#app-nativo table.ac td[data-r]::before{content:attr(data-r);display:block;font:500 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}}
+@container (max-width:560px){#app-nativo table.ac tr{grid-template-columns:repeat(2,minmax(0,1fr))}
+#app-nativo table.ac td.c-acoes .btn{flex:1 1 auto}}
 #app-nativo .registro{font-size:13px;color:var(--muted);margin:0;padding-left:18px}
 #app-nativo .registro li{margin:3px 0}
 #app-nativo .confirmar{margin-top:8px;padding:10px;border:1px solid var(--bad);border-radius:8px;background:var(--bad-bg);color:var(--bad);display:grid;gap:8px;font-size:13px}
@@ -97,6 +107,7 @@ html[data-privado="1"] #app-nativo [data-sens]{filter:blur(6px);user-select:none
 #app-nativo .cap p.s{margin:4px 0 0}
 #app-nativo .cap{container-type:inline-size}
 #app-nativo dl.campos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 14px;margin:12px 0}
+@container (max-width:520px){#app-nativo dl.campos{grid-template-columns:repeat(2,minmax(0,1fr))}}
 #app-nativo dl.campos div{min-width:0}
 #app-nativo dl.campos .largo{grid-column:1/-1}
 #app-nativo dl.campos dt{font:500 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
@@ -109,6 +120,15 @@ html[data-privado="1"] #app-nativo [data-sens]{filter:blur(6px);user-select:none
 #app-nativo table.ac td.c-acoes .btn{white-space:nowrap}
 #app-nativo table.ac td.c-nome{min-width:200px}
 #app-nativo table.ac td.c-sit .linha-acoes{flex-direction:column;align-items:flex-start;gap:6px}
+@container (max-width:900px){#app-nativo table.ac td.c-sit .linha-acoes{flex-direction:row;align-items:center}}
+@container (min-width:901px) and (max-width:1080px){#app-nativo .lista-acessos:has(table.ac-disp) .ordenar{display:flex}
+#app-nativo table.ac-disp,#app-nativo table.ac-disp tbody{display:block;border:0;background:none}
+#app-nativo table.ac-disp thead{display:none}
+#app-nativo table.ac-disp tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+#app-nativo table.ac-disp td{border:0;padding:0}
+#app-nativo table.ac-disp td.c-nome,#app-nativo table.ac-disp td.c-acoes{grid-column:1/-1}
+#app-nativo table.ac-disp td.c-sit .linha-acoes{flex-direction:row;align-items:center}
+#app-nativo table.ac-disp td[data-r]::before{content:attr(data-r);display:block;font:500 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}}
 #app-nativo a.btn{text-decoration:none;display:inline-flex;align-items:center}
 #app-nativo .ac-im{display:flex;gap:12px;align-items:flex-start;min-width:0}
 #app-nativo .ac-im-t{min-width:0}

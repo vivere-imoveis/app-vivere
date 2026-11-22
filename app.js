@@ -113,7 +113,7 @@
     abas.innerHTML = lista.map(function (a) { return '<button role="tab" data-aba="' + a[0] + '" aria-selected="' + (estado.aba === a[0]) + '">' + a[1] + '</button>'; }).join('');
     abas.querySelectorAll('button').forEach(function (b) { b.onclick = function () { if (b.dataset.aba === 'painel') { location.href = volta; return; } estado.aba = b.dataset.aba; estado.link = null; estado.confirmar = null; desenhar(); }; });
     if (estado.aba === 'senha') return telaSenha(main, false);
-    if (estado.aba === 'acessos' && estado.eu.papel === 'gestor') return telaAcessos(main);
+    if (estado.aba === 'acessos' && estado.eu.papel === 'gestor' && window.ACESSOS) return window.ACESSOS.tela(main, contexto()); /* 22/11/2026: acessos.js */
     if (estado.aba === 'destaques' && dst) return window.DESTAQUES.tela(main, contexto());
     if (estado.aba === 'acm' && window.ACM) { var ap = acmParams; acmParams = null; return window.ACM.tela(main, contexto(), ap); }
     if (estado.aba === 'semresp' && window.SEMRESP) return window.SEMRESP.tela(main, contexto());
@@ -121,24 +121,8 @@
     telaInicio(main);
   }
 
-  /* 2026-11-15.1: botão de olho nos campos de senha (sugestão nº 26, Jorlei, caixinha de sugestões da Vivian). */
-  var OLHO_ABERTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-  var OLHO_FECHADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.1 10.1 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-  function campoSenha(rotulo, nome, auto, extra) {
-    return '<label>' + rotulo + '<span class="senha-campo"><input type="password" name="' + nome + '" autocomplete="' + auto + '"' + (extra || '') + ' required>' +
-      '<button type="button" class="ver-senha" aria-label="Mostrar a senha" aria-pressed="false" title="Mostrar a senha">' + OLHO_ABERTO + '</button></span></label>';
-  }
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('.ver-senha'); if (!b) return;
-    e.preventDefault();
-    var i = b.parentNode.querySelector('input'); if (!i) return;
-    var mostrar = i.type === 'password';
-    i.type = mostrar ? 'text' : 'password';
-    b.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
-    b.setAttribute('aria-label', mostrar ? 'Ocultar a senha' : 'Mostrar a senha'); b.title = b.getAttribute('aria-label');
-    b.innerHTML = mostrar ? OLHO_FECHADO : OLHO_ABERTO;
-    i.focus();
-  });
+  /* 2026-11-15.1: campo de senha com o botão de olho — desde 22/11/2026 no senha.js (mesma tela no app e no painel) */
+  var campoSenha = window.SENHA.campo;
 
   function telaEntrar(main, esqueci) {
     titulo(esqueci ? 'Esqueci minha senha' : 'Entrar');
@@ -171,24 +155,10 @@
   }
 
   function telaSenha(main, primeira) {
-    titulo(primeira ? 'Criar sua senha' : 'Minha senha');
-    main.innerHTML = '<form class="form cartao" id="f" novalidate><h2>' + (primeira ? 'Crie a sua senha' : 'Trocar minha senha') + '</h2>' +
-      '<p class="s">Mínimo de 8 caracteres. Use uma senha só sua, que você não usa em outro lugar.</p>' +
-      '<input type="email" name="username" autocomplete="username" value="' + esc(estado.sessao.user.email) + '" hidden>' +
-      campoSenha('Nova senha', 's1', 'new-password', ' minlength="8"') +
-      campoSenha('Repita a senha', 's2', 'new-password', ' minlength="8"') + '<div id="m"></div>' +
-      '<button class="btn pri" type="submit">Salvar a senha</button></form>';
-    $('#f').onsubmit = async function (e) {
-      e.preventDefault(); var s1 = this.s1.value, s2 = this.s2.value;
-      if (s1.length < 8) { $('#m').innerHTML = '<div class="msg erro">A senha precisa de pelo menos 8 caracteres.</div>'; return; }
-      if (s1 !== s2) { $('#m').innerHTML = '<div class="msg erro">As duas senhas não são iguais.</div>'; return; }
-      var b = this.querySelector('button'); b.disabled = true;
-      var r = await sb.auth.updateUser({ password: s1 });
-      b.disabled = false;
-      if (r.error) { $('#m').innerHTML = '<div class="msg erro">Não deu para salvar: ' + esc(r.error.message) + '</div>'; return; }
-      modoSenha = false; history.replaceState(null, '', APP_URL); estado.aba = 'inicio';
-      toast('Senha salva.'); iniciar();
-    };
+    return window.SENHA.tela(main, { sb: sb, esc: esc, toast: toast, titulo: titulo, email: estado.sessao.user.email }, {
+      primeira: primeira,
+      aoSalvar: function () { modoSenha = false; history.replaceState(null, '', APP_URL); estado.aba = 'inicio'; iniciar(); }
+    });
   }
 
   /* Painel do corretor no app: o gestor abre sempre (o dele e, pelo Ver como, o de cada um); quem não é gestor abre o próprio
@@ -220,128 +190,7 @@
 
   function contexto() { return { sb: sb, eu: estado.eu, sessaoUid: estado.sessao.user.id, esc: esc, toast: toast, titulo: titulo }; }
 
-  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.SEMRESP) window.SEMRESP.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); if (window.ACM) window.ACM.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
-
-  /* ---------- Acessos (só o gestor) ---------- */
-  async function chamar(corpo) {
-    var r = await sb.functions.invoke('acessos-admin', { body: corpo });
-    if (r.error) {
-      var msg = r.error.message;
-      try { var j = await r.error.context.json(); if (j && j.erro) msg = j.erro; } catch (e) { }
-      throw new Error(msg);
-    }
-    return r.data;
-  }
-
-  async function carregarAcessos() {
-    estado.carregando = true;
-    try { var d = await chamar({ acao: 'listar' }); estado.acessos = d.acessos || []; estado.registro = d.registro || []; }
-    catch (e) { toast('Erro ao carregar: ' + e.message); }
-    estado.carregando = false;
-  }
-
-  function situacao(a) {
-    if (!a.ativo) return ['Desligado', 'bad'];
-    if (a.senha_criada) return ['Ativo', 'ok'];
-    if (a.convidado_em) return ['Convidado', 'warn'];
-    return ['Sem convite', ''];
-  }
-
-  var COLS = [['nome', 'Nome'], ['papel', 'Papel'], ['situacao', 'Situação'], ['ultimo_acesso', 'Último acesso']];
-  function valorOrdem(a, c) { return c === 'situacao' ? situacao(a)[0] : (a[c] || ''); }
-  function ordenar(lista) {
-    var o = estado.ordem;
-    return lista.slice().sort(function (x, y) {
-      var a = valorOrdem(x, o.campo), b = valorOrdem(y, o.campo);
-      if (!a && b) return 1; if (a && !b) return -1;
-      return String(a).localeCompare(String(b), 'pt-BR') * o.dir;
-    });
-  }
-  function seta(c) { return estado.ordem.campo === c ? (estado.ordem.dir === 1 ? ' ▲' : ' ▼') : ' ↕'; }
-
-  /* Carga dos painéis: o arquivo traz { itens: [{ painel, colecao, doc_id, dados }] }. Vai em lotes; só o gestor consegue (o banco confere). */
-  async function carga(campo) {
-    var f = campo.files && campo.files[0], msg = $('#cargaMsg'); if (!f) return;
-    campo.disabled = true;
-    try {
-      var pac = JSON.parse(await f.text()), itens = pac && pac.itens;
-      if (!Array.isArray(itens) || !itens.length) throw new Error('o arquivo não tem a lista de documentos');
-      var lote = [], tam = 0, feitos = 0, mudou = 0;
-      var enviar = async function () {
-        if (!lote.length) return;
-        var r = await sb.rpc('painel_carga', { p_itens: lote });
-        if (r.error) throw new Error(r.error.message || 'o banco recusou');
-        mudou += r.data || 0; feitos += lote.length; lote = []; tam = 0;
-        msg.textContent = 'Enviando… ' + feitos + ' de ' + itens.length;
-      };
-      for (var i = 0; i < itens.length; i++) {
-        var t = JSON.stringify(itens[i]).length;
-        if (lote.length && (tam + t > 400000 || lote.length >= 200)) await enviar();
-        lote.push(itens[i]); tam += t;
-      }
-      await enviar();
-      msg.textContent = 'Carga concluída: ' + itens.length + ' documentos conferidos, ' + mudou + ' novos ou alterados.';
-    } catch (e) { msg.textContent = 'A carga parou: ' + (e && e.message || e); }
-    campo.disabled = false; campo.value = '';
-  }
-
-  async function telaAcessos(main) {
-    titulo('Acessos');
-    if (!estado.acessos.length && !estado.carregando) { main.innerHTML = '<div class="vazio">Carregando os acessos…</div>'; await carregarAcessos(); }
-    var linhas = ordenar(estado.acessos).map(function (a) {
-      var st = situacao(a), eu = a.email === estado.eu.email, ac = [];
-      if (!a.ativo) ac.push('<button class="btn" data-a="reativar" data-e="' + esc(a.email) + '">Reativar</button>');
-      else {
-        if (a.senha_criada) ac.push('<button class="btn" data-a="redefinir" data-e="' + esc(a.email) + '">Enviar link de nova senha</button>');
-        else ac.push('<button class="btn pri" data-a="convidar" data-e="' + esc(a.email) + '">' + (a.convidado_em ? 'Reenviar convite' : 'Enviar convite') + '</button>');
-        ac.push('<button class="btn" data-a="gerar_link" data-e="' + esc(a.email) + '">Gerar link</button>');
-        if (!eu) ac.push('<button class="btn perigo" data-a="tirar" data-e="' + esc(a.email) + '">Tirar acesso</button>');
-      }
-      var extra = '';
-      if (estado.confirmar === a.email) extra = '<div class="confirmar">Tirar o acesso de ' + esc(a.nome) + '? Ele sai do app na hora e não entra mais até você reativar.<div class="linha-acoes"><button class="btn perigo" data-a="tirar_ok" data-e="' + esc(a.email) + '">Sim, tirar acesso</button><button class="btn" data-a="cancelar">Cancelar</button></div></div>';
-      if (estado.link && estado.link.email === a.email) extra = '<div class="msg aviso" style="margin-top:8px">Link de uso único para ' + esc(a.nome) + ' (vale por tempo limitado; mande só para ele):<input readonly value="' + esc(estado.link.link) + '" data-sens style="margin-top:6px"><div class="linha-acoes" style="margin-top:6px"><button class="btn" data-a="copiar">Copiar o link</button></div></div>';
-      return '<tr class="' + (a.ativo ? '' : 'desligado') + '"><td class="c-nome"><b>' + esc(a.nome) + '</b><span class="s" data-sens>' + esc(a.email) + '</span>' + (a.painel ? '<span class="s">painel: ' + esc(a.painel) + '</span>' : '') + '</td>' +
-        '<td data-r="Papel">' + esc(a.papel) + '</td><td data-r="Situação"><span class="pill ' + st[1] + '">' + st[0] + '</span>' + (a.convidado_em && !a.senha_criada ? '<span class="s">convite ' + dataHora(a.convidado_em) + '</span>' : '') + '</td>' +
-        '<td data-r="Último acesso">' + dataHora(a.ultimo_acesso) + '</td><td class="c-acoes"><div class="linha-acoes">' + ac.join('') + '</div>' + extra + '</td></tr>';
-    }).join('');
-    var reg = estado.registro.slice(0, 20).map(function (r) { return '<li>' + dataHora(r.quando) + ' · ' + esc(r.acao) + (r.email ? ' · <span data-sens>' + esc(r.email) + '</span>' : '') + (r.detalhe ? ' · ' + esc(r.detalhe) : '') + '</li>'; }).join('');
-    main.innerHTML =
-      '<div class="linha-acoes" style="justify-content:space-between;margin-bottom:12px"><p class="s" style="margin:0">' + estado.acessos.length + ' acessos · senhas ficam cifradas no Supabase; ninguém as lê.</p><button class="btn" id="atualizar">Atualizar</button></div>' +
-      '<div class="lista-acessos"><div class="ordenar">Ordenar por: ' + COLS.map(function (c) { return '<button data-o="' + c[0] + '">' + c[1] + seta(c[0]) + '</button>'; }).join('') + '</div>' +
-      '<table class="ac"><thead><tr>' + COLS.map(function (c) { return '<th><button data-o="' + c[0] + '">' + c[1] + seta(c[0]) + '</button></th>'; }).join('') + '<th>Ações</th></tr></thead><tbody>' + linhas + '</tbody></table></div>' +
-      '<div class="sec cartao"><h2>Cadastrar acesso</h2><form id="novo" class="grade" novalidate style="align-items:end">' +
-      '<label>Nome<input name="nome" required></label><label>E-mail (é o login)<input name="email" type="email" required></label>' +
-      '<label>Papel<select name="papel"><option value="corretor">Corretor</option><option value="diretor">Diretor</option><option value="gestor">Gestor</option></select></label>' +
-      '<label>Painel (ex.: hugo)<input name="painel"></label><button class="btn pri" type="submit">Cadastrar</button></form><p class="s">Cadastrar não envia nada; o convite sai só quando você clicar em Enviar convite.</p></div>' +
-      '<div class="sec cartao"><h2>Carga de dados dos painéis</h2><p class="s">Arquivo de carga (.json) preparado pelo Claude. Grava os documentos dos painéis no banco; nada é apagado e o que já está igual não muda.</p>' +
-      '<input type="file" id="arqCarga" accept="application/json,.json"><p class="s" id="cargaMsg" role="status" aria-live="polite"></p></div>' +
-      '<div class="sec cartao"><h2>Registro</h2>' + (reg ? '<ol class="registro">' + reg + '</ol>' : '<p class="s">Nada registrado ainda.</p>') + '</div>';
-
-    $('#arqCarga').onchange = function () { carga(this); };
-    main.querySelectorAll('[data-o]').forEach(function (b) { b.onclick = function () { var c = b.dataset.o; estado.ordem = { campo: c, dir: estado.ordem.campo === c ? -estado.ordem.dir : 1 }; telaAcessos(main); }; });
-    $('#atualizar').onclick = async function () { estado.link = null; estado.confirmar = null; await carregarAcessos(); telaAcessos(main); };
-    $('#novo').onsubmit = async function (e) {
-      e.preventDefault(); var f = this;
-      try { await chamar({ acao: 'cadastrar', nome: f.nome.value.trim(), email: f.email.value.trim(), papel: f.papel.value, painel: f.painel.value.trim() || null }); toast('Cadastrado.'); await carregarAcessos(); telaAcessos(main); }
-      catch (err) { toast('Erro: ' + err.message); }
-    };
-    main.querySelectorAll('[data-a]').forEach(function (b) {
-      b.onclick = async function () {
-        var a = b.dataset.a, email = b.dataset.e;
-        if (a === 'cancelar') { estado.confirmar = null; return telaAcessos(main); }
-        if (a === 'tirar') { estado.confirmar = email; estado.link = null; return telaAcessos(main); }
-        if (a === 'copiar') { try { await navigator.clipboard.writeText(estado.link.link); toast('Link copiado.'); } catch (e) { toast('Copie o link manualmente.'); } return; }
-        b.disabled = true;
-        try {
-          if (a === 'tirar_ok') { await chamar({ acao: 'tirar_acesso', email: email }); estado.confirmar = null; toast('Acesso tirado.'); }
-          else if (a === 'gerar_link') { var d = await chamar({ acao: 'gerar_link', email: email }); estado.link = { email: email, link: d.link }; }
-          else { await chamar({ acao: a, email: email }); toast(a === 'reativar' ? 'Acesso reativado.' : 'E-mail enviado para ' + email + '.'); }
-          await carregarAcessos();
-        } catch (err) { toast('Erro: ' + err.message); }
-        telaAcessos(main);
-      };
-    });
-  }
+  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.SEMRESP) window.SEMRESP.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); if (window.ACM) window.ACM.sair(); if (window.ACESSOS) window.ACESSOS.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
 
   iniciar();
 })();
