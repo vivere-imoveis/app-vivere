@@ -14,3 +14,4 @@ Telas do app da Vivere Imóveis Selecionados: login, criar e trocar senha, Acess
 - `hub/hub-web.js` troca o `window.claude` do claude.ai pelo login do app: lê pelas funções `public.hub_web_colecoes()` e `public.hub_web_ler()`. **Só leitura**: toda gravação é recusada.
 - Quem abre: gestor e quem tem `acessos.hub = true` (por pessoa). Diretor não vê o nível mestre. Coleções com `so_hub` só aparecem a quem tem a marca.
 - Cada publicação nova do HUB no claude.ai precisa ser copiada para cá (rodar o `montar_hub_web.py` com a versão nova).
+- **Repositório público (22/11/2026):** nenhum arquivo de dados entra aqui. O `montar_hub_web.py` deixa de fora `*-dados.js`, `*-dossies.js`, `.json` e `.csv` dos módulos e para se achar CPF, e-mail ou celular fora da lista de exemplos. Os dados chegam à cópia web só pelo banco, pelo nível de acesso de cada pessoa.

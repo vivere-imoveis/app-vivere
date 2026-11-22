@@ -80,7 +80,6 @@
   "modulos/mapa-ruas-9-5.js": "0f5860a8240bdf8a",
   "modulos/mapa-ruas-9-6.js": "4f404a3cf65e4a4e",
   "modulos/mapa.js": "53173f2511598919",
-  "modulos/marketing-dados.js": "df91339bfbc03b23",
   "modulos/marketing.js": "d8a7ca447b8c476b",
   "modulos/metas-corretores.js": "a64f7e7cfe881e49",
   "modulos/orcamento.js": "603687339daca111",
@@ -108,5 +107,9 @@
   "nucleo/nucleo-5.js": "2ebf5e303ee7a497",
   "nucleo/nucleo-6.js": "19bd0efa85ba6032",
   "nucleo/nucleo-7.js": "91aed514d05266ca"
- }
+ },
+ "fora_por_serem_dados": [
+  "modulos/marketing-dados.js",
+  "modulos/marketing-dossies.js"
+ ]
 }
