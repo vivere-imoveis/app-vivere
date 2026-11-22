@@ -5487,18 +5487,18 @@ function gavetaPrazosRD() {
 }
 vInicio = vInicioRD;
 document.addEventListener('toggle', (ev) => { const t = ev.target; if (!t || !t.matches || !t.matches('details[data-rd-g]')) return; const k = t.dataset.rdG; if (!S.rdAbertos) S.rdAbertos = new Set([...document.querySelectorAll('details[data-rd-g][open]')].map((d) => d.dataset.rdG)); if (t.open) S.rdAbertos.add(k); else S.rdAbertos.delete(k); }, true);
-document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-prazos]'); if (!t) return; ev.preventDefault(); abrir('prazos'); });
-window.VIVERE_RD = { prazos: () => abrir('prazos') };
+document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-prazos]'); if (!t) return; ev.preventDefault(); window.VIVERE_RD.prazos(); });
+window.VIVERE_RD = { prazos: () => (window.ABA_APP ? window.ABA_APP.abre('prazos') : abrir('prazos')), htmlPrazos: () => painelPrazos() }; /* trocas-abas-app */
 // "Prazos da Vivere" também no Mais do celular (nav-celular.js espelha #btnPrazosApp) e na lateral do computador
 (function () {
   const poe = () => { const tema = document.getElementById('btnTema'); if (!tema || document.getElementById('btnPrazosApp')) return;
     const b = document.createElement('button'); b.type = 'button'; b.id = 'btnPrazosApp'; b.className = 'btn-tema btn-prazos-rd'; b.innerHTML = rdIc('livro') + 'Prazos da Vivere';
-    b.addEventListener('click', () => abrir('prazos')); tema.parentNode.insertBefore(b, tema); };
+    b.addEventListener('click', () => window.VIVERE_RD.prazos()); tema.parentNode.insertBefore(b, tema); };
   poe(); document.addEventListener('DOMContentLoaded', poe);
   document.addEventListener('DOMContentLoaded', () => {   // depois do painel-app.js e do pendencias.js, que montam a lista
     const E0 = window.MENU_LATERAL_EXTRAS;
     window.MENU_LATERAL_EXTRAS = { itens: () => ((E0 && E0.itens ? E0.itens() || [] : [])).concat([{ id: 'prazos', t: 'Prazos da Vivere', ic: 'livro', href: '#prazos', apos: 'tarefas' }]),
-      abre: (h) => (h === '#prazos' ? abrir('prazos') : E0 && E0.abre ? E0.abre(h) : (location.href = h)) };
+      abre: (h) => (h === '#prazos' ? window.VIVERE_RD.prazos() : E0 && E0.abre ? E0.abre(h) : (location.href = h)) };
     if (window.MenuLateral) MenuLateral.atualiza();
   });
 })();

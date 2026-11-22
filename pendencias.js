@@ -57,7 +57,7 @@
     var b = document.getElementById('btnPendApp');
     if (!b) {
       b = document.createElement('button'); b.type = 'button'; b.id = 'btnPendApp'; b.className = 'btn-tema btn-pend';
-      b.addEventListener('click', abrir);
+      b.addEventListener('click', entrar);
       tema.parentNode.insertBefore(b, tema);
     }
     var n = total();
@@ -70,6 +70,11 @@
 
   /* ---------- tela ---------- */
   function tela() { return document.getElementById('pendTela'); }
+  /* 22/11/2026: no painel, Pendências abre como ABA normal (painel-app.js › ABA_APP); sem ele, segue a janela */
+  var naAba = null;
+  function entrar() { if (window.ABA_APP) return window.ABA_APP.abre('pendencias'); abrir(); }
+  function abrirEm(host) { naAba = host; abrir(); }
+  function sairDaAba() { var t = tela(); naAba = null; if (t) { t.classList.remove('em-aba'); document.body.appendChild(t); } fechar(true); }
   function abrir() {
     var t = tela();
     if (!t) {
@@ -80,13 +85,15 @@
       t.addEventListener('click', clique); t.addEventListener('submit', salvar); t.addEventListener('change', muda);
       document.body.appendChild(t);
     }
-    t.hidden = false; document.documentElement.classList.add('pend-aberta');
+    if (naAba) { if (t.parentNode !== naAba) naAba.appendChild(t); t.classList.add('em-aba'); t.removeAttribute('aria-modal'); t.setAttribute('role', 'region'); }
+    else { t.classList.remove('em-aba'); t.setAttribute('role', 'dialog'); t.setAttribute('aria-modal', 'true'); }
+    t.hidden = false; if (!naAba) document.documentElement.classList.add('pend-aberta');
     desenha(); carrega();
-    var cx = t.querySelector('.pend-caixa'); if (cx) cx.focus();
+    var cx = t.querySelector('.pend-caixa'); if (cx && !naAba) cx.focus();
   }
-  function fechar() { var t = tela(); if (t) t.hidden = true; document.documentElement.classList.remove('pend-aberta'); aberto = null; var b = document.getElementById('btnPendApp'); if (b) b.focus(); }
+  function fechar(semFoco) { if (naAba && semFoco !== true) { if (window.ABA_APP) window.ABA_APP.fecha(); return; } var t = tela(); if (t) t.hidden = true; document.documentElement.classList.remove('pend-aberta'); aberto = null; var b = document.getElementById('btnPendApp'); if (b && semFoco !== true) b.focus(); }
   document.addEventListener('keydown', function (e) {
-    var t = tela(); if (!t || t.hidden) return;
+    var t = tela(); if (!t || t.hidden || naAba) return;
     if (e.key === 'Escape') return fechar();
     if (e.key !== 'Tab') return;
     var f = [].filter.call(t.querySelectorAll('button:not([disabled]),input,select,a[href]'), function (x) { return x.offsetParent !== null; });
@@ -287,7 +294,7 @@
   var E0 = window.MENU_LATERAL_EXTRAS || { itens: function () { return []; }, abre: function (h) { location.href = h; } };
   window.MENU_LATERAL_EXTRAS = {
     itens: function () { var n = total(); return [{ id: 'pendencias', t: 'Pendências', ic: 'alerta', href: '#pendencias', apos: 'tarefas', n: n == null ? '' : String(n) }].concat(E0.itens ? E0.itens() || [] : []); },
-    abre: function (href) { if (href === '#pendencias') return abrir(); return E0.abre ? E0.abre(href) : (location.href = href); }
+    abre: function (href) { if (href === '#pendencias') return entrar(); return E0.abre ? E0.abre(href) : (location.href = href); }
   };
 
   function liga() {
@@ -295,9 +302,9 @@
     pintaBotao();
     new MutationObserver(function () { if (!document.getElementById('btnPendApp')) pintaBotao(); }).observe(document.querySelector('.marca') || abas, { childList: true });
     carrega(); setInterval(function () { if (!document.hidden) carrega(); }, 240000);
-    if (/[?&]pendencias=1\b/.test(location.search)) abrir();
+    if (/[?&]pendencias=1\b/.test(location.search)) entrar();
   }
-  window.PENDENCIAS = { abrir: abrir, fechar: fechar, reler: carrega };
+  window.PENDENCIAS = { abrir: entrar, fechar: fechar, reler: carrega, abrirEm: abrirEm, sairDaAba: sairDaAba };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
   document.addEventListener('error', function (ev) { var t = ev.target; if (t && t.tagName === 'IMG' && t.classList.contains('pend-foto')) { var sp = document.createElement('span'); sp.className = 'pend-foto sem'; sp.setAttribute('aria-hidden', 'true'); sp.textContent = '⌂'; t.replaceWith(sp); } }, true);
 })();

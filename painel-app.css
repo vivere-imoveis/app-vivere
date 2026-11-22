@@ -343,3 +343,18 @@ html.com-janela,html.com-janela body{overflow:hidden}
 #aviso-fora a.b{text-decoration:none}
 /* Telas do app nativas dentro do painel (A CAPTAR, Estudo de Mercado, Sem responsável; 22/11/2026): rolam dentro da janela */
 #app-dentro.nativo .ad-rola{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+/* 22/11/2026 (pedido do Cleiton: "tudo dentro de um único aplicativo"): telas do app e atalhos do painel como ABA normal na
+   área de conteúdo (painel-app.js › ABA_APP) — sem janela por cima, sem "Fechar"; o item fica marcado no menu */
+html.com-aba-app #conteudo,html.com-aba-app #barraQ{display:none!important}
+#aba-app{display:block;min-width:0}
+#aba-app[hidden]{display:none}
+#aba-app .aba-app-t{font:500 20px/1.25 var(--display);margin:4px 0 12px;letter-spacing:.02em;color:var(--ink)}
+#aba-app #app-nativo{max-width:none;margin:0;padding:0 0 40px}
+html.com-aba-app .abas button[aria-selected="true"]{color:var(--muted)!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+.btn-tema[aria-current="page"]{border-color:var(--brass)!important;background:var(--soft)!important}
+.btn-so-mais{display:none!important}
+#aba-app .pend-tela{position:static;inset:auto;z-index:auto;background:none;display:block;padding:0;overflow:visible}
+#aba-app .pend-caixa{border:0;border-radius:0;box-shadow:none;width:100%;max-width:none;padding:0 0 40px;min-height:0;background:none}
+#aba-app [data-pend="fechar"],#aba-app [data-vfechar]{display:none!important}
+#aba-app #vistSobre .sobre{position:static;inset:auto;z-index:auto;background:none;display:block}
+#aba-app #vistSobre .gaveta{width:100%;max-width:none;height:auto;overflow:visible;padding:0 0 40px;animation:none;background:none}

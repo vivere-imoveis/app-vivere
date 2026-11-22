@@ -13,7 +13,51 @@
   var DENTRO = !window.__artefatoLoja;
   function embutivel(href) { return DENTRO && /^(index\.html\?aba=|hub\/)/.test(href || ''); }
   var NOMES = { acaptar: 'A CAPTAR', acm: 'Estudo de Mercado', senha: 'Minha senha', acessos: 'Acessos', semresp: 'Imóveis sem responsável', destaques: 'Destaques' };
-  function fechaDentro() { var ov = document.getElementById('app-dentro'); if (!ov) return false; ov.remove(); document.documentElement.classList.remove('com-janela'); lerVivo(); return true; }
+  function fechaDentro() { var f = fechaAba(); var ov = document.getElementById('app-dentro'); if (!ov) return f; ov.remove(); document.documentElement.classList.remove('com-janela'); lerVivo(); return true; }
+  /* 22/11/2026 (pedido do Cleiton: "tudo dentro de um único aplicativo"): Pendências, Prazos da Vivere, Vistorias, Estudo de
+     Mercado, A CAPTAR, Sem responsável, Minha senha e Acessos abrem como ABA NORMAL na área de conteúdo — mesmo lugar das
+     outras abas, item marcado no menu, sem janela por cima e sem "Fechar". Tocar em qualquer aba do painel volta a ele.
+     Só o HUB VIVERE continua à parte (outro artefato). */
+  var ABA = { id: '', fecha: null };
+  var BTN_ABA = { acaptar: 'btnAcapApp', acm: 'btnAcmApp', pendencias: 'btnPendApp', vistorias: 'btnVistApp', prazos: 'btnPrazosApp', senha: 'btnSenhaApp', acessos: 'btnAcessosApp' };
+  function hostAba() {
+    var h = document.getElementById('aba-app');
+    if (!h) { var c = document.getElementById('conteudo'); if (!c || !c.parentNode) return null; h = document.createElement('section'); h.id = 'aba-app'; h.setAttribute('role', 'tabpanel'); h.hidden = true; c.parentNode.insertBefore(h, c.nextSibling); }
+    return h;
+  }
+  function marcaAba() {
+    Object.keys(BTN_ABA).forEach(function (k) { var b = document.getElementById(BTN_ABA[k]); if (!b) return; if (ABA.id === k) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    if (window.MenuLateral) MenuLateral.atualiza();
+    try { document.dispatchEvent(new CustomEvent('vivere:aba-app', { detail: { aba: ABA.id } })); } catch (e) { }
+  }
+  function fechaAba() {
+    if (!ABA.id) return false;
+    var f = ABA.fecha; ABA.id = ''; ABA.fecha = null;
+    try { if (f) f(); } catch (e) { }
+    var h = document.getElementById('aba-app'); if (h) { h.innerHTML = ''; h.hidden = true; }
+    document.documentElement.classList.remove('com-aba-app'); delete document.documentElement.dataset.abaApp;
+    marcaAba(); lerVivo(); return true;
+  }
+  function abreAba(id, titulo, aoFechar, comTitulo) {
+    fechaAba();
+    var ov = document.getElementById('app-dentro'); if (ov) { ov.remove(); document.documentElement.classList.remove('com-janela'); }
+    var h = hostAba(); if (!h) return null;
+    h.hidden = false; h.dataset.aba = id; h.setAttribute('aria-label', titulo);
+    h.innerHTML = (comTitulo ? '<h2 class="aba-app-t"></h2>' : '') + '<div class="aba-app-corpo"></div>';
+    if (comTitulo) h.querySelector('.aba-app-t').textContent = titulo;
+    ABA.id = id; ABA.fecha = aoFechar || null;
+    document.documentElement.classList.add('com-aba-app'); document.documentElement.dataset.abaApp = id;
+    try { scrollTo({ top: 0 }); } catch (e) { scrollTo(0, 0); }
+    marcaAba();
+    return h.querySelector('.aba-app-corpo');
+  }
+  function abreAbaApp(id) {
+    if (NATIVO[id]) return abreNativo('index.html?aba=' + id);
+    if (id === 'pendencias' && window.PENDENCIAS && PENDENCIAS.abrirEm) { var c1 = abreAba('pendencias', 'Pendências', function () { PENDENCIAS.sairDaAba(); }); if (c1) PENDENCIAS.abrirEm(c1); return; }
+    if (id === 'vistorias' && window.VistoriaApp && VistoriaApp.abrirEm) { var c2 = abreAba('vistorias', 'Vistorias', function () { VistoriaApp.sairDaAba(); }); if (c2) VistoriaApp.abrirEm(c2); return; }
+    if (id === 'prazos' && window.VIVERE_RD && VIVERE_RD.htmlPrazos) { var c3 = abreAba('prazos', 'Prazos da Vivere'); if (c3) c3.innerHTML = VIVERE_RD.htmlPrazos(); return; }
+  }
+  window.ABA_APP = { abre: abreAbaApp, fecha: fechaAba, atual: function () { return ABA.id; } };
   function abreDentro(href) {
     var aba = (/aba=([a-z]+)/.exec(href) || [])[1], t = /^hub\//.test(href) ? 'HUB VIVERE' : (NOMES[aba] || 'App');
     var ov = document.getElementById('app-dentro');
@@ -65,11 +109,9 @@
   function escH(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   async function abreNativo(href) {
     var aba = abaDe(href), cfg = NATIVO[aba], t = NOMES[aba] || 'App';
-    var ov = document.getElementById('app-dentro'); if (ov) ov.remove();
-    ov = document.createElement('div'); ov.id = 'app-dentro'; ov.className = 'nativo'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', t);
-    ov.innerHTML = '<div class="ad-barra"><b class="ad-t"></b><button type="button" class="b ad-x">✕ Fechar</button></div><div class="ad-rola"><div id="app-nativo"><div class="vazio">Carregando ' + escH(t) + '…</div></div></div>';
-    ov.querySelector('.ad-t').textContent = t; ov.querySelector('.ad-x').addEventListener('click', fechaDentro);
-    document.body.appendChild(ov); document.documentElement.classList.add('com-janela');
+    var corpo = abreAba(aba, t, function () { if (aba === 'acessos' && window.ACESSOS) ACESSOS.sair(); }, true); if (!corpo) return;
+    corpo.innerHTML = '<div id="app-nativo"><div class="vazio">Carregando ' + escH(t) + '…</div></div>';
+    var ov = document.getElementById('aba-app');
     var raiz = ov.querySelector('#app-nativo');
     try {
       await carrega('app-nativo.css', true);
@@ -77,7 +119,7 @@
       var P = VIVERE_PONTE.contextoApp();
       var ctx = { sb: P.sb, eu: P.eu, sessaoUid: P.sessaoUid, esc: escH,
         toast: function (m) { try { toast(m); } catch (e) { } },
-        titulo: function (x) { var b = ov.querySelector('.ad-t'); if (b) b.textContent = x || t; } };
+        titulo: function (x) { var b = ov.querySelector('.aba-app-t'); if (b && ABA.id === aba) b.textContent = x || t; } };
       var q = new URLSearchParams((href.split('?')[1]) || '');
       if (aba === 'acm') await window.ACM.tela(raiz, ctx, { ref: q.get('ref') || '', estudo: q.get('estudo') || '' });
       else if (aba === 'acaptar') await window.ACAPTAR.tela(raiz, ctx, q.get('cod') || '');
@@ -103,6 +145,7 @@
   }, true);
   window.PAINEL_DENTRO = { abre: abreDentro, fecha: fechaDentro, pode: embutivel, ir: ir };
   function volta() { try { sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) { } }
+  function P0e() { var P = window.VIVERE_PONTE; return P && P.estado ? P.estado() : {}; }
   function pinta() {
     var tema = document.getElementById('btnTema');
     if (!tema) return;
@@ -121,6 +164,14 @@
       m.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); ir('index.html?aba=acm'); });
       tema.parentNode.insertBefore(m, tema);
     }
+    /* 22/11/2026: Minha senha e Acessos também no Mais do celular (o nav-celular.js espelha estes botões, que ficam escondidos no topo) */
+    [['btnSenhaApp', 'senha', 'cadeado', 'Minha senha', true], ['btnAcessosApp', 'acessos', 'escudo', 'Acessos', (P0e().papel === 'gestor')]].forEach(function (x) {
+      if (!x[4] || document.getElementById(x[0])) return;
+      var bt = document.createElement('button'); bt.type = 'button'; bt.id = x[0]; bt.className = 'btn-tema btn-so-mais'; bt.title = x[3]; bt.setAttribute('aria-label', x[3]);
+      bt.innerHTML = (window.VIVERE_ICONES && VIVERE_ICONES.html ? '<span class="ba-ic" aria-hidden="true">' + VIVERE_ICONES.html(x[2]) + '</span>' : '') + '<span class="ba-t">' + x[3] + '</span>';
+      bt.addEventListener('click', function () { ir('index.html?aba=' + x[1]); });
+      tema.parentNode.insertBefore(bt, tema);
+    });
     /* 21/11/2026 (hub-web-diretoria F3): botão do HUB VIVERE na web, só para quem tem a marca acessos.hub (e o gestor) */
     var P0 = window.VIVERE_PONTE, est0 = P0 && P0.estado ? P0.estado() : {};
     if (est0.hub && !document.getElementById('btnHubApp')) {

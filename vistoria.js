@@ -113,12 +113,19 @@
   function raiz() {
     var r = document.getElementById('vistSobre');
     if (!r) {
-      r = document.createElement('div'); r.id = 'vistSobre'; document.body.appendChild(r);
+      r = document.createElement('div'); r.id = 'vistSobre'; (naAba || document.body).appendChild(r);
       r.addEventListener('click', aoClicar); r.addEventListener('change', aoMudar); r.addEventListener('input', aoDigitar);
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && V.tela) { e.stopPropagation(); fecharTudo(); } }, true);
     }
+    if (naAba && r.parentNode !== naAba) naAba.appendChild(r); else if (!naAba && r.parentNode !== document.body) document.body.appendChild(r);
+    r.classList.toggle('em-aba', !!naAba);
     return r;
   }
+  /* 22/11/2026: no painel, Vistorias abre como ABA normal (painel-app.js › ABA_APP); fechar dentro da aba volta à lista */
+  var naAba = null;
+  function entrar() { if (window.ABA_APP) return window.ABA_APP.abre('vistorias'); abrirLista(); }
+  function abrirEm(host) { naAba = host; abrirLista(); }
+  function sairDaAba() { if (V.sujo) gravarAgora(); naAba = null; V.tela = null; V.atual = null; var r = document.getElementById('vistSobre'); if (r) { r.innerHTML = ''; r.classList.remove('em-aba'); document.body.appendChild(r); } }
   function abrirLista() { if (saidaTravada()) return; ligarDb(); V.tela = 'lista'; V.atual = null; if (!V.carteira) lerCarteira(); desenhar(); }
   function abrirVistoria(id) { var d = V.docs[id]; if (!d) return; V.atual = JSON.parse(JSON.stringify(d)); V.atual.id = id; V.atual.comodos = V.atual.comodos || []; V.tela = 'form'; V.aviso = ''; desenhar(); }
   var criando = false;
@@ -139,6 +146,7 @@
   function fecharTudo() {
     if (saidaTravada()) return;
     if (V.sujo) gravarAgora();
+    if (naAba) return abrirLista();
     V.tela = null; V.atual = null; var r = document.getElementById('vistSobre'); if (r) r.innerHTML = '';
   }
   function chip(atr, k, t, on) { return '<button type="button" class="vs-chip' + (on ? ' on' : '') + '" ' + atr + '="' + esc(k) + '" aria-pressed="' + (on ? 'true' : 'false') + '">' + esc(t) + '</button>'; }
@@ -286,7 +294,7 @@
     var tema = document.getElementById('btnTema'); if (!tema || document.getElementById('btnVistApp')) return;
     var b = document.createElement('button'); b.type = 'button'; b.id = 'btnVistApp'; b.className = 'btn-tema';
     b.innerHTML = '<span aria-hidden="true">📋</span><span class="bv-t">Vistorias</span>'; b.title = 'Vistoria simples pelo celular';
-    b.addEventListener('click', abrirLista);
+    b.addEventListener('click', entrar);
     tema.parentNode.insertBefore(b, tema);
   }
   function botaoNaFicha(g) {
@@ -312,7 +320,7 @@
     if (E && typeof E.itens === 'function' && !E.vist) {
       var itens = E.itens, abre = E.abre;
       E.itens = function () { var l = itens.apply(this, arguments) || []; l.splice(1, 0, { id: 'vistorias', t: 'Vistorias', ic: 'prancheta', href: '#vistorias', apos: 'oportunidades' }); return l; };
-      E.abre = function (href) { if (href === '#vistorias') return abrirLista(); return abre.apply(this, arguments); };
+      E.abre = function (href) { if (href === '#vistorias') return entrar(); return abre.apply(this, arguments); };
       E.vist = true;
       if (window.MenuLateral && MenuLateral.atualiza) MenuLateral.atualiza();
     }
@@ -321,6 +329,6 @@
     document.addEventListener('visibilitychange', function () { if (document.hidden && V.sujo) gravarAgora(); });
     window.addEventListener('pagehide', function () { if (V.sujo) gravarAgora(); });
   }
-  window.VistoriaApp = { versao: VERSAO, abrir: abrirLista, nova: novaVistoria };
+  window.VistoriaApp = { versao: VERSAO, abrir: entrar, nova: novaVistoria, abrirEm: abrirEm, sairDaAba: sairDaAba };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vigiar); else vigiar();
 })();

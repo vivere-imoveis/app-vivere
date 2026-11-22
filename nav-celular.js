@@ -6,7 +6,7 @@
 (function () {
   'use strict';
   var BARRA = [['inicio', 'Início'], ['leads', 'Leads'], ['tarefas', 'Tarefas'], ['oportunidades', 'Imóveis']]; /* trocas-redesenho-f1 */
-  var ATALHOS = ['btnAcapApp', 'btnAcmApp', 'btnPendApp', 'btnVistApp', 'btnPrazosApp', 'btnHubApp', 'btnPrivado', 'btnTema', 'btnInicio'];
+  var ATALHOS = ['btnAcapApp', 'btnAcmApp', 'btnPendApp', 'btnVistApp', 'btnPrazosApp', 'btnSenhaApp', 'btnAcessosApp', 'btnHubApp', 'btnPrivado', 'btnTema', 'btnInicio'];
   var SVG = {
     lupa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>',
@@ -25,7 +25,7 @@
     var c = el.cloneNode(true); c.querySelectorAll('svg, .n, .ic, .bp-ic, .ba-ic, .ba-n').forEach(function (x) { x.remove(); });
     return c.textContent.replace(/\s+/g, ' ').trim();
   }
-  function ativa() { var a = abas && abas.querySelector('[aria-selected="true"]'); return a ? a.getAttribute('data-aba') : ''; }
+  function ativa() { var ap = document.documentElement.dataset.abaApp; if (ap) return 'app:' + ap; /* 22/11/2026: tela do app aberta como aba → "Mais" marcado */ var a = abas && abas.querySelector('[aria-selected="true"]'); return a ? a.getAttribute('data-aba') : ''; }
 
   function pintaBarra() {
     if (!barra) return;
@@ -57,13 +57,13 @@
       var k = b.getAttribute('data-aba');
       return '<button type="button" data-nc="' + esc(k) + '"' + (k === at ? ' aria-current="page"' : '') + '><span class="nc-i">' + icone(b) + '</span><span>' + esc(rotulo(b)) + '</span>' + selo(b) + '</button>';
     }).join('') + '</div>';
-    var at2 = ATALHOS.map(function (id) { return document.getElementById(id); }).filter(function (el) { return el && !(el.id === 'btnAcapApp' && orig('acaptar')); });   // A CAPTAR já está nas abas
+    var at2 = ATALHOS.map(function (id) { return document.getElementById(id); }).filter(function (el) { return el && !(el.id === 'btnAcapApp' && orig('acaptar')) && !(el.id === 'btnInicio' && window.__artefatoLoja); });   // 22/11/2026: no Gestor, "Início do app" levaria para fora   // A CAPTAR já está nas abas
     if (at2.length) h += '<h2>Atalhos</h2><div class="nc-grade">' + at2.map(function (el) {
       var r = el.id === 'btnPrivado' ? (el.getAttribute('aria-pressed') === 'true' ? 'Mostrar valores' : 'Ocultar valores') : el.id === 'btnInicio' ? 'Início do app' : el.id === 'btnTema' ? 'Tema: ' + rotulo(el).replace(/^[◐☀☾]\s*/, '') : rotulo(el);
       /* 22/11/2026: no PAINEL DO GESTOR (claude.ai) o atalho que é link vira link de verdade, porque lá o clique feito por script
          não abre página nenhuma; no app segue o botão que aciona o original (que abre a janela dentro do painel). */
       if (window.__artefatoLoja && el.tagName === 'A' && el.getAttribute('href') && !/^#/.test(el.getAttribute('href'))) return '<a class="nc-link" data-nc-link="1" href="' + esc(el.getAttribute('href')) + '"><span class="nc-i">' + icone(el) + '</span><span>' + esc(r) + '</span>' + selo(el) + '</a>';
-      return '<button type="button" data-nc-at="' + el.id + '"><span class="nc-i">' + icone(el) + '</span><span>' + esc(r) + '</span>' + selo(el) + '</button>';
+      return '<button type="button" data-nc-at="' + el.id + '"' + (el.getAttribute('aria-current') === 'page' ? ' aria-current="page"' : '') + '><span class="nc-i">' + icone(el) + '</span><span>' + esc(r) + '</span>' + selo(el) + '</button>';
     }).join('') + '</div>';
     g.innerHTML = h;
     document.body.appendChild(veu); document.body.appendChild(g); aberta = [veu, g];
@@ -103,6 +103,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fechar(); });
     var pedido = 0, agenda = function () { if (!pedido) pedido = requestAnimationFrame(function () { pedido = 0; pintaBarra(); }); };
     new MutationObserver(agenda).observe(abas, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-selected'] });
+    document.addEventListener('vivere:aba-app', agenda);
     new MutationObserver(agenda).observe(marca, { childList: true, subtree: true, characterData: true });
     var modo = function () { document.body.classList.toggle('nc-on', mq.matches); if (!mq.matches) { fechar(); document.body.classList.remove('nc-busca'); } };
     if (mq.addEventListener) mq.addEventListener('change', modo); else mq.addListener(modo);

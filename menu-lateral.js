@@ -52,7 +52,8 @@
     const ss = [...document.querySelectorAll('.sub-op button[data-aba]')];
     const min = document.body.classList.contains('ml-min');
     const ex = extras();
-    const novo = ex.map((x) => x.id + (x.n || '')).join(',') + '§' + gs.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + '#' + ss.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + (min ? 'm' : '');
+    const abaApp = document.documentElement.dataset.abaApp || '';   /* 22/11/2026: tela do app aberta como aba (painel-app.js › ABA_APP) */
+    const novo = abaApp + '@' + ex.map((x) => x.id + (x.n || '')).join(',') + '§' + gs.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + '#' + ss.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + (min ? 'm' : '');
     if (novo === sig) return; sig = novo;
     const subs = ss.slice(1);
     /* 22/11/2026 (pedido do Cleiton): atalho que abre nesta mesma página e traz "apos" (ex.: Pendências → tarefas,
@@ -61,17 +62,17 @@
     const btnEx = (x, dentro) => { const miolo = `<span class="ml-ic">${window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(x.ic) : esc(x.t.slice(0, 2))}</span><span class="ml-tx">${esc(x.t)}</span>${x.n ? `<span class="ml-n ml-n-ok">${esc(x.n)}</span>` : ''}`;
       /* 22/11/2026: x.url (só no PAINEL DO GESTOR do claude.ai) = link de verdade, que o claude.ai abre fora; o clique feito por script não abre */
       if (x.url) return `<a class="ml-g ml-app" href="${esc(x.url)}" target="_blank" rel="noopener" title="${esc(x.t)} · abre fora do Gestor">${miolo}</a>`;
-      return `<button type="button" class="ml-g ml-app${dentro ? ' ml-dentro' : ''}" data-ml-href="${esc(x.href)}" title="${esc(x.t)}${dentro || x.dentro ? '' : ' · abre outra página do app'}">${miolo}</button>`; };
+      return `<button type="button" class="ml-g ml-app${dentro ? ' ml-dentro' : ''}" data-ml-href="${esc(x.href)}" aria-current="${abaApp && abaApp === x.id ? 'page' : 'false'}" title="${esc(x.t)}${dentro || x.dentro ? '' : ' · abre outra página do app'}">${miolo}</button>`; };
     const ehGest = (b) => b.dataset.aba === 'gestor', gGest = gs.filter(ehGest), gPain = gs.filter((b) => !ehGest(b));
     const exGest = ex.filter((x) => x.grupo === 'gestao'), temGest = gGest.length > 0 || exGest.length > 0;
-    const btnAba = (b) => { const sel = b.getAttribute('aria-selected') === 'true', t = txt(b);
+    const btnAba = (b) => { const sel = !abaApp && b.getAttribute('aria-selected') === 'true', t = txt(b);
       return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>`; };
     aside.innerHTML = `<div class="ml-topo"><span class="ml-tit">Menu</span><button type="button" class="ml-x" data-ml-min title="${min ? 'Abrir o menu' : 'Recolher o menu'}" aria-label="${min ? 'Abrir o menu' : 'Recolher o menu'}">${min ? '»' : '«'}</button></div>` +
       /* 22/11/2026 (pedido do Cleiton): no painel de quem é gestor, o menu abre com "Gestão" (Gestor, HUB VIVERE, Acessos) e
          depois "Painel" (Início e os demais; Minha senha e A CAPTAR por último). Títulos de seção não são clicáveis.
          O corretor não tem a seção Gestão e vê o menu sem títulos. */
       (temGest ? `<div class="ml-sep">Gestão</div>` + gGest.map(btnAba).join('') + exGest.map((x) => btnEx(x, false)).join('') + `<div class="ml-sep">Painel</div>` : '') +
-      gPain.map((b) => { const sel = b.getAttribute('aria-selected') === 'true', t = txt(b);
+      gPain.map((b) => { const sel = !abaApp && b.getAttribute('aria-selected') === 'true', t = txt(b);
         return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>` +
           (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}">${icone(s.dataset.aba, txt(s)).replace(' fim', '')}<span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : '') + exIn.filter((x) => x.apos === b.dataset.aba).map((x) => btnEx(x, true)).join(''); }).join('') +
       exFora.slice().sort((a, b) => (a.id === 'acaptar') - (b.id === 'acaptar')).map((x) => btnEx(x, false)).join('');   // 22/11/2026 (pedido do Cleiton): sem o título "No app"; esses ficam por último
