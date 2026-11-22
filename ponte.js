@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-22.1'; // ia.texto: descrição do anúncio pela painel-ia (tipo descricao, F3 do agenciamento pelo celular) · antes: 'ponte 2026-11-21.4'; // páginas de leitura 4 de cada vez (carregamento F1e) · antes: 'ponte 2026-11-21.3'; // marca acessos.hub no estado, para o botão HUB do painel (hub-web-diretoria F3) · antes: 'ponte 2026-11-21.2'; // _chegada_em dos leads pela coluna criado_em (trocas-usabilidade-f3, Lucas #4) · antes: 'ponte 2026-11-21.1'; // segmentos e remarketing da base de leads (trocas-followup-app) · antes: 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-22.2'; // carregamento F2 do Gestor: índice e coleções grandes numa rodada só (faixas em paralelo pelo total do índice; nº de páginas do índice lembrado no aparelho — só a contagem, nenhum dado) · antes: 'ponte 2026-11-22.1'; // ia.texto: descrição do anúncio pela painel-ia (tipo descricao, F3 do agenciamento pelo celular) · antes: 'ponte 2026-11-21.4'; // páginas de leitura 4 de cada vez (carregamento F1e) · antes: 'ponte 2026-11-21.3'; // marca acessos.hub no estado, para o botão HUB do painel (hub-web-diretoria F3) · antes: 'ponte 2026-11-21.2'; // _chegada_em dos leads pela coluna criado_em (trocas-usabilidade-f3, Lucas #4) · antes: 'ponte 2026-11-21.1'; // segmentos e remarketing da base de leads (trocas-followup-app) · antes: 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1, metas_equipes: 1 };   // metas_equipes: fatia 7 do CRM (placar das equipes, sem nomes)
@@ -159,7 +159,33 @@
   /* 22/11/2026 (carregamento): leitura que já se sabe grande (visão do gestor: todos os painéis) pede as 4 primeiras páginas
      juntas (junto = 4), sem esperar a 1ª — uma ida a menos ao banco. No PAINEL DO GESTOR (claude.ai) cada ida passa pelo
      conector e custa ~0,7 s; no app, ~0,25 s. As leituras pequenas seguem com 1 página na 1ª ida. */
-  async function paginas(montar, junto) {
+  /* 22/11/2026 (carregamento F2 do Gestor): o índice de todos os painéis tem ~10 páginas e saía em 3 rodadas de 4. Agora o
+     aparelho guarda SÓ quantas páginas ele teve da última vez (um número, nenhum dado) e pede todas de uma vez. */
+  var PAGS_CHAVE = 'vivere.ponte.paginas';
+  function pagsLembradas(chave) { try { var o = JSON.parse(localStorage.getItem(PAGS_CHAVE) || '{}'); var n = +o[chave]; return n > 0 && n <= 16 ? n : 0; } catch (e) { return 0; } }
+  function pagsGuardar(chave, n) { try { var o = JSON.parse(localStorage.getItem(PAGS_CHAVE) || '{}'); if (o[chave] === n) return; o[chave] = n; localStorage.setItem(PAGS_CHAVE, JSON.stringify(o)); } catch (e) { } }
+  /* Coleção grande do Gestor (captados, leads, imóveis de todos): o índice já deu o total de linhas, então ela sai em faixas
+     menores, todas ao mesmo tempo (até 12), em vez de páginas de 1000 em rodadas de 4. Se a coleção cresceu desde o índice,
+     a última faixa cheia puxa a seguinte. */
+  async function faixas(montar, total) {
+    var tam = Math.max(250, Math.ceil(total / 12)), n = Math.max(1, Math.ceil(total / tam)), tudo = [];
+    for (var de = 0; ; de += tam * n, n = 1) {
+      var rs = await Promise.all(Array.apply(null, Array(n)).map(function (_, k) { return montar().range(de + k * tam, de + (k + 1) * tam - 1); }));
+      for (var k = 0; k < rs.length; k++) {
+        if (rs[k].error) throw rs[k].error;
+        tudo = tudo.concat(rs[k].data || []);
+        if (!rs[k].data || rs[k].data.length < tam) return tudo;
+      }
+      if (tudo.length >= total) return tudo; // o índice acabou de dar o total: sem a ida extra só para ver se há mais (o que entrar depois chega pelo tempo real ou pela releitura)
+    }
+  }
+  async function paginas(montar, junto, chave) {
+    var lembrou = chave ? pagsLembradas(chave) : 0; if (lembrou) junto = Math.max(junto || 1, lembrou + 1);
+    var r = await paginasJunto(montar, junto);
+    if (chave) pagsGuardar(chave, Math.ceil((r.length + 1) / PAGINA));
+    return r;
+  }
+  async function paginasJunto(montar, junto) {
     var tudo = [], n = junto || 1;
     for (var de = 0; ; de += PAGINA * n, n = 4) {
       var rs = await Promise.all(Array.apply(null, Array(n)).map(function (_, k) { return montar().range(de + k * PAGINA, de + (k + 1) * PAGINA - 1); }));
@@ -278,8 +304,8 @@
     var primeira = !pronto[GEST], fontes = Object.keys(GFONTE), m = mem[GEST] || (mem[GEST] = {}), mudou = {};
     /* 22/11/2026 (carregamento): controle/info e o uso dos 7 dias saem junto com o índice (antes, um depois do outro) */
     var pUso = lerUso();
-    var r0P = deTodos(sb.from('painel_docs').select('painel,dados').eq('colecao', 'controle').eq('doc_id', 'info'));
-    var indice = await paginas(function () { return deTodos(sb.from('painel_docs').select('painel,colecao,doc_id,versao').in('colecao', fontes)).order('painel').order('colecao').order('doc_id'); }, 4);
+    var r0P = Promise.resolve(deTodos(sb.from('painel_docs').select('painel,dados').eq('colecao', 'controle').eq('doc_id', 'info'))); // F2: o pedido sai já (a consulta do Supabase só parte quando alguém a espera; antes saía no fim, uma rodada a mais)
+    var indice = await paginas(function () { return deTodos(sb.from('painel_docs').select('painel,colecao,doc_id,versao').in('colecao', fontes)).order('painel').order('colecao').order('doc_id'); }, 4, 'g:indice');
     var vivos = {}, falta = {}, total = {};
     indice.forEach(function (x) {
       var g = GFONTE[x.colecao]; if (!g || !painelReal(x.painel)) return;
@@ -295,7 +321,7 @@
     await Promise.all(Object.keys(falta).map(async function (g) {
       var col = GMAPA[g], ids = falta[g].filter(function (v, i, a) { return a.indexOf(v) === i; }), linhas;
       var base = function () { return deTodos(sb.from('painel_docs').select('painel,doc_id,dados,versao,criado_em').eq('colecao', col)); };
-      if (ids.length > 60 || falta[g].length * 2 > total[g]) linhas = await paginas(function () { return base().order('painel').order('doc_id'); }, Math.min(4, Math.max(1, Math.ceil((total[g] || 0) / PAGINA))));
+      if (ids.length > 60 || falta[g].length * 2 > total[g]) linhas = await faixas(function () { return base().order('painel').order('doc_id'); }, total[g] || 0);
       else linhas = await paginas(function () { return base().in('doc_id', ids).order('painel').order('doc_id'); });
       var c = m[g];
       linhas.forEach(function (l) {

@@ -2042,7 +2042,7 @@ function ligarGestor() {
   S.gestor = true;
   if (!ABAS.some((a) => a[0] === 'gestor')) ABAS.unshift(['gestor', 'Gestor']);
   ROT_ABA_Q.gestor = 'painéis: nome do corretor';
-  G_ALVOS.forEach((alvo) => { S[alvo] = {}; });
+  G_ALVOS.forEach((alvo) => { S[alvo] = {}; if (!S.gProntos.has(alvo)) S.prontos.delete(alvo); });   // carregamento F2: sem zeros enquanto a visão de todos carrega (esqueleto)
   try { if (!sessionStorage.getItem('painel.aba')) S.aba = 'gestor'; } catch (e) { S.aba = 'gestor'; }
   const gcol = (nome, chave) => db.collection(nome).onSnapshot((snap) => {
     const o = {}; snap.docs.forEach((d) => { if (d.exists) o[d.id] = d.data(); });
@@ -5127,7 +5127,7 @@ render();
   const erro = () => { toast('A conexão com os dados caiu. Recarregue a página.'); };
   const col = (nome, alvo) => db.collection(nome).onSnapshot((snap) => {
     const o = {}; snap.docs.forEach((d) => { if (d.exists) o[d.id] = d.data(); });
-    if (S.gestor && G_ALVOS.has(alvo)) { if (alvo === 'leads') S.demora = false; S.prontos.add(alvo); return renderLogo(); }
+    if (S.gestor && G_ALVOS.has(alvo)) { if (alvo === 'leads') S.demora = false; if (S.gProntos.has(alvo)) S.prontos.add(alvo); return renderLogo(); }   // carregamento F2 (22/11/2026): no gestor, a coleção conta como pronta só quando a de TODOS chega — antes os números apareciam zerados por ~3 s
     S[alvo] = o; if (alvo === 'leads') { separarArq(); S.demora = false; } S.prontos.add(alvo); renderLogo();
     if (alvo === 'perfilIA' && S.aberto && S.aberto.tipo === 'lead') atualizaPF(S.aberto.id);
     if (alvo === 'leadResp' && S.aberto && S.aberto.tipo === 'lead') atualizaLR(S.aberto.id);
