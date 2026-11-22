@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-21.3'; // marca acessos.hub no estado, para o botão HUB do painel (hub-web-diretoria F3) · antes: 'ponte 2026-11-21.2'; // _chegada_em dos leads pela coluna criado_em (trocas-usabilidade-f3, Lucas #4) · antes: 'ponte 2026-11-21.1'; // segmentos e remarketing da base de leads (trocas-followup-app) · antes: 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-21.4'; // páginas de leitura 4 de cada vez (carregamento F1e) · antes: 'ponte 2026-11-21.3'; // marca acessos.hub no estado, para o botão HUB do painel (hub-web-diretoria F3) · antes: 'ponte 2026-11-21.2'; // _chegada_em dos leads pela coluna criado_em (trocas-usabilidade-f3, Lucas #4) · antes: 'ponte 2026-11-21.1'; // segmentos e remarketing da base de leads (trocas-followup-app) · antes: 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1, metas_equipes: 1 };   // metas_equipes: fatia 7 do CRM (placar das equipes, sem nomes)
@@ -154,14 +154,20 @@
   function limparCache() { try { indexedDB.deleteDatabase(CACHE_NOME); } catch (e) { } }
 
   /* ---------- Leitura: primeiro o índice (pequeno), depois só o que mudou ---------- */
+  // carregamento F1e (21/11/2026): depois da 1ª página cheia, as seguintes vão 4 de cada vez (antes, uma depois da outra:
+  // o índice do gestor tinha 10 páginas e os captados 9, ~150 ms cada em fila). A ordem do resultado é a mesma.
   async function paginas(montar) {
-    var tudo = [], de = 0;
-    for (; ;) {
-      var r = await montar().range(de, de + PAGINA - 1);
-      if (r.error) throw r.error;
-      tudo = tudo.concat(r.data || []);
-      if (!r.data || r.data.length < PAGINA) return tudo;
-      de += PAGINA;
+    var r = await montar().range(0, PAGINA - 1);
+    if (r.error) throw r.error;
+    var tudo = r.data || [];
+    if (tudo.length < PAGINA) return tudo;
+    for (var de = PAGINA; ; de += PAGINA * 4) {
+      var rs = await Promise.all([0, 1, 2, 3].map(function (k) { return montar().range(de + k * PAGINA, de + (k + 1) * PAGINA - 1); }));
+      for (var k = 0; k < rs.length; k++) {
+        if (rs[k].error) throw rs[k].error;
+        tudo = tudo.concat(rs[k].data || []);
+        if (!rs[k].data || rs[k].data.length < PAGINA) return tudo;
+      }
     }
   }
   function sincronizar(escopo) {
