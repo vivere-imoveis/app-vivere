@@ -287,3 +287,32 @@ body .g-barra>span:last-child{white-space:nowrap}
   #conteudo .prev-mes .cartao{padding:7px 9px}
   #conteudo .prev-mes .cartao .v{font-size:19px}
 }
+/* Meus imóveis no celular: cartão mais curto (densidade, 22/11/2026). Os 5 botões cabem numa linha (rótulos curtos, Mapa e
+   Google Maps só com o ícone) e o bloco do proprietário fica mais justo. Rótulos curtos: trocas_meus_cel.py no painel.js. */
+@media (max-width:560px){
+  #conteudo article.imv{gap:6px}
+  /* foto ao lado do título e do endereço; valores e características usam a largura toda */
+  #conteudo article.imv .com-capa{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;row-gap:4px;align-items:start}
+  #conteudo article.imv .com-capa>.txt{display:contents}
+  #conteudo article.imv .com-capa>.capa{grid-row:1/span 2}
+  #conteudo article.imv .com-capa .cm-fat{grid-column:1/-1}
+  #conteudo article.imv .cm-fat{font-size:12.5px;gap:1px 8px}
+  #conteudo article.imv .acoes-imv{gap:4px;row-gap:3px}
+  #conteudo article.imv .acoes-imv .b{padding:4px 8px;font-size:12px;gap:0}
+  #conteudo article.imv .acoes-imv .so-pc{display:none}
+  #conteudo article.imv .acoes-imv .data-imv{font-size:10.5px}
+  #conteudo article.imv .prop{padding:6px 9px;gap:2px}
+  #conteudo article.imv .prop .cm-lin{font-size:12.5px;line-height:1.5}
+  #conteudo article.imv .prop .copiar{font-size:12px;padding:0 3px}
+  #conteudo article.imv .zap{gap:4px}
+  #conteudo article.imv .zap a{font-size:11.5px;padding:1px 7px}
+  #conteudo article.imv .prop-falta{margin-top:2px;gap:6px}
+  #conteudo article.imv .prop-falta .pill{font-size:10.5px}
+  #conteudo article.imv .prop-falta .b{padding:3px 8px;font-size:12px}
+}
+/* Meus leads no celular: barra de botões (Arquivados, Relatórios, Personalizar, Registrar conversa, + Novo lead) em 2 linhas
+   em vez de 3, com botões mais justos (densidade, 22/11/2026). Só ícone fica para decisão do Cleiton. */
+@media (max-width:560px){
+  #conteudo .linha:has(> [data-arqver]){gap:5px!important}
+  #conteudo .linha:has(> [data-arqver]) > .b{padding:4px 8px!important;font-size:12px!important;gap:4px!important;min-height:30px}
+}
