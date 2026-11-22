@@ -129,10 +129,10 @@ body.ml-on #ml{min-width:208px;max-width:240px;padding:16px 12px 24px;gap:2px}
   body.ml-on .marca{flex-wrap:nowrap}
 }
 .rd-n .num,.rd-n .rd-n-v{text-align:left}
-/* sub-abas de Imóveis (8): uma fileira que rola de lado no celular e no tablet, em vez de 4 linhas de botões */
+/* sub-abas de Imóveis (8): no celular e no tablet quebram em linhas, no tamanho de cada botão, sem nada escondido de lado
+   (22/11/2026, pedido do Cleiton: a fileira que rolava de lado escondia Empreendimentos, Mapa e o resto) */
 @media (max-width:1023px){
-  .chips.sub-op{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;gap:6px!important;padding-bottom:2px;scrollbar-width:none;grid-template-columns:none!important;margin-inline:-16px!important;padding-inline:16px!important;scroll-padding-inline:16px}
-  .chips.sub-op::-webkit-scrollbar{display:none}
-  .chips.sub-op button{flex:none!important;width:auto!important;min-height:40px;white-space:nowrap}
+  .chips.sub-op{display:flex!important;flex-wrap:wrap!important;overflow:visible!important;gap:4px!important;grid-template-columns:none!important;margin-inline:0!important;padding-inline:0!important}
+  .chips.sub-op button{flex:0 0 auto!important;width:auto!important;min-height:36px;white-space:nowrap;padding:6px 10px!important}
 }
 .marca #btnPrazosApp{display:none!important}
