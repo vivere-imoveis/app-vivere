@@ -32,7 +32,21 @@
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && document.getElementById('app-dentro')) fechaDentro(); });
   /* clicar numa aba do painel (topo, lateral ou barra do celular) fecha a janela */
   document.addEventListener('click', function (ev) { var b = ev.target.closest && ev.target.closest('[data-aba]'); if (b && !b.closest('#app-dentro')) fechaDentro(); }, true);
-  window.PAINEL_DENTRO = { abre: abreDentro, fecha: fechaDentro, pode: embutivel };
+  /* ir(href): no app abre na janela; no PAINEL DO GESTOR (claude.ai), onde script não troca de página, mostra um aviso com
+     o link de verdade, que o toque do usuário abre fora */
+  function urlFora(href) { return /^hub\//.test(href) ? 'https://claude.ai/artifact/LR3j38He26qquNQHKunkMx' : 'https://vivere-imoveis.github.io/app-vivere/' + href; }
+  function avisoFora(href) {
+    var aba = (/aba=([a-z]+)/.exec(href) || [])[1], t = /^hub\//.test(href) ? 'HUB VIVERE' : (NOMES[aba] || 'esta tela');
+    var v = document.getElementById('aviso-fora'); if (v) v.remove();
+    v = document.createElement('div'); v.id = 'aviso-fora'; v.setAttribute('role', 'status');
+    v.innerHTML = '<span>' + t + ' fica no app, fora do Gestor.</span><a class="b p" target="_blank" rel="noopener"></a><button type="button" class="b" aria-label="Fechar o aviso">✕</button>';
+    var a = v.querySelector('a'); a.href = urlFora(href); a.textContent = 'Abrir ' + t + ' ↗';
+    a.addEventListener('click', function () { setTimeout(function () { v.remove(); }, 0); });
+    v.querySelector('button').addEventListener('click', function () { v.remove(); });
+    document.body.appendChild(v); setTimeout(function () { if (v.isConnected) v.remove(); }, 15000);
+  }
+  function ir(href) { if (embutivel(href)) return abreDentro(href); if (!DENTRO) return avisoFora(href); volta(); location.href = href; }
+  window.PAINEL_DENTRO = { abre: abreDentro, fecha: fechaDentro, pode: embutivel, ir: ir };
   function volta() { try { sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) { } }
   function pinta() {
     var tema = document.getElementById('btnTema');
@@ -74,11 +88,14 @@
     itens: function () {
       var P = window.VIVERE_PONTE, est = P && P.estado ? P.estado() : {}, sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
       var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
-      return [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n, dentro: DENTRO }, { id: 'acm', t: 'Estudo de Mercado', ic: 'grafico', href: 'index.html?aba=acm', apos: DENTRO ? 'oportunidades' : '' }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha', dentro: DENTRO },
+      var L = [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n, dentro: DENTRO }, { id: 'acm', t: 'Estudo de Mercado', ic: 'grafico', href: 'index.html?aba=acm', apos: DENTRO ? 'oportunidades' : '' }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha', dentro: DENTRO },
         est.hub ? { id: 'hub', t: 'HUB VIVERE', ic: 'casa', href: 'hub/', dentro: DENTRO } : null,
         est.papel === 'gestor' ? { id: 'acessos', t: 'Acessos', ic: 'escudo', href: 'index.html?aba=acessos', dentro: DENTRO } : null];
+      /* 22/11/2026: no PAINEL DO GESTOR (claude.ai) cada atalho do app vira link de verdade (url), que abre fora */
+      if (!DENTRO) L.forEach(function (x) { if (x) x.url = /^hub\//.test(x.href) ? 'https://claude.ai/artifact/LR3j38He26qquNQHKunkMx' : 'https://vivere-imoveis.github.io/app-vivere/' + x.href; });
+      return L;
     },
-    abre: function (href) { if (embutivel(href)) return abreDentro(href); volta(); location.href = href; }
+    abre: function (href) { ir(href); }
   };
   function liga() {
     var abas = document.getElementById('abas');

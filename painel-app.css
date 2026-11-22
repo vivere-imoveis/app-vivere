@@ -334,3 +334,10 @@ body.ml-on.ml-min #app-dentro{left:58px}
 #app-dentro .ad-f{flex:1;width:100%;border:0;background:var(--bg)}
 html.com-janela,html.com-janela body{overflow:hidden}
 @media (max-width:560px){#app-dentro .ad-fora{display:none}}
+/* 22/11/2026: atalho do menu lateral que é link de verdade (PAINEL DO GESTOR no claude.ai), igual aos botões */
+#ml a.ml-g{box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;line-height:1.25;position:relative;text-decoration:none}
+#ml a.ml-g:focus-visible{outline:2px solid var(--accent)}
+#ml a.ml-g[href*="acaptar"]{color:var(--brass);border:1px solid color-mix(in srgb,var(--brass) 55%,transparent);margin:4px 0}
+/* Aviso do PAINEL DO GESTOR (claude.ai) para telas que ficam no app: o link de verdade abre fora (22/11/2026) */
+#aviso-fora{position:fixed;left:50%;transform:translateX(-50%);top:12px;width:max-content;z-index:960;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;max-width:min(560px,calc(100vw - 24px));padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 8px 24px rgba(0,0,0,.22);font-size:14px}
+#aviso-fora a.b{text-decoration:none}

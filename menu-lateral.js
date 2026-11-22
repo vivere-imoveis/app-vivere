@@ -58,7 +58,10 @@
     /* 22/11/2026 (pedido do Cleiton): atalho que abre nesta mesma página e traz "apos" (ex.: Pendências → tarefas,
        Vistorias → oportunidades) fica logo abaixo daquela aba, e não na seção "No app". */
     const exIn = ex.filter((x) => x.apos && gs.some((b) => b.dataset.aba === x.apos)), exFora = ex.filter((x) => !exIn.includes(x));
-    const btnEx = (x, dentro) => `<button type="button" class="ml-g ml-app${dentro ? ' ml-dentro' : ''}" data-ml-href="${esc(x.href)}" title="${esc(x.t)}${dentro || x.dentro ? '' : ' · abre outra página do app'}"><span class="ml-ic">${window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(x.ic) : esc(x.t.slice(0, 2))}</span><span class="ml-tx">${esc(x.t)}</span>${x.n ? `<span class="ml-n ml-n-ok">${esc(x.n)}</span>` : ''}</button>`;
+    const btnEx = (x, dentro) => { const miolo = `<span class="ml-ic">${window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(x.ic) : esc(x.t.slice(0, 2))}</span><span class="ml-tx">${esc(x.t)}</span>${x.n ? `<span class="ml-n ml-n-ok">${esc(x.n)}</span>` : ''}`;
+      /* 22/11/2026: x.url (só no PAINEL DO GESTOR do claude.ai) = link de verdade, que o claude.ai abre fora; o clique feito por script não abre */
+      if (x.url) return `<a class="ml-g ml-app" href="${esc(x.url)}" target="_blank" rel="noopener" title="${esc(x.t)} · abre fora do Gestor">${miolo}</a>`;
+      return `<button type="button" class="ml-g ml-app${dentro ? ' ml-dentro' : ''}" data-ml-href="${esc(x.href)}" title="${esc(x.t)}${dentro || x.dentro ? '' : ' · abre outra página do app'}">${miolo}</button>`; };
     aside.innerHTML = `<div class="ml-topo"><span class="ml-tit">Menu</span><button type="button" class="ml-x" data-ml-min title="${min ? 'Abrir o menu' : 'Recolher o menu'}" aria-label="${min ? 'Abrir o menu' : 'Recolher o menu'}">${min ? '»' : '«'}</button></div>` +
       gs.map((b) => { const sel = b.getAttribute('aria-selected') === 'true', t = txt(b);
         return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>` +

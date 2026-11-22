@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -1991,8 +1991,8 @@ function pintaConteudo(el, html) {
 let RL_EM = null;
 function renderLogo() { if (RL_EM) return; RL_EM = setTimeout(() => { RL_EM = null; render(); }, 40); }
 function render() {
-  if (S.aba === 'semresp') { S.aba = 'imoveis'; try { sessionStorage.setItem('painel.aba', 'imoveis'); sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} location.href = 'index.html?aba=semresp'; return; } // 19/11/2026: abre no app
-  if (S.aba === 'acaptar') { S.aba = 'inicio'; try { sessionStorage.setItem('painel.aba', 'inicio'); sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} location.href = acapUrl(); }
+  if (S.aba === 'semresp') { S.aba = 'imoveis'; try { sessionStorage.setItem('painel.aba', 'imoveis'); sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} if (window.PAINEL_DENTRO && PAINEL_DENTRO.ir) PAINEL_DENTRO.ir('index.html?aba=semresp'); else { location.href = 'index.html?aba=semresp'; return; } } // 19/11/2026: abre no app; 22/11/2026: na janela dentro do painel
+  if (S.aba === 'acaptar') { S.aba = 'inicio'; try { sessionStorage.setItem('painel.aba', 'inicio'); sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} if (window.PAINEL_DENTRO && PAINEL_DENTRO.ir) PAINEL_DENTRO.ir(acapUrl()); else location.href = acapUrl(); }
   desenharAbas();
   document.getElementById('nomeCorretor').textContent = S.gestor ? rotGestor() : (S.info.corretor || 'Corretor');
   const el = document.getElementById('conteudo');

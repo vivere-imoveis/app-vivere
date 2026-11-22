@@ -92,3 +92,7 @@ body.nc-on .aviso { padding-block: 7px !important; }
   .cartao .s { font-size: 12px; }
   #barraQ details summary { font-size: 12px; }
 }
+/* 22/11/2026: atalho que é link de verdade (PAINEL DO GESTOR no claude.ai) com o mesmo desenho dos botões da gaveta */
+.nc-grade > a.nc-link { appearance: none; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 10px; padding: 10px 6px 8px; display: grid; justify-items: center; gap: 4px; font: 500 12px/1.25 var(--body, system-ui); text-align: center; position: relative; cursor: pointer; min-height: 62px; text-decoration: none; }
+.nc-grade > a.nc-link:last-child:nth-child(3n+1) { grid-column: span 3; }
+.nc-grade > a.nc-link:last-child:nth-child(3n+2) { grid-column: span 2; }
