@@ -1,5 +1,5 @@
 /* Navegação compacta do painel no celular (22/11/2026, pedido do Cleiton). Par do nav-celular.css.
-   Até 700 px: cabeçalho de uma linha (selo, nome, lupa, ☰), barra fixa embaixo com Início, Leads, Tarefas, Ofertas e Mais,
+   Até 1023 px (celular e tablet em pé): cabeçalho de uma linha (selo, nome, lupa, ☰), barra fixa embaixo com Início, Leads, Tarefas, Ofertas e Mais,
    e a gaveta "Mais" com as outras abas e os atalhos (A CAPTAR, ACM, Pendências, Vistorias, HUB, ocultar valores, tema,
    início do app). Tudo só espelha os botões originais (o menu #abas e os atalhos do cabeçalho seguem no lugar, escondidos):
    o clique na barra ou na gaveta clica o botão original. */
@@ -13,7 +13,7 @@
     mais: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
     ponto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6"/></svg>'
   };
-  var mq = window.matchMedia('(max-width: 700px)');
+  var mq = window.matchMedia('(max-width: 1023px)');
   var abas, barra, btBusca, btMenu, aberta = null;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }

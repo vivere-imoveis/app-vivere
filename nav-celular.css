@@ -1,6 +1,6 @@
 /* Navegação compacta do painel (22/11/2026, pedido do Cleiton: "menus demais em cima no celular; textos mais compactos
    no celular, tablet e computador"). Par do nav-celular.js.
-   Celular (até 700 px, body.nc-on): cabeçalho de uma linha (selo, nome, busca, ☰), barra fixa embaixo (Início, Leads,
+   Celular e tablet em pé (até 1023 px, body.nc-on): cabeçalho de uma linha (selo, nome, busca, ☰), barra fixa embaixo (Início, Leads,
    Tarefas, Ofertas, Mais) e a gaveta "Mais" com as outras abas e os atalhos. O menu original continua lá (escondido):
    a barra e a gaveta só espelham os botões dele, então nada muda na navegação por dentro.
    Tablet (701 a 1099 px): atalhos só com ícone e textos menores. Computador: atalhos e cartões mais enxutos. */
@@ -58,6 +58,14 @@ body.nc-on .toast { bottom: calc(76px + env(safe-area-inset-bottom)) !important;
   @keyframes nc-sobe { from { transform: translateY(24px); opacity: .4; } to { transform: none; opacity: 1; } }
 }
 
+/* barra de baixo centrada no tablet */
+@media (min-width: 701px) { body.nc-on .nc-barra { padding-inline: calc((100vw - 640px) / 2); } }
+/* "Ver como" do gestor: seletor de uma linha (como já era no celular) */
+body.nc-on .g-barra { gap: 5px 8px !important; padding: 6px 8px !important; margin-bottom: 8px !important; }
+body.nc-on .g-barra > span:first-child, body.nc-on .g-barra .chips { display: none !important; }
+body.nc-on .g-barra .g-sel { display: block !important; flex: 1 1 100%; width: 100%; font-size: 16px; padding: 6px 8px; }
+body.nc-on .g-barra > span:last-child { margin-left: 0 !important; font-size: 11.5px; }
+
 /* textos mais compactos no celular */
 body.nc-on .cartao .r { font-size: 10px !important; letter-spacing: .06em; }
 body.nc-on .cartao .v { font-size: 22px !important; }
@@ -68,7 +76,7 @@ body.nc-on #conteudo .linha > .b { padding: 6px 10px; font-size: 13px; }
 body.nc-on .painel h2 { font-size: 13px !important; }
 body.nc-on .aviso { padding-block: 7px !important; }
 
-/* ---------- tablet (701 a 1099 px) ---------- */
+/* ---------- tablet deitado e meia tela (1024 a 1099 px; até 1023 vale a barra de baixo) ---------- */
 @media (min-width: 701px) and (max-width: 1099px) {
   #btnAcapApp .ba-n, #btnAcmApp .ba-t, #btnHubApp .ba-t, #btnVistApp .bv-t { display: none !important; }
   header.topo .btn-tema { padding: 6px 9px !important; font-size: 12px !important; }
