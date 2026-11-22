@@ -222,11 +222,12 @@ body.ml-on.ml-min #ml .ml-topo{justify-content:center}
 .ac-pp{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);white-space:nowrap}
 .ac-pp select{width:auto;padding:5px 8px;font-size:13px}
 @media (max-width:560px){.ac-pag>.s{flex:1 1 100%;margin:0}.ac-pag .btn{flex:1 1 0}}
-/* resumo do A CAPTAR no celular e tablet em pé: 3 + 2 numa grade de 6, compacto (densidade, 22/11/2026) */
+/* resumo do A CAPTAR no celular e tablet em pé: 3 + 2 numa grade de 6, compacto (densidade, 22/11/2026).
+   Seletores mais fortes que os da camada densidade.js (.g-num), que daria 3 + 2 com um buraco no fim da 2ª linha. */
 @media (max-width:700px){
-  .resumo-ac{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-bottom:10px}
-  .resumo-ac div,.resumo-ac .tot{grid-column:span 2;padding:7px 9px;border-radius:10px}
-  .resumo-ac div:nth-child(n+4){grid-column:span 3}
-  .resumo-ac b{font-size:19px}
-  .resumo-ac span{display:block;font-size:11px;line-height:1.2}
+  #conteudo .resumo-ac.resumo-ac.resumo-ac{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-bottom:10px}
+  #conteudo .resumo-ac>div{grid-column:span 2!important;padding:7px 9px!important;border-radius:10px}
+  #conteudo .resumo-ac>div:nth-child(n+4){grid-column:span 3!important}
+  #conteudo .resumo-ac b{font-size:19px!important}
+  #conteudo .resumo-ac span{display:block;font-size:11px;line-height:1.2}
 }
