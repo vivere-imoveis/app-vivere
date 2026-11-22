@@ -18,7 +18,7 @@
     var qn = /[?&]nav=([01])\b/.exec(location.search); if (qn) localStorage.setItem('vivere.nav', qn[1]);
     if (localStorage.getItem('vivere.nav') === '0') return;
   } catch (e) {}
-  var BARRA = [['inicio', 'Início'], ['crm', 'CRM'], ['locacao', 'Locação'], ['financeiro', 'Financeiro']];
+  var BARRA = [['inicio', 'Início'], ['crm', 'Leads'], ['estoque', 'Imóveis'], ['locacao', 'Locação']]; /* hub-redesenho-f1 */
   var css = document.createElement('style'); css.id = 'topo-compacto-css';
   css.textContent = [
     /* resumo das coletas (todos os formatos) */

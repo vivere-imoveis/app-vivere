@@ -422,7 +422,7 @@ html[data-privado="1"] .btn-privado .olho-fechado{display:block}
 <script src="nucleo/nucleo-1.js?v=6bdf5597" charset="utf-8"></script>
 <!-- reordena-abas:fim -->
 <script src="nucleo/nucleo-2.js?v=9b652a30" charset="utf-8"></script>
-<script src="nucleo/nucleo-3.js?v=62c5b430" charset="utf-8"></script>
+<script src="nucleo/nucleo-3.js?v=dec6f723" charset="utf-8"></script>
 
 <script src="nucleo/nucleo-4.js?v=eabfb5bd" charset="utf-8"></script>
 
@@ -458,6 +458,22 @@ nav.abas button[aria-selected="true"],nav.sub button[aria-selected="true"]{borde
 #vz-aviso.visivel{opacity:1;transform:translate(-50%,0)}
 @media (pointer:coarse){#vz-aviso{bottom:auto;top:calc(10px + env(safe-area-inset-top,0px));transform:translate(-50%,-20px)}}
 .busca{display:flex;gap:6px;align-items:center}.busca>input{flex:1 1 auto;min-width:0}
+</style>
+<style id="hub-redesenho-f1">/* hub-redesenho-f1 (22/11/2026): o desenho do painel dos corretores — rótulos sem caixa alta, abas discretas,
+   lateral com o fio de latão na área aberta, números do Início com rótulo em minúsculas. Sem destaque em cor escolhido por nós. */
+.marca h1{letter-spacing:.02em!important;text-transform:none!important;font-size:19px!important;font-weight:500!important}
+nav.abas button{text-transform:none!important;letter-spacing:.01em!important;font-size:14.5px!important;font-family:var(--display)}
+nav.abas button,nav.sub button{border-color:transparent!important;background:none!important;box-shadow:none!important;border-radius:10px 10px 0 0!important}
+nav.abas button:hover,nav.sub button:hover{background:var(--soft)!important}
+nav.abas button[aria-selected="true"],nav.sub button[aria-selected="true"]{background:var(--soft)!important;box-shadow:inset 0 -2px 0 var(--brass)!important;color:var(--ink)}
+.kpi .rot{text-transform:none!important;letter-spacing:0!important;font:600 13px var(--body)!important;color:var(--ink)!important}
+.kpi .num{font-family:var(--display);font-variant-numeric:tabular-nums lining-nums}
+#ml .ml-g,#ml .ml-s{border-color:transparent!important}
+#ml .ml-g[aria-current="page"],#ml [aria-current="page"]{background:var(--soft)!important;border-color:transparent!important;box-shadow:inset 3px 0 0 var(--brass)}
+#ml .ml-tit,#ml .ml-sep{text-transform:none!important;letter-spacing:0!important}
+#ml .ml-g,#ml .ml-s,#ml .ml-tx{text-transform:none!important;letter-spacing:0!important;font-size:14.5px}
+#conteudo h2{text-transform:none!important;letter-spacing:.01em!important;font-size:18px!important}
+.lk-metas,.lk-paineis summary{text-transform:none!important;letter-spacing:0!important}
 </style>
 <style id="celular-sem-rolagem">/* 02/11/2026: no celular o menu dos painéis dos corretores ocupa a largura do topo, sem sair da tela */
 @media (max-width:700px){.topo{position:relative}.lk-paineis{position:static}.lk-paineis .menu{left:0;right:0;top:auto;min-width:0;max-width:none;margin-top:6px}}
@@ -643,6 +659,6 @@ body.ml-on.ml-min #ml .ml-topo{justify-content:center}
 .ml-troca{font-size:16px}
 </style>
 <script id="icones-vivere" src="nucleo/nucleo-6.js?v=19bd0efa" charset="utf-8"></script>
-<script src="nucleo/nucleo-7.js?v=91aed514" charset="utf-8"></script>
-<script src="modulos/topo-compacto.js?v=f99bb670"></script>
+<script src="nucleo/nucleo-7.js?v=b72a2264" charset="utf-8"></script>
+<script src="modulos/topo-compacto.js?v=4f7cfb6b"></script>
 <script src="modulos/entrada.js?v=b45a7679"></script>

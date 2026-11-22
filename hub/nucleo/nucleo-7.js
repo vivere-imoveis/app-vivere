@@ -1,7 +1,7 @@
 
 (function(){
   const LS='hubv.menuModo', LSM='hubv.menuMin';
-  const IC={inicio:'casa',crm:'pessoas',locacao:'chave',financeiro:'cifrao',gestao:'grafico',construcoes:'obra'}; /* 13/11/2026: ícones de traço (icones-vivere) no lugar dos emojis */
+  const IC={inicio:'casa',crm:'pessoas',estoque:'predio',marketing:'enviar',cadastros:'pasta',equipe:'estrela',locacao:'chave',financeiro:'cifrao',gestao:'grafico',construcoes:'obra'}; /* hub-redesenho-f1 */ /* 13/11/2026: ícones de traço (icones-vivere) no lugar dos emojis */
   const icone=(g,t)=>window.VIVERE_ICONES&&VIVERE_ICONES.html?VIVERE_ICONES.html(IC[g]||'blocos'):t.slice(0,2);
   /* 18/11/2026 (pedido do Cleiton): símbolo de traço ao lado de toda área, aba e sub-aba, no topo e na lateral; nada de emoji */
   const ICA={pendencias:'alerta','crm-visao':'grafico','cadastro-imoveis':'casa',imoveis:'etiqueta',mapa:'mapa','link-mapa':'pino',empreendimentos:'predio','empreendimentos-construtoras':'obra',
@@ -22,14 +22,14 @@
       const i=document.createElement('i'); i.className='ic ic-'+(b.dataset.grupo?(IC[b.dataset.grupo]||'blocos'):icTab(b)); i.setAttribute('aria-hidden','true'); b.insertBefore(i,b.firstChild); }); }
   const ler=k=>{ try{ return localStorage.getItem(k); }catch(_){ return null; } };
   const grava=(k,v)=>{ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(_){} };
-  const telaCheia=()=>innerWidth>=1440&&!!(screen&&screen.width)&&innerWidth>=screen.width*0.9;
-  const modo=()=>{ if(innerWidth<900) return 'topo'; const m=ler(LS); return m==='lateral'||m==='topo'?m:(telaCheia()?'lateral':'topo'); };
+  const telaCheia=()=>innerWidth>=1024; /* hub-redesenho-f1 */
+  const modo=()=>{ if(innerWidth<1024) return 'topo'; const m=ler(LS); return m==='lateral'||m==='topo'?m:(telaCheia()?'lateral':'topo'); };
   let aside=null, sig='';
   function botaoTroca(){ const t=document.querySelector('.topo')||document.querySelector('header'); if(!t||document.getElementById('ml-troca')) return;
     const b=document.createElement('button'); b.type='button'; b.id='ml-troca'; b.className='tema-btn ml-troca'; b.textContent='☰';
     const tema=document.getElementById('tema-btn'); if(tema&&tema.parentNode===t) t.insertBefore(b,tema); else t.appendChild(b); }
   function titBotao(){ const b=document.getElementById('ml-troca'); if(!b) return; const lat=document.body.classList.contains('ml-on');
-    b.title=lat?'Menu no topo':'Menu lateral'; b.setAttribute('aria-label',b.title); b.hidden=innerWidth<900; }
+    b.title=lat?'Menu no topo':'Menu lateral'; b.setAttribute('aria-label',b.title); b.hidden=innerWidth<1024; }
   function monta(){
     decora();
     const on=modo()==='lateral'; const mudou=document.body.classList.contains('ml-on')!==on; document.body.classList.toggle('ml-on',on); if(mudou&&window.MenusCheios) requestAnimationFrame(()=>{ try{ MenusCheios.atualiza(); }catch(_){} }); document.body.classList.toggle('ml-min',on&&ler(LSM)==='1'); titBotao();

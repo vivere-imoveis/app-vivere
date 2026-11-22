@@ -1,12 +1,12 @@
 {
- "hub_versao": "1795321217-0aa7",
- "index_original_sha16": "83912a2f1de2d429",
+ "hub_versao": "1795350949-27ff",
+ "index_original_sha16": "16fa025424cc2cb2",
  "nucleos": 7,
- "montado_em": "2026-11-22T01:20-03:00",
+ "montado_em": "2026-11-22T09:40-03:00",
  "fora_por_serem_dados": [],
  "arquivos": {
   "hub-web.js": "f91fa1fe6b5ae230",
-  "index.html": "276f9d0a8265e82d",
+  "index.html": "4efb9f32948334c0",
   "modulos/acm.js": "11d14bfb53c61b00",
   "modulos/app-vivere.js": "931a658f03d65dbe",
   "modulos/base-leads.js": "50324a52b7163808",
@@ -95,7 +95,7 @@
   "modulos/relatorios.js": "069b529df11f4d15",
   "modulos/site-leads.js": "031fe351e8b4bbe6",
   "modulos/solicitacoes.js": "6ec842a5ceccc62d",
-  "modulos/topo-compacto.js": "f99bb67026469db9",
+  "modulos/topo-compacto.js": "4f7cfb6becf1a641",
   "modulos/vendor/jspdf-2.5.1.umd.min.js": "98ccf17aa10c20bb",
   "modulos/vendor/jspdf-autotable-3.8.2.min.js": "27a9c3b61843c631",
   "modulos/vendor/leaflet-1.9.4.js": "db49d009c841f5ca",
@@ -104,10 +104,11 @@
   "modulos/whatsapp-ia.js": "0fc8e2edd7d7ce39",
   "nucleo/nucleo-1.js": "6bdf5597ca821306",
   "nucleo/nucleo-2.js": "9b652a30ae103ad8",
-  "nucleo/nucleo-3.js": "62c5b4304224f271",
+  "nucleo/nucleo-3.js": "dec6f723a690dba1",
   "nucleo/nucleo-4.js": "eabfb5bd68447bb8",
   "nucleo/nucleo-5.js": "2ebf5e303ee7a497",
   "nucleo/nucleo-6.js": "19bd0efa85ba6032",
-  "nucleo/nucleo-7.js": "91aed514d05266ca"
- }
+  "nucleo/nucleo-7.js": "b72a22642a72f359"
+ },
+ "obs_hub_redesenho_f1": "edições do hub_redesenho_f1.py aplicadas direto nesta cópia (mesmos textos do edit_version no artefato); index_original_sha16 do artefato novo abaixo"
 }
