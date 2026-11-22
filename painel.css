@@ -490,3 +490,5 @@ td[data-l="Telefone"] .cel,td[data-l="Outro telefone"] .cel{white-space:nowrap}
 nav.abas>button,nav.sub>button,.abas>button,.menu-cheio>button,.menu-cheio>a.btn{flex:0 0 auto!important}
 nav.abas,nav.sub,.abas,.filtros,.chips,.ordenar-movel{column-gap:4px!important;row-gap:4px!important}
 .quebra-menu{display:none!important}
+/* transicao-suave (22/11/2026): entrada curta do conteúdo ao trocar de aba ou sub-aba */
+@media (prefers-reduced-motion:no-preference){#conteudo.vista-nova{animation:pc-entra .16s ease-out}@keyframes pc-entra{from{opacity:.35;transform:translateY(4px)}}}

@@ -1958,6 +1958,35 @@ document.addEventListener('click', (ev) => {
 }, true);
 (function () { const st = document.createElement('style'); st.id = 'css-acaptar-aba'; st.textContent = '.btn-acap{display:inline-flex;align-items:center;gap:6px;text-decoration:none;border-color:var(--brass);color:var(--ink)}.btn-acap:hover{background:var(--soft)}.btn-acap .ba-t{font-weight:600;letter-spacing:.06em}.btn-acap .ba-n{font-size:12px;color:var(--muted);white-space:nowrap;padding-left:6px;border-left:1px solid var(--line)}.btn-acap .ba-n b{color:var(--ok-selo);font-weight:700}.btn-acap .ba-m b{color:var(--brass)}.topo-mini .tm-acap{display:none}@media (max-width:700px){.marca{row-gap:8px}.btn-acap{order:5;flex:1 1 100%;justify-content:center;padding:8px 12px}.topo-mini .tm-acap{display:inline-flex;align-items:center;gap:2px;flex:none;border:1px solid var(--brass);background:var(--panel);color:var(--ink);border-radius:999px;padding:6px 10px;font:500 13px var(--body);text-decoration:none;white-space:nowrap}.topo-mini .tm-acap b{font-weight:700;color:var(--ok-selo)}.topo-mini .tm-acap b+b{color:var(--brass)}}.acap-cts .cartao{text-align:left;font:inherit;color:inherit;cursor:pointer}.acap-cts .cartao:hover{border-color:var(--brass)}.acap-fil{margin:12px 0 10px}.acap-como{margin:4px 0 12px;max-width:80ch}.pill.acap-lv{background:var(--ok-bg);color:var(--ok-selo)}.pill.acap-cp{background:var(--soft);color:var(--brass)}.acap-cod{font:600 11px/1.5 var(--body)!important;letter-spacing:.06em;color:var(--brass)!important;margin-top:2px}.acap-ft{display:block;width:72px;aspect-ratio:4/3;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--soft)}.acap-ft.sem{display:grid;place-items:center;font-size:22px}.acap-ft.g{width:96px;flex:none}.acap-lista .lista-m{container-type:inline-size}.acap-cg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;font-size:13px;font-variant-numeric:tabular-nums}.acap-cg>div{min-width:0}.acap-cg .r{display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}.acap-lista td .b{white-space:nowrap}.acap-ac{align-items:center;gap:6px 10px}.acap-ac .b{margin-left:auto}@container (min-width:520px){.acap-cg{grid-template-columns:repeat(4,minmax(0,1fr))}.acap-ft.g{width:132px}}@container (max-width:420px){.acap-ac .b{margin-left:0;flex:1 1 100%;justify-content:center}.acap-ft.g{width:84px}}'; document.head.appendChild(st); })();
 
+// transicao-suave (22/11/2026, pedido do Cleiton: "a transição sempre suave, sem parecer tudo bugado"):
+// 1) dado que chega igual ao que já está na tela não redesenha nada (antes, cada eco do banco refazia a página inteira);
+// 2) redesenho por dado novo na mesma aba mantém abertos os blocos que a pessoa abriu e a posição da tela;
+// 3) troca de aba ou sub-aba: o conteúdo entra com um esmaecer curto e a tela volta ao começo do conteúdo.
+let PC_VISTA = null, PC_ACAO = 0;
+// redesenho logo depois de um clique, tecla ou envio é da própria pessoa (salvar, filtrar, abrir): segue como sempre foi;
+// os itens 1 e 2 valem só para o redesenho que vem do banco, sem a pessoa ter feito nada.
+['click', 'submit', 'change', 'keydown'].forEach((t) => document.addEventListener(t, () => { PC_ACAO = performance.now(); }, true));
+function pintaConteudo(el, html) {
+  const vista = S.aba + '|' + (S.gestor ? S.verComo : '');
+  const mesmaVista = vista === PC_VISTA, doBanco = performance.now() - PC_ACAO > 1500;
+  if (mesmaVista && doBanco && el._pcHtml === html && el.childElementCount) return;
+  let abertos = null;
+  if (mesmaVista && doBanco) {
+    abertos = new Map();
+    el.querySelectorAll('details').forEach((d, i) => { const k = ((d.querySelector('summary') || {}).textContent || '').trim().slice(0, 80) || '#' + i; abertos.set(k, d.open); });
+  }
+  const y = scrollY;
+  el.innerHTML = html; el._pcHtml = html;
+  if (abertos && abertos.size) {
+    el.querySelectorAll('details').forEach((d, i) => { const k = ((d.querySelector('summary') || {}).textContent || '').trim().slice(0, 80) || '#' + i; if (abertos.has(k)) d.open = abertos.get(k); });
+  }
+  if (mesmaVista) { if (Math.abs(scrollY - y) > 1) scrollTo(0, y); return; }
+  const primeira = PC_VISTA === null; PC_VISTA = vista;
+  if (primeira) return;
+  const topo = el.getBoundingClientRect().top + scrollY - 90;
+  if (scrollY > topo) scrollTo(0, Math.max(0, topo));
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { el.classList.remove('vista-nova'); void el.offsetWidth; el.classList.add('vista-nova'); }
+}
 // trocas-usabilidade-f3 (Lucas #9): várias coleções chegando juntas (abertura, releitura) viram um desenho só
 let RL_EM = null;
 function renderLogo() { if (RL_EM) return; RL_EM = setTimeout(() => { RL_EM = null; render(); }, 40); }
@@ -1972,7 +2001,8 @@ function render() {
   if (!S.prontos.has('leads') && !S.prontos.has('meus')) { el.innerHTML = '<div class="vazio">Carregando os seus dados…</div>'; return; }
   S.qInfo = '';
   const aeQ = document.activeElement, fq = aeQ && (aeQ.id === 'oplf-q' || aeQ.id === 'da-q') ? [aeQ.selectionStart, aeQ.selectionEnd] : null;
-  el.innerHTML = (S.gestor ? barraGestor() : '') + subOp() + ({ gestor: S.gestor ? vGestor : vInicio, inicio: vInicio, acaptar: vAcaptar, tarefas: vTarefas, leads: vLeads, oportunidades: vOport, demandas: vDemandas, demandas_auto: vDemAuto, imoveis: vImoveis, pesquisa: vPesquisa, empreendimentos: vEmp, mapa: vMapa, solicitacoes: vSolic }[S.aba] || vInicio)();
+  const html = (S.gestor ? barraGestor() : '') + subOp() + ({ gestor: S.gestor ? vGestor : vInicio, inicio: vInicio, acaptar: vAcaptar, tarefas: vTarefas, leads: vLeads, oportunidades: vOport, demandas: vDemandas, demandas_auto: vDemAuto, imoveis: vImoveis, pesquisa: vPesquisa, empreendimentos: vEmp, mapa: vMapa, solicitacoes: vSolic }[S.aba] || vInicio)();
+  pintaConteudo(el, html);   // transicao-suave (22/11/2026): sem redesenho igual, mantém o que está aberto, troca de aba com entrada suave
   if (fq) { const q = document.getElementById(aeQ.id); if (q) { q.focus(); try { q.setSelectionRange(fq[0], fq[1]); } catch (_) {} } }
   pintaBarra();
   montaMapa();
