@@ -16,8 +16,28 @@
   var A = {
     sub: 'disp', im: [], tr: [], ped: [], ct: {}, carregado: false, carregando: false,
     f: { q: '', neg: '' }, bs: {}, bAberto: false, bq: '', cod: '', ordem: { disp: { k: 'anuncio', d: -1 }, captei: { k: 'bairro', d: 1 }, dir: { k: 'desde', d: 1 }, fora: { k: 'anuncio', d: -1 } },
-    confirmar: null, soltar: null, saiu: null, ocupado: false
+    confirmar: null, soltar: null, saiu: null, ocupado: false,
+    pg: {}, pgSig: {}, porPag: 50
   };
+  /* paginação 50/100 (padrão de 13/11/2026; densidade, 22/11/2026): listas com mais de 50 imóveis paginam, com a escolha
+     "Por página" guardada no aparelho. Mudar filtro, busca, bairro, código ou ordem volta à 1ª página. */
+  try { A.porPag = +localStorage.getItem('acaptar.porPag') === 100 ? 100 : 50; } catch (e) { }
+  function paginar(qual, arr) {
+    var sig = [A.f.q, A.f.neg, Object.keys(A.bs).sort().join(','), A.cod, JSON.stringify(A.ordem[qual] || '')].join('|');
+    if (A.pgSig[qual] !== sig) { A.pgSig[qual] = sig; A.pg[qual] = 0; }
+    var n = arr.length, pp = A.porPag, nPag = Math.max(1, Math.ceil(n / pp)), p = Math.min(A.pg[qual] || 0, nPag - 1);
+    if (A.confirmar) { for (var i = 0; i < n; i++) if (arr[i].id === A.confirmar) { p = Math.floor(i / pp); break; } }
+    A.pg[qual] = p;
+    var ini = p * pp, fim = Math.min(ini + pp, n);
+    function nav(baixo) {
+      if (n <= 50) return '';
+      return '<div class="ac-pag' + (baixo ? ' baixo' : '') + '"><span class="s">' + (ini + 1) + '–' + fim + ' de ' + n + ' · página ' + (p + 1) + ' de ' + nPag + '</span>' +
+        '<button type="button" class="btn" data-pag="' + qual + ':-1"' + (p ? '' : ' disabled') + ' aria-label="Página anterior">‹ Anterior</button>' +
+        '<button type="button" class="btn" data-pag="' + qual + ':1"' + (p < nPag - 1 ? '' : ' disabled') + ' aria-label="Próxima página">Próxima ›</button>' +
+        '<label class="ac-pp">Por página <select data-porpag="1" aria-label="Imóveis por página"><option' + (pp === 50 ? ' selected' : '') + '>50</option><option' + (pp === 100 ? ' selected' : '') + '>100</option></select></label></div>';
+    }
+    return { fatia: arr.slice(ini, fim), topo: nav(false), baixo: nav(true) };
+  }
   var C = null; // contexto vindo do app.js: { sb, eu, esc, toast, titulo, redesenhar }
 
   try { var s0 = sessionStorage.getItem('acaptar-sub'); if (s0) A.sub = s0; } catch (e) { }
@@ -230,7 +250,8 @@
     var h = filtros(base);
     if (!base.length) return h + '<div class="vazio">A base ainda não chegou ao app.</div>';
     if (!arr.length) return h + '<div class="vazio">Nenhum imóvel com esses filtros.</div>';
-    var linhas = arr.map(function (v) {
+    var pgn = paginar(A.sub === 'fora' ? 'fora' : 'disp', arr);
+    var linhas = pgn.fatia.map(function (v) {
       var s = situacao(v), ac = '';
       if (s.k === 'livre') ac = '<button class="btn pri" data-acao="confirmar" data-id="' + esc(v.id) + '"' + (A.ocupado ? ' disabled' : '') + '>Ver e captar</button>';
       else if (s.k === 'meu') ac = '<button class="btn" data-sub="minhas">Abrir em Minhas</button>';
@@ -244,8 +265,8 @@
         '<td data-r="Anunciado">' + dataBR(an) + '<span class="s">' + esc(origemDe(v)) + '</span>' + sitesDe(v) + '</td>' +
         '<td class="c-acoes c-sit"><div class="linha-acoes"><span class="pill ' + (s.k === 'livre' ? 'ok' : s.k === 'meu' ? 'warn' : '') + '">' + esc(s.t) + '</span>' + ac + '</div>' + conf + '</td></tr>';
     }).join('');
-    return h + '<p class="s" style="margin:0 0 10px">' + arr.length + ' de ' + base.length + ' imóveis</p>' + barraOrd('disp', colsBarra) +
-      '<table class="ac ac-disp"><thead><tr>' + cols.map(function (c) { return thOrd('disp', c[0], c[1]); }).join('') + '</tr></thead><tbody>' + linhas + '</tbody></table>';
+    return h + '<p class="s" style="margin:0 0 10px">' + arr.length + ' de ' + base.length + ' imóveis</p>' + barraOrd('disp', colsBarra) + pgn.topo +
+      '<table class="ac ac-disp"><thead><tr>' + cols.map(function (c) { return thOrd('disp', c[0], c[1]); }).join('') + '</tr></thead><tbody>' + linhas + '</tbody></table>' + pgn.baixo;
   }
 
   function telaFora() {
@@ -258,7 +279,8 @@
     h = intro + h;
     if (!base.length) return h + '<div class="vazio">Nenhum imóvel fora do mercado por enquanto.</div>';
     if (!arr.length) return h + '<div class="vazio">Nenhum imóvel com esses filtros.</div>';
-    var linhas = arr.map(function (v) {
+    var pgn = paginar(A.sub === 'fora' ? 'fora' : 'disp', arr);
+    var linhas = pgn.fatia.map(function (v) {
       var s = situacao(v), ac = '';
       if (s.k === 'livre') ac = '<button class="btn pri" data-acao="confirmar" data-id="' + esc(v.id) + '"' + (A.ocupado ? ' disabled' : '') + '>Ver e captar</button>';
       else if (s.k === 'meu') ac = '<button class="btn" data-sub="minhas">Abrir em Minhas</button>';
@@ -272,8 +294,8 @@
         '<td data-r="Anunciado">' + dataBR(an) + '<span class="s">' + esc(origemDe(v)) + '</span>' + sitesDe(v) + '</td>' +
         '<td class="c-acoes c-sit"><div class="linha-acoes"><span class="pill ' + (s.k === 'livre' ? 'ok' : s.k === 'meu' ? 'warn' : '') + '">' + esc(s.t) + '</span>' + ac + '</div>' + conf + '</td></tr>';
     }).join('');
-    return h + '<p class="s" style="margin:0 0 10px">' + arr.length + ' de ' + base.length + ' imóveis fora do mercado</p>' + barraOrd('fora', colsBarra) +
-      '<table class="ac ac-disp ac-fora"><thead><tr>' + cols.map(function (c) { return thOrd('fora', c[0], c[1]); }).join('') + '</tr></thead><tbody>' + linhas + '</tbody></table>';
+    return h + '<p class="s" style="margin:0 0 10px">' + arr.length + ' de ' + base.length + ' imóveis fora do mercado</p>' + barraOrd('fora', colsBarra) + pgn.topo +
+      '<table class="ac ac-disp ac-fora"><thead><tr>' + cols.map(function (c) { return thOrd('fora', c[0], c[1]); }).join('') + '</tr></thead><tbody>' + linhas + '</tbody></table>' + pgn.baixo;
   }
 
   function telaMinhas() {
@@ -354,13 +376,14 @@
     var cols = [['bairro', 'Imóvel'], ['negocio', 'Negócio'], ['tipo', 'Tipo'], ['preco', 'Valor'], ['area', 'Área']];
     var h = '<p class="s" style="margin:0 0 10px">Imóveis localizados no Captei. A lista é grátis; abrir o proprietário custa 1 Capcoin, por isso cada busca passa pelo OK da diretoria.</p>' + filtros(base);
     if (!arr.length) return h + '<div class="vazio">Nenhum imóvel do Captei com esses filtros.</div>';
-    var linhas = arr.map(function (v) {
+    var pgn = paginar('captei', arr);
+    var linhas = pgn.fatia.map(function (v) {
       var p = null; A.ped.forEach(function (x) { if (x.imovel_id === v.id && x.user_id === C.sessaoUid) p = x; });
       var ac = p ? '<span class="pill ' + (p.status === 'aprovado' ? 'ok' : p.status === 'recusado' ? 'bad' : 'warn') + '">' + (p.status === 'aprovado' ? 'Aprovado pela diretoria' : p.status === 'recusado' ? 'Recusado pela diretoria' : 'Aguardando OK da diretoria') + '</span>'
         : '<button class="btn" data-acao="pedir" data-id="' + esc(v.id) + '"' + (A.ocupado ? ' disabled' : '') + '>Pedir a busca (1 Capcoin)</button>';
       return '<tr' + (A.cod ? ' class="alvo"' : '') + '>' + celImovel(v) + '<td data-r="Negócio">' + esc(NEG[v.negocio] || '—') + '</td><td data-r="Tipo">' + esc(TIPO[v.tipo] || '—') + '</td><td data-r="Valor" class="num" data-sens>' + brl(v.preco) + '</td><td data-r="Área" class="num">' + (v.area ? v.area + ' m²' : '—') + '</td><td class="c-acoes"><div class="linha-acoes">' + ac + '</div></td></tr>';
     }).join('');
-    return h + barraOrd('captei', cols) + '<table class="ac"><thead><tr>' + cols.map(function (c) { return thOrd('captei', c[0], c[1]); }).join('') + '<th></th></tr></thead><tbody>' + linhas + '</tbody></table>';
+    return h + barraOrd('captei', cols) + pgn.topo + '<table class="ac"><thead><tr>' + cols.map(function (c) { return thOrd('captei', c[0], c[1]); }).join('') + '<th></th></tr></thead><tbody>' + linhas + '</tbody></table>' + pgn.baixo;
   }
 
   function telaDir() {
@@ -491,6 +514,8 @@
     raiz.querySelectorAll('[data-acl]').forEach(function (b) { b.onclick = function () { aclClique(b); }; });   // trocas-acaptar-leads
     raiz.querySelectorAll('[data-sub]').forEach(function (b) { b.onclick = function () { A.sub = b.dataset.sub; A.confirmar = null; A.soltar = null; A.saiu = null; try { sessionStorage.setItem('acaptar-sub', A.sub); } catch (e) { } desenhar(); }; });
     raiz.querySelectorAll('[data-ord]').forEach(function (b) { b.onclick = function () { var p = b.dataset.ord.split(':'), st = A.ordem[p[0]]; A.ordem[p[0]] = st.k === p[1] ? { k: p[1], d: -st.d } : { k: p[1], d: 1 }; desenhar(); }; });
+    raiz.querySelectorAll('[data-pag]').forEach(function (b) { b.onclick = function () { var p = b.dataset.pag.split(':'); A.pg[p[0]] = Math.max(0, (A.pg[p[0]] || 0) + (+p[1])); A.confirmar = null; desenhar(); var t = raiz.querySelector('.ac-pag'); if (t) t.scrollIntoView({ block: 'start' }); }; });
+    raiz.querySelectorAll('[data-porpag]').forEach(function (c) { c.onchange = function () { A.porPag = +c.value === 100 ? 100 : 50; Object.keys(A.pg).forEach(function (k) { A.pg[k] = 0; }); try { localStorage.setItem('acaptar.porPag', String(A.porPag)); } catch (e) { } desenhar(); }; });
     raiz.querySelectorAll('[data-copiar]').forEach(function (b) { b.onclick = function () { try { navigator.clipboard.writeText(b.dataset.copiar).then(function () { b.textContent = 'Copiado'; setTimeout(function () { b.textContent = 'Copiar'; }, 1500); }); } catch (e) { } }; });
     var busca = raiz.querySelector('#acBusca');
     if (busca) busca.oninput = function () { A.f.q = busca.value; var pos = busca.selectionStart; desenhar(); var n = raiz.querySelector('#acBusca'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) { } } };
