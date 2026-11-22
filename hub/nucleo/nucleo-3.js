@@ -1794,9 +1794,14 @@ function carregaModulos(){
 
 let agendado=false;
 function pintaPaineis(){ const el=document.getElementById('paineis-menu'); if(!el) return;
-  const d=(S.controle||{}).paineis_corretor||{}; const it=Object.values(d.itens||{}).filter(x=>x&&x.url).sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
-  const L=it.length?it:[{nome:'Kamily Rauber',url:'https://claude.ai/artifact/ELM9Y354QzufHVfMJGgEHq',situacao:'piloto'}];
-  const h=L.map(x=>`<a href="${escUrl(x.url)}" target="_blank" rel="noopener"><span>${esc(x.nome)}</span><span class="s">${esc(x.situacao||'')} ↗</span></a>`).join('')+`<p>Um painel por corretor, com os próprios leads e agenciamentos. Cada um recebe só o seu.</p>`;
+  // 22/11/2026 (pedido do Cleiton): o menu lista todos os painéis do app (controle/paineis_app), sem os rótulos antigos "teste"/"piloto";
+  // sem essa lista, volta à lista antiga das rotinas (controle/paineis_corretor), também sem rótulo.
+  const A=(S.controle||{}).paineis_app||{}, base=A.base||'https://vivere-imoveis.github.io/app-vivere/painel.html?ver=';
+  const d=(S.controle||{}).paineis_corretor||{};
+  let it=Object.entries(A.itens||{}).map(([k,x])=>({nome:(x&&x.nome)||k,url:(x&&x.url)||base+encodeURIComponent(k)}));
+  if(!it.length) it=Object.values(d.itens||{}).filter(x=>x&&x.url).map(x=>({nome:x.nome_painel||x.nome,url:x.url}));
+  it.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+  const h=it.map(x=>`<a href="${escUrl(x.url)}" target="_blank" rel="noopener"><span>${esc(x.nome)}</span><span class="s">↗</span></a>`).join('')+`<p>${it.length} painéis no app da Vivere. Cada um abre como o corretor vê.</p>`;
   if(el.innerHTML!==h) el.innerHTML=h; }
 document.addEventListener('click',e=>{ const d=document.getElementById('lk-paineis'); if(d&&d.open&&!d.contains(e.target)) d.open=false; });
 /* 03/11/2026: menu Painéis dos corretores não sai da tela (a 900 px passava 17 px): ancora à direita do botão quando não cabe à esquerda */

@@ -1,10 +1,10 @@
-// modulos/registros.js — 📜 Registros (logs) do HUB VIVERE e dos painéis dos corretores. Entrega 2, 22/11/2026.
+// modulos/registros.js — 📄 Registros (logs) do HUB VIVERE e dos painéis dos corretores. Entrega 2, 22/11/2026.
 // Lê a coleção virtual '_registros' pelo conector Vivere Conversas (hub_ler → public.hub_mestre_ler → privado.registros_pagina).
 // Só o nível mestre: a aba só aparece se a leitura do resumo der certo (no HUB da web a leitura é barrada e a aba não nasce).
 // Nada se grava aqui. Mostra quando, quem (pessoa, agente, espelho, externo ou rotina), canal, onde, operação e antes → depois.
 (function () {
   const H = window.HUB; if (!H) return;
-  const esc = H.esc, ID = 'registros', SERV = 'Vivere Conversas', VERSAO = '2026-11-22.1';
+  const esc = H.esc, ID = 'registros', SERV = 'Vivere Conversas', VERSAO = '2026-11-22.3';
   const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   const TIPOS = [['pessoa', 'Pessoas'], ['agente', 'Agentes (Vivian, Claude)'], ['externo', 'Externos (site, inquilino)'], ['espelho', 'Espelhos e sincronias'], ['rotina', 'Rotinas automáticas']];
   const PERIODOS = [['1', 'Hoje'], ['7', '7 dias'], ['30', '30 dias'], ['180', '180 dias']];
@@ -60,7 +60,7 @@
     const chips = TIPOS.map(([k, t]) => `<label class="btn" style="display:inline-flex;gap:4px;align-items:center${F.tipos.includes(k) ? ';border-color:var(--accent);font-weight:600' : ''}"><input type="checkbox" data-reg-tipo="${k}"${F.tipos.includes(k) ? ' checked' : ''}> ${esc(t)}</label>`).join(' ');
     return `<div class="filtros" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0">
       ${sel('reg-dias', PERIODOS, F.dias)}
-      ${sel('reg-sistema', [['', 'HUB e painéis'], ['hub', 'Só HUB'], ['painel', 'Só painéis']], F.sistema)}
+      ${sel('reg-sistema', [['', 'HUB, painéis e app'], ['hub', 'Só HUB'], ['painel', 'Só painéis'], ['app', 'Só tabelas do app']], F.sistema)}
       ${sel('reg-painel', [['', 'Todos os painéis']].concat((R.paineis || []).map((p) => [p, p])), F.painel)}
       ${sel('reg-op', [['', 'Toda operação']].concat(Object.keys(OPS).map((k) => [k, OPS[k]])), F.operacao)}
       <input id="reg-q" class="btn" style="min-width:160px;flex:1" placeholder="Buscar documento, pessoa, coleção ou canal" value="${esc(F.busca)}">
@@ -68,7 +68,7 @@
     </div><div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">${chips}</div>`;
   }
   function itemHTML(x) {
-    const onde = x.sistema === 'painel' ? `Painel ${esc(x.painel || '?')} · ${esc(x.colecao)}` : `HUB · ${esc(x.colecao)}`;
+    const onde = x.sistema === 'painel' ? `Painel ${esc(x.painel || '?')} · ${esc(x.colecao)}` : x.sistema === 'app' ? `App · ${esc(x.colecao)}${x.painel ? ' · painel ' + esc(x.painel) : ''}` : `HUB · ${esc(x.colecao)}`;
     const campos = (x.campos || []);
     const ab = !!F.aberto[x.id];
     const det = ab ? `<div class="tabela" style="margin-top:6px"><table><thead><tr><th>Campo</th><th>Antes</th><th>Depois</th></tr></thead><tbody>${
@@ -93,7 +93,7 @@
       <span class="s" style="margin-left:auto">Por página</span>
       <select id="reg-pp" class="btn"><option value="50"${F.pp === 50 ? ' selected' : ''}>50</option><option value="100"${F.pp === 100 ? ' selected' : ''}>100</option></select>
       <button class="btn" data-reg-recarregar>Atualizar</button></div>`;
-    return `<h2>📜 Registros</h2><p class="nota">Toda inclusão, alteração, remoção e exclusão no HUB e nos painéis dos corretores: quem fez, por qual canal e o que mudou.</p>
+    return `<h2>📄 Registros</h2><p class="nota">Toda inclusão, alteração, remoção e exclusão no HUB, nos painéis dos corretores e nas tabelas do app: quem fez, por qual canal e o que mudou.</p>
       ${resumoHTML()}${filtrosHTML()}${pag}<div id="reg-lista">${lista}</div>${F.itens && F.itens.length ? pag : ''}`;
   }
 
@@ -121,7 +121,7 @@
   // Só registra a aba se a leitura do resumo der certo (nível mestre pelo conector do Cleiton).
   ler('__resumo__').then((p) => {
     F.resumo = (p.itens[0] || {}).dados || null;
-    H.registrar({ id: ID, aba: '📜 Registros', grupo: 'gestao', colecoes: [], render, versao: VERSAO,
+    H.registrar({ id: ID, aba: '📄 Registros', grupo: 'gestao', colecoes: [], render, versao: VERSAO,
       busca() { return []; } });
   }).catch(() => { /* sem acesso: a aba não aparece */ });
 })();

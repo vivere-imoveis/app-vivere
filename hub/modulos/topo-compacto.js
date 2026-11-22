@@ -143,7 +143,7 @@
     if (at2.length) h += '<h2>Atalhos</h2><div class="tc-grade">' + at2.join('') + '</div>';
     var pm = document.getElementById('paineis-menu'), links = pm ? [].slice.call(pm.querySelectorAll('a[href]')) : [];
     if (links.length) h += '<h2>Painéis dos corretores</h2><div class="tc-pain">' + links.map(function (a) {
-      return '<a href="' + esc(a.href) + '" target="_blank" rel="noopener">' + esc(a.textContent.replace(/\s+/g, ' ').trim()) + '</a>';
+      return '<a href="' + esc(a.href) + '" target="_blank" rel="noopener">' + esc((a.querySelector('span') || a).textContent.replace(/[↗]/g, '').replace(/\s+/g, ' ').trim()) + ' ↗</a>';
     }).join('') + '</div>';
     var col = document.getElementById('coletas');
     if (col && col.innerHTML.trim()) h += '<h2>Coletas</h2><div class="coletas tc-col">' + col.innerHTML + '</div>';
@@ -196,5 +196,5 @@
     modo(); pinta(); kpis();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inicia); else inicia();
-  window.TopoCompacto = { versao: '2026-11-22.3' };
+  window.TopoCompacto = { versao: '2026-11-22.4' };
 })();
