@@ -114,11 +114,19 @@ function mascaraSens(t){ let s=String(t==null?'':t); for(const [n,re] of RE_SENS
 
 /* ---------- cabeçalho ---------- */
 function pintaColetas(){
+  // 22/11/2026 (pedido do Cleiton, tarefa vis-app-carregamento-transicoes): as 9 coletas viram um resumo de 1 linha
+  // ("Coletas em dia · 8 de 9 · hora", vermelho se alguma falhou); o toque abre o detalhe de cada fonte.
   const c=S.controle.coletas||{}; const nomes={alude:'Alude',planilha:'Planilha',imobibrasil:'Imobibrasil',pastas:'Pastas',tarefas:'Tarefas',leads:'Leads',drive:'Drive',crm:'CRM',pendencias:'Pendências'};
-  const el=document.getElementById('coletas');
-  el.innerHTML=Object.keys(nomes).map(k=>{const x=c[k]||{}; const st=x.status||'';
+  const el=document.getElementById('coletas'); const ks=Object.keys(nomes); let ok=0, falha=0, ult=0;
+  const chips=ks.map(k=>{const x=c[k]||{}; const st=x.status||''; if(st==='ok') ok++; if(st==='falhou') falha++;
+    const t=x.em?Date.parse(x.em):NaN; if(t>ult) ult=t;
     const quando=x.em?new Date(x.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'sem coleta';
     return `<span class="chip ${esc(st)}" title="${esc(x.msg||'')}"><i></i>${nomes[k]} · ${esc(st==='falhou'?'falhou':quando)}</span>`}).join('');
+  const hora=ult?new Date(ult).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'sem coleta';
+  const txt=falha?`${falha===1?'1 coleta falhou':falha+' coletas falharam'} · ${ok} de ${ks.length} em dia`:`Coletas em dia · ${ok} de ${ks.length}`;
+  const html=`<details class="col-res"><summary class="chip ${falha?'falhou':ok===ks.length?'ok':'pulado'}" title="Ver a última coleta de cada fonte"><i></i><span class="col-tx">${txt}</span><span class="col-h">· ${esc(hora)}</span></summary><div class="col-det">${chips}</div></details>`;
+  if(el._h===html) return; const aberto=!!el.querySelector('details[open]'); el._h=html; el.innerHTML=html; if(aberto) el.firstElementChild.open=true;
+  el.classList.toggle('com-falha',!!falha);
 }
 function pintaKpis(){
   // Régua do topo (decisão do Cleiton em 18/10/2026, a partir dos indicadores dos sistemas de gestão imobiliária):

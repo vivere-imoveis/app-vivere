@@ -1,11 +1,11 @@
 {
- "hub_versao": "1795318134-403e",
- "index_original_sha16": "49b3c9e4fcf5c0e7",
+ "hub_versao": "1795318669-0da1",
+ "index_original_sha16": "1ae6d7dcb8f472c6",
  "nucleos": 7,
- "montado_em": "2026-11-22T00:29-03:00",
+ "montado_em": "2026-11-22T00:38-03:00",
  "arquivos": {
-  "hub-web.js": "3fc6bbb960035157",
-  "index.html": "7ed15ebd1ce30c10",
+  "hub-web.js": "f91fa1fe6b5ae230",
+  "index.html": "e738d1fa885da389",
   "modulos/acm.js": "11d14bfb53c61b00",
   "modulos/app-vivere.js": "931a658f03d65dbe",
   "modulos/base-leads.js": "50324a52b7163808",
@@ -21,6 +21,7 @@
   "modulos/demandas-auto.js": "93679e0965e09075",
   "modulos/demandas.js": "a0935affc2a0f53b",
   "modulos/empreendimentos.js": "f98b30d2b9ea84c5",
+  "modulos/entrada.js": "b45a7679ba2d9495",
   "modulos/ficha-imovel.js": "8006d399abb407f7",
   "modulos/fichas-locacao.js": "7116d1cf23e8fa73",
   "modulos/financeiro.js": "5f77b2c818dde29a",
@@ -93,6 +94,7 @@
   "modulos/relatorios.js": "069b529df11f4d15",
   "modulos/site-leads.js": "031fe351e8b4bbe6",
   "modulos/solicitacoes.js": "6ec842a5ceccc62d",
+  "modulos/topo-compacto.js": "5b071e19ad8fd902",
   "modulos/vendor/jspdf-2.5.1.umd.min.js": "98ccf17aa10c20bb",
   "modulos/vendor/jspdf-autotable-3.8.2.min.js": "27a9c3b61843c631",
   "modulos/vendor/leaflet-1.9.4.js": "db49d009c841f5ca",
@@ -101,11 +103,10 @@
   "modulos/whatsapp-ia.js": "0fc8e2edd7d7ce39",
   "nucleo/nucleo-1.js": "6bdf5597ca821306",
   "nucleo/nucleo-2.js": "9b652a30ae103ad8",
-  "nucleo/nucleo-3.js": "16f288fad13eb380",
+  "nucleo/nucleo-3.js": "ea9ffe710cca645b",
   "nucleo/nucleo-4.js": "eabfb5bd68447bb8",
   "nucleo/nucleo-5.js": "2ebf5e303ee7a497",
   "nucleo/nucleo-6.js": "19bd0efa85ba6032",
   "nucleo/nucleo-7.js": "91aed514d05266ca"
- },
- "obs": "modulos/marketing-dossies.js fica fora da cópia web (repositório público): os dossiês vêm do banco (marketing_dossies), pelo nível de acesso."
+ }
 }
