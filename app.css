@@ -231,3 +231,7 @@ body.ml-on.ml-min #ml .ml-topo{justify-content:center}
   #conteudo .resumo-ac b{font-size:19px!important}
   #conteudo .resumo-ac span{display:block;font-size:11px;line-height:1.2}
 }
+/* Página aberta dentro do painel (?embed=1, 22/11/2026): sem o topo e sem o menu lateral desta página */
+html.embed header.topo,html.embed #ml,html.embed .ml-troca{display:none!important}
+html.embed body.ml-on,html.embed body{padding-left:0!important}
+html.embed main#conteudo{padding-top:14px}

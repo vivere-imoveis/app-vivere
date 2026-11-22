@@ -8,6 +8,31 @@
   var URL_ACAP = 'index.html?aba=acaptar';
   var vivo = null; // 11/11/2026: nº de livres lido na hora do Supabase pela ponte; sem ele, vale o número da aba escondida
   function lerVivo() { var P = window.VIVERE_PONTE; if (!P || !P.acaptarLivres) return; P.acaptarLivres().then(function (n) { vivo = n; pinta(); }).catch(function () { }); }
+  /* 22/11/2026 (pedido do Cleiton): A CAPTAR, Estudo de Mercado, Minha senha, Acessos e HUB abrem numa janela dentro do
+     painel, sem sair dele. Só no app: no PAINEL DO GESTOR do claude.ai (window.__artefatoLoja) seguem abrindo fora. */
+  var DENTRO = !window.__artefatoLoja;
+  function embutivel(href) { return DENTRO && /^(index\.html\?aba=|hub\/)/.test(href || ''); }
+  var NOMES = { acaptar: 'A CAPTAR', acm: 'Estudo de Mercado', senha: 'Minha senha', acessos: 'Acessos', semresp: 'Imóveis sem responsável', destaques: 'Destaques' };
+  function fechaDentro() { var ov = document.getElementById('app-dentro'); if (!ov) return false; ov.remove(); document.documentElement.classList.remove('com-janela'); lerVivo(); return true; }
+  function abreDentro(href) {
+    var aba = (/aba=([a-z]+)/.exec(href) || [])[1], t = /^hub\//.test(href) ? 'HUB VIVERE' : (NOMES[aba] || 'App');
+    var ov = document.getElementById('app-dentro');
+    if (!ov) {
+      ov = document.createElement('div'); ov.id = 'app-dentro'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'false');
+      ov.innerHTML = '<div class="ad-barra"><b class="ad-t"></b><a class="ad-fora" target="_blank" rel="noopener" title="Abrir numa aba nova">Abrir numa aba</a><button type="button" class="b ad-x">✕ Fechar</button></div><iframe class="ad-f"></iframe>';
+      ov.querySelector('.ad-x').addEventListener('click', fechaDentro);
+      document.body.appendChild(ov);
+    }
+    ov.querySelector('.ad-t').textContent = t; ov.setAttribute('aria-label', t);
+    ov.querySelector('.ad-fora').href = href;
+    var f = ov.querySelector('.ad-f'); f.title = t; f.src = href + (href.indexOf('?') >= 0 ? '&' : '?') + 'embed=1';
+    document.documentElement.classList.add('com-janela');
+  }
+  window.addEventListener('message', function (ev) { if (ev.origin === location.origin && ev.data && ev.data.vivere === 'fechar-janela') fechaDentro(); });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && document.getElementById('app-dentro')) fechaDentro(); });
+  /* clicar numa aba do painel (topo, lateral ou barra do celular) fecha a janela */
+  document.addEventListener('click', function (ev) { var b = ev.target.closest && ev.target.closest('[data-aba]'); if (b && !b.closest('#app-dentro')) fechaDentro(); }, true);
+  window.PAINEL_DENTRO = { abre: abreDentro, fecha: fechaDentro, pode: embutivel };
   function volta() { try { sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) { } }
   function pinta() {
     var tema = document.getElementById('btnTema');
@@ -16,7 +41,7 @@
     if (!b) {
       b = document.createElement('a');
       b.id = 'btnAcapApp'; b.className = 'btn-tema btn-acap'; b.href = URL_ACAP;
-      b.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); volta(); location.href = URL_ACAP; });
+      b.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); if (embutivel(URL_ACAP)) return abreDentro(URL_ACAP); volta(); location.href = URL_ACAP; });
       tema.parentNode.insertBefore(b, tema);
     }
     /* 18/11/2026 (ACM): botão do Estudo de Mercado ao lado do A CAPTAR, também fora das abas (abre a página do app) */
@@ -24,7 +49,7 @@
       var m = document.createElement('a');
       m.id = 'btnAcmApp'; m.className = 'btn-tema btn-acap'; m.href = 'index.html?aba=acm'; m.title = 'Abrir o Estudo de Mercado (ACM). Abre outra página do app.'; m.setAttribute('aria-label', m.title);
       m.innerHTML = (window.VIVERE_ICONES && VIVERE_ICONES.html ? '<span class="ba-ic" aria-hidden="true">' + VIVERE_ICONES.html('grafico') + '</span>' : '') + '<span class="ba-t">ACM</span>';
-      m.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); volta(); location.href = m.href; });
+      m.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); if (embutivel('index.html?aba=acm')) return abreDentro('index.html?aba=acm'); volta(); location.href = m.href; });
       tema.parentNode.insertBefore(m, tema);
     }
     /* 21/11/2026 (hub-web-diretoria F3): botão do HUB VIVERE na web, só para quem tem a marca acessos.hub (e o gestor) */
@@ -33,7 +58,7 @@
       var hb = document.createElement('a');
       hb.id = 'btnHubApp'; hb.className = 'btn-tema btn-acap'; hb.href = 'hub/'; hb.title = 'Abrir o HUB VIVERE (só leitura). Abre outra página do app.'; hb.setAttribute('aria-label', hb.title);
       hb.innerHTML = (window.VIVERE_ICONES && VIVERE_ICONES.html ? '<span class="ba-ic" aria-hidden="true">' + VIVERE_ICONES.html('casa') + '</span>' : '') + '<span class="ba-t">HUB</span>';
-      hb.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); volta(); location.href = hb.href; });
+      hb.addEventListener('click', function (ev) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return; ev.preventDefault(); if (embutivel('hub/')) return abreDentro('hub/'); volta(); location.href = hb.href; });
       tema.parentNode.insertBefore(hb, tema);
       if (window.MenuLateral) MenuLateral.atualiza();
     }
@@ -49,11 +74,11 @@
     itens: function () {
       var P = window.VIVERE_PONTE, est = P && P.estado ? P.estado() : {}, sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
       var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
-      return [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n }, { id: 'acm', t: 'Estudo de Mercado', ic: 'grafico', href: 'index.html?aba=acm' }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha' },
-        est.hub ? { id: 'hub', t: 'HUB VIVERE', ic: 'casa', href: 'hub/' } : null,
-        est.papel === 'gestor' ? { id: 'acessos', t: 'Acessos', ic: 'escudo', href: 'index.html?aba=acessos' } : null];
+      return [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n, dentro: DENTRO }, { id: 'acm', t: 'Estudo de Mercado', ic: 'grafico', href: 'index.html?aba=acm', apos: DENTRO ? 'oportunidades' : '' }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha', dentro: DENTRO },
+        est.hub ? { id: 'hub', t: 'HUB VIVERE', ic: 'casa', href: 'hub/', dentro: DENTRO } : null,
+        est.papel === 'gestor' ? { id: 'acessos', t: 'Acessos', ic: 'escudo', href: 'index.html?aba=acessos', dentro: DENTRO } : null];
     },
-    abre: function (href) { volta(); location.href = href; }
+    abre: function (href) { if (embutivel(href)) return abreDentro(href); volta(); location.href = href; }
   };
   function liga() {
     var abas = document.getElementById('abas');

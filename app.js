@@ -6,6 +6,17 @@
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj';
   var APP_URL = location.origin + location.pathname;
+  /* 22/11/2026 (pedido do Cleiton): ?embed=1 = esta página aberta numa janela dentro do painel (A CAPTAR, Estudo de
+     Mercado, Minha senha, Acessos). Some o topo e o menu desta página; um link para o painel fecha a janela. */
+  var EMBED = /[?&]embed=1\b/.test(location.search) && window.parent !== window;
+  if (EMBED) {
+    document.documentElement.classList.add('embed');
+    document.addEventListener('click', function (ev) {
+      var a = ev.target.closest && ev.target.closest('a[href]'); if (!a) return;
+      var h = a.getAttribute('href') || '';
+      if (/^painel\.html/.test(h) && !a.target) { ev.preventDefault(); try { window.parent.postMessage({ vivere: 'fechar-janela' }, location.origin); } catch (e) { } }
+    }, true);
+  }
   var VERSAO = 'app-vivere 2026-11-19.1'; // melhorias 122 (só o V no cabeçalho) e 123 (menu lateral com animação leve) · antes: // aba Estudo de Mercado (ACM, tarefa vivere-parecer-preco-comparaveis)
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
