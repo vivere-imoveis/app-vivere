@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -936,7 +936,36 @@ function opsCache(id, l) {
   if (m && m.sig === sig && m.cx === cx && m.cc === cc) return m.r;
   const r = opsDoLead(n); OPS_MEMO.set(id, { sig, cx, cc, r }); return r;
 }
-function leadsComOfertas() { if (!S.prontos.has('vitrine')) return []; return Object.entries(S.leads).filter(([, l]) => abertaL(l) && ladoDe(l) !== 'tem').filter(([id, l]) => { const o = opsCache(id, l); return o.novas.length || nCaptAcao(o); }); }
+// trocas-carregamento-f1d: muitos leads sem cruzamento guardado = calcula em pedaços, fora do desenho, e desenha de novo no fim
+function opsPronto(id, l) {
+  const cx = ctxOp(), cc = S.prontos.has('capt') ? ctxCapt() : null, mm = OPS_MEMO_W.get(cx), m = mm && mm.get(id);
+  return m && m.cx === cx && m.cc === cc && m.sig === JSON.stringify(leadN(id, l)) ? m.r : null;
+}
+const OPW = { t: null, jobs: [] }, OPW_ERRO = new WeakMap();   // OPW_ERRO: lead cujo cruzamento deu erro no pedaço (não volta à fila)
+function aquecerPasso() {
+  OPW.t = null; const fim = performance.now() + 10;
+  while (OPW.jobs.length && performance.now() < fim) {
+    const j = OPW.jobs[0], sv = [S.meus, S.capt, S.vitrine, S.catalogo];
+    S.meus = j.meus; S.capt = j.capt; S.vitrine = j.vit; S.catalogo = j.cat;
+    try { while (j.i < j.itens.length && performance.now() < fim) { const [id, l] = j.itens[j.i++]; try { opsCache(id, l); } catch (e) { const ce = ctxOp(); let se = OPW_ERRO.get(ce); if (!se) OPW_ERRO.set(ce, se = new Set()); se.add(id); } } }
+    finally { [S.meus, S.capt, S.vitrine, S.catalogo] = sv; }
+    if (j.i >= j.itens.length) OPW.jobs.shift();
+  }
+  if (OPW.jobs.length) OPW.t = setTimeout(aquecerPasso, 0); else { S.opsAquecendo = false; renderLogo(); }
+}
+function aquecerOps(falta) {
+  if (!OPW.jobs.some((j) => j.meus === S.meus && j.capt === S.capt && j.vit === S.vitrine && j.cat === S.catalogo)) {
+    OPW.jobs.push({ itens: falta, i: 0, meus: S.meus, capt: S.capt, vit: S.vitrine, cat: S.catalogo }); S.opsAquecendo = true;
+  }
+  if (!OPW.t) OPW.t = setTimeout(aquecerPasso, 0);
+}
+function leadsComOfertas() {
+  if (!S.prontos.has('vitrine')) return [];
+  const cand = Object.entries(S.leads).filter(([, l]) => abertaL(l) && ladoDe(l) !== 'tem');
+  const er = OPW_ERRO.get(ctxOp()), falta = cand.filter(([id, l]) => !opsPronto(id, l) && !(er && er.has(id)));
+  if (falta.length > 24) { aquecerOps(falta); return cand.filter(([id, l]) => { const o = opsPronto(id, l); return o && (o.novas.length || nCaptAcao(o)); }); }
+  return cand.filter(([id, l]) => { const o = opsCache(id, l); return o.novas.length || nCaptAcao(o); });
+}
 
 /* ---------- Captação em dois lados (01/11/2026, decisão do Cleiton) ----------
    🔎 PROCURA (locatário, comprador e os clientes comuns) × 🏠 TEM (locador, vendedor, operador de renda).
@@ -2091,7 +2120,7 @@ function vInicio() {
     hoje: () => `<div class="cartao"><div class="r">Para hoje</div><div class="v">${hoje}</div><div class="s">próximas ações marcadas</div></div>`,
     previsao: () => cartaoPrevisaoInicio(),
     imoveis: () => `<div class="cartao"><div class="r">Meus imóveis</div><div class="v">${ativos}</div><div class="s">ativos de ${M.length} agenciados</div></div>`,
-    ofertas: () => `<div class="cartao${nOp ? ' alerta' : ''}" style="${nOp ? 'border-color:var(--brass)' : ''}"><div class="r">Ofertas</div><div class="v">${nOp}</div><div class="s">lead${nOp === 1 ? '' : 's'} com imóveis para ofertar · <button class="copiar" type="button" data-aba="oportunidades">ver</button></div></div>`,
+    ofertas: () => `<div class="cartao${nOp ? ' alerta' : ''}" style="${nOp ? 'border-color:var(--brass)' : ''}"><div class="r">Ofertas</div><div class="v">${S.opsAquecendo ? '…' : nOp}</div><div class="s">lead${nOp === 1 ? '' : 's'} com imóveis para ofertar · <button class="copiar" type="button" data-aba="oportunidades">ver</button></div></div>`,
     acaptar: () => S.acap ? `<div class="cartao"><div class="r">🎯 A CAPTAR</div><div class="v">${acapMinhas().length}</div><div class="s">em captação por você · ${linkAcap('abrir', 'copiar')}</div></div>` : '',
     solic: () => `<div class="cartao${compl ? ' alerta' : ''}"><div class="r">Solicitações</div><div class="v">${pend}</div><div class="s">aguardando aprovação${compl ? ` · <b>${compl} para complementar</b>` : ''}</div></div>`,
   };
