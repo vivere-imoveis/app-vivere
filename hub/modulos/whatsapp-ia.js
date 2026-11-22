@@ -52,19 +52,19 @@
 
   // ------------------------------------------------------------ situação
   function cardsSituacao() {
-    const s = sit(), C = cors(), P = fila().filter((f) => f.status === 'pendente'), X = aExpirar();
+    const s = sit(), C = cors(), P = s.fila_pendentes != null ? Array(+s.fila_pendentes || 0).fill(0) : fila().filter((f) => f.status === 'pendente'), X = s.expira_7d != null ? Array(+s.expira_7d || 0).fill(0) : aExpirar();   // 22/11/2026: contagens do banco
     const ativos = C.filter((c) => c.ativo !== false);
     const desde7 = somaDias(hoje(), -7);
     const msg7 = s.msgs_7d != null ? +s.msgs_7d : convs().filter((c) => (c.dia || '') >= desde7).reduce((n, c) => n + (+c.n_msgs || (c.mensagens || []).length || 0), 0);   // 22/11/2026: número do banco (privado.wia_hub_situacao), quando houver
     const lig = s.agente_ligado === true;
     return `<div class="grade" style="margin-bottom:14px">
       <div class="card"><h2>Agente</h2><div style="font-family:var(--display);font-size:22px;color:var(--${lig ? 'ok' : 'muted'})">${lig ? 'Ligado' : 'Desligado'}</div><p class="nota" style="margin:0">etapa ${esc(s.etapa || 3)} de 5 · ${esc(ETAPAS[(+s.etapa || 3) - 1] || '')}</p></div>
-      <div class="card"><h2>Números autorizados</h2><div style="font-family:var(--display);font-size:26px">${s.numeros_ativos != null ? esc(s.numeros_ativos) : ativos.length}</div><p class="nota" style="margin:0">${C.length - ativos.length ? (C.length - ativos.length) + ' sem acesso' : 'todos com acesso'}${s.recusados_7d ? ` · ${esc(s.recusados_7d)} tentativa(s) de número fora da lista` : ''}</p></div>
+      <div class="card"><h2>Números autorizados</h2><div style="font-family:var(--display);font-size:26px">${s.numeros_ativos != null ? esc(s.numeros_ativos) : ativos.length}</div><p class="nota" style="margin:0">${s.numeros_total != null ? (s.numeros_total - s.numeros_ativos > 0 ? (s.numeros_total - s.numeros_ativos) + ' sem acesso' : 'todos com acesso') : C.length - ativos.length ? (C.length - ativos.length) + ' sem acesso' : 'todos com acesso'}${s.recusados_7d ? ` · ${esc(s.recusados_7d)} tentativa(s) de número fora da lista` : ''}</p></div>
       <div class="card"><h2>Mensagens · 7 dias</h2><div style="font-family:var(--display);font-size:26px">${msg7}</div><p class="nota" style="margin:0">${s.ultima_msg_em ? 'última às ' + dtH(s.ultima_msg_em) + (s.corretores_7d ? ' · ' + esc(s.corretores_7d) + ' pessoas na semana' : '') : s.ultima_carga ? 'cópia de ' + dtH(s.ultima_carga) : 'nenhuma conversa ainda'}</p></div>
       <div class="card"${P.length ? ' style="border-color:var(--warn)"' : ''}><h2>Fila de aprovação</h2><div style="font-family:var(--display);font-size:26px${P.length ? ';color:var(--warn)' : ''}">${P.length}</div><p class="nota" style="margin:0">${P.length ? 'avisos e cobranças esperando você' : 'nada esperando'}</p></div>
       <div class="card"${X.length ? ' style="border-color:var(--bad)"' : ''}><h2>Expira em ${AVISO()} dias</h2><div style="font-family:var(--display);font-size:26px${X.length ? ';color:var(--bad)' : ''}">${X.length}</div><p class="nota" style="margin:0">conversas apagadas aos ${RET()} dias</p></div>
     </div>
-    <p class="nota">Modelo: ${esc(s.modelo || 'a definir na etapa 4')} · teto mensal da API do Claude: ${s.teto_mensal ? H.brl(+s.teto_mensal) : 'a definir'}${s.gasto_mes != null ? ' · gasto no mês: ' + H.brl(+s.gasto_mes) : ''} · retorno ao HUB: ${esc(s.retorno || 'rotina diária dos dias úteis')}.</p>`;
+    <p class="nota">Modelo: ${esc(s.modelo || '—')}${s.atualizado_em ? ' · números de ' + dtH(s.atualizado_em) : ''}.</p>`;
   }
 
   // ------------------------------------------------------------ fila de aprovação
@@ -193,10 +193,9 @@
     const nP = fila().filter((f) => f.status === 'pendente').length, nX = aExpirar().length;
     const cont = { fila: nP, expira: nX };
     const nav = `<div class="filtros" role="group" aria-label="Partes da aba">${VISTAS.map(([k, t]) => `<button class="btn" data-wa-vista="${k}" aria-pressed="${F.vista === k}">${t}${cont[k] ? ` <span class="pill ${k === 'expira' ? 'bad' : 'warn'}">${cont[k]}</span>` : ''}</button>`).join('')}</div>`;
-    const corpo = F.vista === 'expira' ? vistaExpira() : F.vista === 'conversas' ? vistaConversas() : F.vista === 'numeros' ? vistaNumeros() : vistaFila();
     return `<h2>Agente de IA no WhatsApp</h2><p class="nota">Número próprio da Vivere na API oficial do WhatsApp, conversa 1:1 com cada corretor. O agente responde sozinho às consultas (imóveis, leads, empreendimentos, oportunidades); avisos e cobranças passam pela sua aprovação no piloto. Proprietário só para o corretor agenciador; nada financeiro, fiscal ou tributário da Vivere.</p>
       <p style="display:flex;gap:8px 12px;flex-wrap:wrap;align-items:center;margin:0 0 14px"><a class="btn" href="https://claude.ai/artifact/UWq6TXqyoBPdiGZNV2aQiw" target="_blank" rel="noopener noreferrer">🔵💬 Abrir a CENTRAL DA VIVIAN</a><span class="nota" style="margin:0">conversas, regras, cadernos e uso da Vivian em tempo real (só o Cleiton)</span></p>
-      ${cardsSituacao()}${nav}${corpo}${vistaTeste()}`;
+      ${cardsSituacao()}<p class="nota">Os quadros se atualizam sozinhos pelo banco a cada 15 minutos. Conversas, números, regras e cadernos ficam na CENTRAL DA VIVIAN, ao vivo (botão acima).</p>`;
   }
 
   H.registrar({
