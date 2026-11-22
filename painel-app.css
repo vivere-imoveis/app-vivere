@@ -341,3 +341,5 @@ html.com-janela,html.com-janela body{overflow:hidden}
 /* Aviso do PAINEL DO GESTOR (claude.ai) para telas que ficam no app: o link de verdade abre fora (22/11/2026) */
 #aviso-fora{position:fixed;left:50%;transform:translateX(-50%);top:12px;width:max-content;z-index:960;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;max-width:min(560px,calc(100vw - 24px));padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 8px 24px rgba(0,0,0,.22);font-size:14px}
 #aviso-fora a.b{text-decoration:none}
+/* Telas do app nativas dentro do painel (A CAPTAR, Estudo de Mercado, Sem responsável; 22/11/2026): rolam dentro da janela */
+#app-dentro.nativo .ad-rola{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
