@@ -316,3 +316,9 @@ body .g-barra>span:last-child{white-space:nowrap}
   #conteudo .linha:has(> [data-arqver]){gap:5px!important}
   #conteudo .linha:has(> [data-arqver]) > .b{padding:4px 8px!important;font-size:12px!important;gap:4px!important;min-height:30px}
 }
+/* Menu lateral: Pendências logo abaixo de Tarefas e Vistorias logo abaixo de Imóveis (abrem nesta mesma página, sem a seta
+   de "outra página"); 22/11/2026, pedido do Cleiton */
+#ml .ml-app.ml-dentro .ml-tx::after{content:none}
+/* Meus leads › Kanban, Pipeline e Funil com "Todos": um quadro por funil, um embaixo do outro (22/11/2026) */
+#conteudo .vt-funil + .vt-funil{margin-top:18px;padding-top:12px;border-top:1px solid var(--line)}
+#conteudo .vt-tit{margin:0 0 8px;font-size:15px;display:flex;align-items:baseline;gap:6px}

@@ -55,11 +55,15 @@
     const novo = ex.map((x) => x.id + (x.n || '')).join(',') + '§' + gs.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + '#' + ss.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + (min ? 'm' : '');
     if (novo === sig) return; sig = novo;
     const subs = ss.slice(1);
+    /* 22/11/2026 (pedido do Cleiton): atalho que abre nesta mesma página e traz "apos" (ex.: Pendências → tarefas,
+       Vistorias → oportunidades) fica logo abaixo daquela aba, e não na seção "No app". */
+    const exIn = ex.filter((x) => x.apos && gs.some((b) => b.dataset.aba === x.apos)), exFora = ex.filter((x) => !exIn.includes(x));
+    const btnEx = (x, dentro) => `<button type="button" class="ml-g ml-app${dentro ? ' ml-dentro' : ''}" data-ml-href="${esc(x.href)}" title="${esc(x.t)}${dentro ? '' : ' · abre outra página do app'}"><span class="ml-ic">${window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(x.ic) : esc(x.t.slice(0, 2))}</span><span class="ml-tx">${esc(x.t)}</span>${x.n ? `<span class="ml-n ml-n-ok">${esc(x.n)}</span>` : ''}</button>`;
     aside.innerHTML = `<div class="ml-topo"><span class="ml-tit">Menu</span><button type="button" class="ml-x" data-ml-min title="${min ? 'Abrir o menu' : 'Recolher o menu'}" aria-label="${min ? 'Abrir o menu' : 'Recolher o menu'}">${min ? '»' : '«'}</button></div>` +
       gs.map((b) => { const sel = b.getAttribute('aria-selected') === 'true', t = txt(b);
         return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>` +
-          (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}">${icone(s.dataset.aba, txt(s)).replace(' fim', '')}<span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : ''); }).join('') +
-      (ex.length ? `<div class="ml-sep">No app</div>` + ex.map((x) => `<button type="button" class="ml-g ml-app" data-ml-href="${esc(x.href)}" title="${esc(x.t)} · abre outra página do app"><span class="ml-ic">${window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(x.ic) : esc(x.t.slice(0, 2))}</span><span class="ml-tx">${esc(x.t)}</span>${x.n ? `<span class="ml-n ml-n-ok">${esc(x.n)}</span>` : ''}</button>`).join('') : '');
+          (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}">${icone(s.dataset.aba, txt(s)).replace(' fim', '')}<span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : '') + exIn.filter((x) => x.apos === b.dataset.aba).map((x) => btnEx(x, true)).join(''); }).join('') +
+      (exFora.length ? `<div class="ml-sep">No app</div>` + exFora.map((x) => btnEx(x, false)).join('') : '');
     mede();
   }
   /* 14/11/2026 (pedido do Cleiton): a lateral tem a largura do maior título, sem sobra em branco; o conteúdo acompanha. */

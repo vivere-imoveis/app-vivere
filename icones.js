@@ -63,7 +63,8 @@
     refazer: '<path d="M4.5 11a7.5 7.5 0 0 1 13-4.6L20 9"/><path d="M20 4.5V9h-4.5"/><path d="M19.5 13a7.5 7.5 0 0 1-13 4.6L4 15"/><path d="M4 19.5V15h4.5"/>',
     quadrado: '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
     feito: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
-    fechar: '<path d="M6 6l12 12M18 6 6 18"/>'
+    fechar: '<path d="M6 6l12 12M18 6 6 18"/>',
+    contatos: '<rect x="5.5" y="3.5" width="14" height="17" rx="2"/><circle cx="12.5" cy="10" r="2.5"/><path d="M8.8 16.5c.7-1.7 2-2.6 3.7-2.6s3 .9 3.7 2.6"/><path d="M3.5 8h3.5M3.5 12h3.5M3.5 16h3.5"/>'
   };
   // emoji → ícone de traço
   var IC = { '🎯': 'alvo', '🏠': 'casa', '🎤': 'microfone', '📍': 'pino', '🗺': 'mapa', '✨': 'brilho', '⚡': 'raio', '🔎': 'lupa', '🔍': 'lupa', '📷': 'camera',
@@ -73,7 +74,7 @@
     '📁': 'pasta', '📂': 'pasta', '📤': 'enviar', '👁': 'olho', '⚠': 'alerta', '☁': 'nuvem', '🗄': 'arquivo', '💬': 'balao', '🔒': 'cadeado', '🔐': 'cadeado',
     '⭐': 'estrela', '🌟': 'estrela', '🪧': 'placa', '🏊': 'piscina', '🧭': 'bussola', '🌅': 'sol', '🌤': 'sol', '🏗': 'obra', '📞': 'telefone', '☎': 'telefone',
     '♻': 'refazer', '🔄': 'refazer', '🤖': 'robo', '🔧': 'ferramenta', '🛠': 'ferramenta', '📱': 'celular', '🚨': 'alerta', '👏': 'brilho', '🚶': 'pessoas',
-    '⏹': 'quadrado', '📎': 'clipe', '🔥': 'fogo', '❄': 'floco', '🏘': 'casa', '📅': 'prancheta', '🗓': 'prancheta', '📝': 'documento', '💼': 'pasta', '✅': 'feito', '✔': 'feito', '❌': 'fechar', '🚫': 'fechar' };
+    '⏹': 'quadrado', '📎': 'clipe', '🔥': 'fogo', '❄': 'floco', '🏘': 'casa', '📅': 'prancheta', '🗓': 'prancheta', '📝': 'documento', '💼': 'pasta', '✅': 'feito', '✔': 'feito', '❌': 'fechar', '🚫': 'fechar', '📇': 'contatos' };
   // emoji de cor → ponto na cor do tema
   var PT = { '🟢': 'ok', '🟠': 'capt', '🔵': 'azul', '🔴': 'ruim', '🟡': 'aviso', '🔶': 'capt los' };
   var chaves = Object.keys(IC).concat(Object.keys(PT));

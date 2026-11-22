@@ -286,7 +286,7 @@
   /* ---------- lateral (menu-lateral.js) ---------- */
   var E0 = window.MENU_LATERAL_EXTRAS || { itens: function () { return []; }, abre: function (h) { location.href = h; } };
   window.MENU_LATERAL_EXTRAS = {
-    itens: function () { var n = total(); return [{ id: 'pendencias', t: 'Pendências', ic: 'alerta', href: '#pendencias', n: n == null ? '' : String(n) }].concat(E0.itens ? E0.itens() || [] : []); },
+    itens: function () { var n = total(); return [{ id: 'pendencias', t: 'Pendências', ic: 'alerta', href: '#pendencias', apos: 'tarefas', n: n == null ? '' : String(n) }].concat(E0.itens ? E0.itens() || [] : []); },
     abre: function (href) { if (href === '#pendencias') return abrir(); return E0.abre ? E0.abre(href) : (location.href = href); }
   };
 

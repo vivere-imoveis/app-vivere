@@ -311,7 +311,7 @@
     var E = window.MENU_LATERAL_EXTRAS;
     if (E && typeof E.itens === 'function' && !E.vist) {
       var itens = E.itens, abre = E.abre;
-      E.itens = function () { var l = itens.apply(this, arguments) || []; l.splice(1, 0, { id: 'vistorias', t: 'Vistorias', ic: 'prancheta', href: '#vistorias' }); return l; };
+      E.itens = function () { var l = itens.apply(this, arguments) || []; l.splice(1, 0, { id: 'vistorias', t: 'Vistorias', ic: 'prancheta', href: '#vistorias', apos: 'oportunidades' }); return l; };
       E.abre = function (href) { if (href === '#vistorias') return abrirLista(); return abre.apply(this, arguments); };
       E.vist = true;
       if (window.MenuLateral && MenuLateral.atualiza) MenuLateral.atualiza();
