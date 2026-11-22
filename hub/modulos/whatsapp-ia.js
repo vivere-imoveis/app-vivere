@@ -55,12 +55,12 @@
     const s = sit(), C = cors(), P = fila().filter((f) => f.status === 'pendente'), X = aExpirar();
     const ativos = C.filter((c) => c.ativo !== false);
     const desde7 = somaDias(hoje(), -7);
-    const msg7 = convs().filter((c) => (c.dia || '') >= desde7).reduce((n, c) => n + (+c.n_msgs || (c.mensagens || []).length || 0), 0);
+    const msg7 = s.msgs_7d != null ? +s.msgs_7d : convs().filter((c) => (c.dia || '') >= desde7).reduce((n, c) => n + (+c.n_msgs || (c.mensagens || []).length || 0), 0);   // 22/11/2026: número do banco (privado.wia_hub_situacao), quando houver
     const lig = s.agente_ligado === true;
     return `<div class="grade" style="margin-bottom:14px">
       <div class="card"><h2>Agente</h2><div style="font-family:var(--display);font-size:22px;color:var(--${lig ? 'ok' : 'muted'})">${lig ? 'Ligado' : 'Desligado'}</div><p class="nota" style="margin:0">etapa ${esc(s.etapa || 3)} de 5 · ${esc(ETAPAS[(+s.etapa || 3) - 1] || '')}</p></div>
-      <div class="card"><h2>Números autorizados</h2><div style="font-family:var(--display);font-size:26px">${ativos.length}</div><p class="nota" style="margin:0">${C.length - ativos.length ? (C.length - ativos.length) + ' sem acesso' : 'todos com acesso'}${s.recusados_7d ? ` · ${esc(s.recusados_7d)} tentativa(s) de número fora da lista` : ''}</p></div>
-      <div class="card"><h2>Mensagens · 7 dias</h2><div style="font-family:var(--display);font-size:26px">${msg7}</div><p class="nota" style="margin:0">${s.ultima_carga ? 'cópia de ' + dtH(s.ultima_carga) : 'nenhuma conversa ainda'}</p></div>
+      <div class="card"><h2>Números autorizados</h2><div style="font-family:var(--display);font-size:26px">${s.numeros_ativos != null ? esc(s.numeros_ativos) : ativos.length}</div><p class="nota" style="margin:0">${C.length - ativos.length ? (C.length - ativos.length) + ' sem acesso' : 'todos com acesso'}${s.recusados_7d ? ` · ${esc(s.recusados_7d)} tentativa(s) de número fora da lista` : ''}</p></div>
+      <div class="card"><h2>Mensagens · 7 dias</h2><div style="font-family:var(--display);font-size:26px">${msg7}</div><p class="nota" style="margin:0">${s.ultima_msg_em ? 'última às ' + dtH(s.ultima_msg_em) + (s.corretores_7d ? ' · ' + esc(s.corretores_7d) + ' pessoas na semana' : '') : s.ultima_carga ? 'cópia de ' + dtH(s.ultima_carga) : 'nenhuma conversa ainda'}</p></div>
       <div class="card"${P.length ? ' style="border-color:var(--warn)"' : ''}><h2>Fila de aprovação</h2><div style="font-family:var(--display);font-size:26px${P.length ? ';color:var(--warn)' : ''}">${P.length}</div><p class="nota" style="margin:0">${P.length ? 'avisos e cobranças esperando você' : 'nada esperando'}</p></div>
       <div class="card"${X.length ? ' style="border-color:var(--bad)"' : ''}><h2>Expira em ${AVISO()} dias</h2><div style="font-family:var(--display);font-size:26px${X.length ? ';color:var(--bad)' : ''}">${X.length}</div><p class="nota" style="margin:0">conversas apagadas aos ${RET()} dias</p></div>
     </div>
