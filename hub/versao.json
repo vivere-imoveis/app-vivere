@@ -2,10 +2,10 @@
  "hub_versao": "1795318669-0da1",
  "index_original_sha16": "1ae6d7dcb8f472c6",
  "nucleos": 7,
- "montado_em": "2026-11-22T00:38-03:00",
+ "montado_em": "2026-11-22T00:47-03:00",
  "arquivos": {
   "hub-web.js": "f91fa1fe6b5ae230",
-  "index.html": "e738d1fa885da389",
+  "index.html": "7a673d1db3c51a48",
   "modulos/acm.js": "11d14bfb53c61b00",
   "modulos/app-vivere.js": "931a658f03d65dbe",
   "modulos/base-leads.js": "50324a52b7163808",
@@ -109,7 +109,6 @@
   "nucleo/nucleo-7.js": "91aed514d05266ca"
  },
  "fora_por_serem_dados": [
-  "modulos/marketing-dados.js",
-  "modulos/marketing-dossies.js"
+  "modulos/marketing-dados.js"
  ]
 }
