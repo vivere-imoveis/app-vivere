@@ -1,12 +1,12 @@
 {
- "hub_versao": "1795351762-bfe0",
+ "hub_versao": "1795352178-3eec",
  "index_original_sha16": "ver list_files",
  "nucleos": 7,
  "montado_em": "2026-11-22T09:40-03:00",
  "fora_por_serem_dados": [],
  "arquivos": {
   "hub-web.js": "f91fa1fe6b5ae230",
-  "index.html": "5d609619d2f48038",
+  "index.html": "79a6f0aa3833ad94",
   "modulos/acm.js": "11d14bfb53c61b00",
   "modulos/app-vivere.js": "931a658f03d65dbe",
   "modulos/base-leads.js": "50324a52b7163808",
@@ -104,7 +104,7 @@
   "modulos/whatsapp-ia.js": "0fc8e2edd7d7ce39",
   "nucleo/nucleo-1.js": "6bdf5597ca821306",
   "nucleo/nucleo-2.js": "9b652a30ae103ad8",
-  "nucleo/nucleo-3.js": "0c96d915922e976c",
+  "nucleo/nucleo-3.js": "c2454fd87a51b326",
   "nucleo/nucleo-4.js": "eabfb5bd68447bb8",
   "nucleo/nucleo-5.js": "2ebf5e303ee7a497",
   "nucleo/nucleo-6.js": "19bd0efa85ba6032",
