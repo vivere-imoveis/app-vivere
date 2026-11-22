@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -5306,6 +5306,20 @@ window.VZ_CFG={ ids:['qAba'], idAbas:'qAba',
   window.TabelaCartao = { atualiza: agenda };
 })();
 
+if (/[?&]medir=1\b/.test(location.search)) {   // trocas-medir: medição do desenho, só com ?medir=1
+  const MD = {}; let MDn = 0;
+  const md = (nome, f) => function () { const a = performance.now(); try { return f.apply(this, arguments); } finally { const d = performance.now() - a; const x = MD[nome] || (MD[nome] = [0, 0]); x[0] += d; x[1]++; } };
+  avisosDe = md('avisosDe', avisosDe); avisosAgenc = md('avisosAgenc', avisosAgenc); leadsComOfertas = md('leadsComOfertas', leadsComOfertas);
+  opsCache = md('opsCache', opsCache); opsDoLead = md('opsDoLead', opsDoLead); ctxOp = md('ctxOp', ctxOp);
+  cartaoPrevisaoInicio = md('cartaoPrevisaoInicio', cartaoPrevisaoInicio); painelPrazos = md('painelPrazos', painelPrazos);
+  desenharAbas = md('desenharAbas', desenharAbas); subOp = md('subOp', subOp); pintaBarra = md('pintaBarra', pintaBarra); montaMapa = md('montaMapa', montaMapa);
+  aplicarVer = md('aplicarVer', aplicarVer); barraGestor = md('barraGestor', barraGestor); separarArq = md('separarArq', separarArq); vInicio = md('vInicio', vInicio);
+  TF.blocoHoje = md('TF.blocoHoje', TF.blocoHoje); if (window.MetasCRM) MetasCRM.bloco = md('MetasCRM.bloco', MetasCRM.bloco);
+  const r0 = render;
+  render = function () { for (const k in MD) delete MD[k]; const a = performance.now(); try { return r0.apply(this, arguments); } finally {
+    MDn++; const o = { n: MDn, aba: S.aba, total: Math.round(performance.now() - a), em: Math.round(a), dom: document.getElementsByTagName('*').length };
+    Object.keys(MD).forEach((k) => { o[k] = Math.round(MD[k][0]) + (MD[k][1] > 1 ? '/' + MD[k][1] : ''); }); console.log('[medir] ' + JSON.stringify(o)); } };
+}
 })();
 
 } catch (e) { setTimeout(function () { throw e; }); }
