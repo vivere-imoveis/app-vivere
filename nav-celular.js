@@ -30,12 +30,16 @@
   function pintaBarra() {
     if (!barra) return;
     var at = ativa(), naBarra = BARRA.some(function (b) { return b[0] === at; });
-    barra.innerHTML = BARRA.filter(function (b) { return orig(b[0]); }).map(function (b) {
+    /* 22/11/2026: só redesenha quando algo mudou. Antes a barra era refeita a cada quadro (o botão ☰ do topo era sempre
+       "diferente" porque o navegador reescreve o SVG), e o toque de uma pessoa (descer e subir o dedo) caía em botões
+       diferentes: o clique não acontecia. */
+    var novo = BARRA.filter(function (b) { return orig(b[0]); }).map(function (b) {
       var o = orig(b[0]);
       return '<button type="button" data-nc="' + b[0] + '"' + (at === b[0] ? ' aria-current="page"' : '') + '><span class="nc-i">' + icone(o) + '</span>' + esc(b[1]) + selo(o) + '</button>';
     }).join('') + '<button type="button" data-nc-mais="1"' + (!naBarra && at ? ' aria-current="page"' : '') + ' aria-haspopup="dialog"><span class="nc-i">' + SVG.mais + '</span>Mais</button>';
+    if (barra.__html !== novo) { barra.__html = novo; barra.innerHTML = novo; }
     var p = document.getElementById('btnPendApp');
-    var hm = SVG.menu + selo(p); if (btMenu && btMenu.innerHTML !== hm) btMenu.innerHTML = hm;   // só troca se mudou (o observador da .marca veria a troca)
+    var hm = SVG.menu + selo(p); if (btMenu && btMenu.__html !== hm) { btMenu.__html = hm; btMenu.innerHTML = hm; }   // compara com o último texto gravado, não com o innerHTML (que o navegador reescreve)
   }
 
   function fechar() {
