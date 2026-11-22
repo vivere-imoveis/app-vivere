@@ -18,7 +18,7 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function orig(k) { return abas && abas.querySelector('button[data-aba="' + k + '"]'); }
-  function icone(el) { var s = el && el.querySelector('svg'); return s ? s.outerHTML : SVG.ponto; }
+  function icone(el) { var i = el && el.querySelector('i.ic'); if (i) return i.outerHTML; var s = el && el.querySelector('svg'); return s ? s.outerHTML : SVG.ponto; }
   function selo(el) { var n = el && el.querySelector('.n, .bp-n, .ba-n b'); var t = n ? n.textContent.trim() : ''; return /^\d+$/.test(t) && t !== '0' ? '<span class="nc-selo">' + esc(t) + '</span>' : ''; }
   function rotulo(el) {
     var c = el.cloneNode(true); c.querySelectorAll('svg, .n, .ic, .bp-ic, .ba-ic, .ba-n').forEach(function (x) { x.remove(); });
@@ -31,8 +31,8 @@
     var at = ativa(), naBarra = BARRA.some(function (b) { return b[0] === at; });
     barra.innerHTML = BARRA.filter(function (b) { return orig(b[0]); }).map(function (b) {
       var o = orig(b[0]);
-      return '<button type="button" data-nc="' + b[0] + '"' + (at === b[0] ? ' aria-current="page"' : '') + '><span class="ic">' + icone(o) + '</span>' + esc(b[1]) + selo(o) + '</button>';
-    }).join('') + '<button type="button" data-nc-mais="1"' + (!naBarra && at ? ' aria-current="page"' : '') + ' aria-haspopup="dialog"><span class="ic">' + SVG.mais + '</span>Mais</button>';
+      return '<button type="button" data-nc="' + b[0] + '"' + (at === b[0] ? ' aria-current="page"' : '') + '><span class="nc-i">' + icone(o) + '</span>' + esc(b[1]) + selo(o) + '</button>';
+    }).join('') + '<button type="button" data-nc-mais="1"' + (!naBarra && at ? ' aria-current="page"' : '') + ' aria-haspopup="dialog"><span class="nc-i">' + SVG.mais + '</span>Mais</button>';
     var p = document.getElementById('btnPendApp');
     var hm = SVG.menu + selo(p); if (btMenu && btMenu.innerHTML !== hm) btMenu.innerHTML = hm;   // só troca se mudou (o observador da .marca veria a troca)
   }
@@ -50,12 +50,12 @@
     var g = document.createElement('div'); g.className = 'nc-gav'; g.setAttribute('role', 'dialog'); g.setAttribute('aria-label', 'Mais abas e atalhos');
     var h = '<div class="puxa"></div><h2>Abas</h2><div class="nc-grade">' + outras.map(function (b) {
       var k = b.getAttribute('data-aba');
-      return '<button type="button" data-nc="' + esc(k) + '"' + (k === at ? ' aria-current="page"' : '') + '>' + icone(b) + '<span>' + esc(rotulo(b)) + '</span>' + selo(b) + '</button>';
+      return '<button type="button" data-nc="' + esc(k) + '"' + (k === at ? ' aria-current="page"' : '') + '><span class="nc-i">' + icone(b) + '</span><span>' + esc(rotulo(b)) + '</span>' + selo(b) + '</button>';
     }).join('') + '</div>';
     var at2 = ATALHOS.map(function (id) { return document.getElementById(id); }).filter(Boolean);
     if (at2.length) h += '<h2>Atalhos</h2><div class="nc-grade">' + at2.map(function (el) {
       var r = el.id === 'btnPrivado' ? (el.getAttribute('aria-pressed') === 'true' ? 'Mostrar valores' : 'Ocultar valores') : el.id === 'btnInicio' ? 'Início do app' : rotulo(el).replace(/^[◐☀☾]\s*/, '');
-      return '<button type="button" data-nc-at="' + el.id + '">' + icone(el) + '<span>' + esc(r) + '</span>' + selo(el) + '</button>';
+      return '<button type="button" data-nc-at="' + el.id + '"><span class="nc-i">' + icone(el) + '</span><span>' + esc(r) + '</span>' + selo(el) + '</button>';
     }).join('') + '</div>';
     g.innerHTML = h;
     document.body.appendChild(veu); document.body.appendChild(g); aberta = [veu, g];

@@ -33,10 +33,11 @@ body.nc-on #barraQ details { display: none; }
 .nc-barra { display: none; }
 body.nc-on .nc-barra { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; background: var(--panel); border-top: 1px solid var(--line); padding: 4px 2px calc(6px + env(safe-area-inset-bottom)); }
 .nc-barra button { appearance: none; border: 0; background: none; color: var(--muted); display: grid; justify-items: center; gap: 1px; padding: 6px 2px 2px; font: 500 11px var(--body, system-ui); position: relative; cursor: pointer; min-width: 0; }
-.nc-barra button svg, .nc-barra button .ic svg { width: 21px; height: 21px; }
-.nc-barra button .ic { display: grid; place-items: center; height: 24px; }
+.nc-i { display: grid; place-items: center; height: 24px; }
+.nc-i svg, .nc-i .ic { width: 21px !important; height: 21px !important; font-size: 21px; margin: 0 !important; }
+.nc-grade .nc-i svg, .nc-grade .nc-i .ic { width: 19px !important; height: 19px !important; }
 .nc-barra button[aria-current="page"] { color: var(--ink); }
-.nc-barra button[aria-current="page"] .ic { color: var(--brass); }
+.nc-barra button[aria-current="page"] .nc-i { color: var(--brass); }
 .nc-barra .nc-selo { top: 0; right: auto; left: calc(50% + 6px); }
 body.nc-on { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
 body.nc-on .toast { bottom: calc(76px + env(safe-area-inset-bottom)) !important; }
@@ -48,7 +49,6 @@ body.nc-on .toast { bottom: calc(76px + env(safe-area-inset-bottom)) !important;
 .nc-gav h2 { font: 600 12px var(--body, system-ui); letter-spacing: .02em; color: var(--muted); margin: 10px 2px 6px; text-transform: none; }
 .nc-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .nc-grade button { appearance: none; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 10px; padding: 10px 6px 8px; display: grid; justify-items: center; gap: 4px; font: 500 12px/1.25 var(--body, system-ui); text-align: center; position: relative; cursor: pointer; min-height: 62px; }
-.nc-grade button svg { width: 19px; height: 19px; }
 .nc-grade button[aria-current="page"] { border-color: var(--brass); }
 .nc-grade .nc-selo { top: 4px; right: 4px; }
 @media (prefers-reduced-motion: no-preference) {
