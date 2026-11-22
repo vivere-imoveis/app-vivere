@@ -15,8 +15,8 @@
   const LS = 'painel.menuModo', LSM = 'painel.menuMin';
   const ler = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const grava = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
-  const telaCheia = () => innerWidth >= 1440 && !!(screen && screen.width) && innerWidth >= screen.width * 0.9;
-  const modo = () => { if (innerWidth < 900) return 'topo'; const m = ler(LS); return m === 'lateral' || m === 'topo' ? m : (telaCheia() ? 'lateral' : 'topo'); };
+  const telaCheia = () => innerWidth >= 1024; /* trocas-redesenho-f1 */
+  const modo = () => { if (innerWidth < 1024) return 'topo'; const m = ler(LS); return m === 'lateral' || m === 'topo' ? m : (telaCheia() ? 'lateral' : 'topo'); };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let aside = null, sig = '';
   /* Atalhos de outras páginas do app no fim da lateral (14/11/2026, pedido do Cleiton): o painel-app.js informa A CAPTAR,
@@ -29,7 +29,7 @@
     tema.parentNode.insertBefore(b, tema);
   }
   function titulo() { const b = document.getElementById('ml-troca'); if (!b) return; const lat = document.body.classList.contains('ml-on');
-    b.title = lat ? 'Menu no topo' : 'Menu lateral'; b.setAttribute('aria-label', b.title); b.hidden = innerWidth < 900; }
+    b.title = lat ? 'Menu no topo' : 'Menu lateral'; b.setAttribute('aria-label', b.title); b.hidden = innerWidth < 1024; }
   const visivel = (b) => getComputedStyle(b).display !== 'none';
   const txt = (b) => { const c = b.cloneNode(true); c.querySelectorAll('.n,svg,.ic').forEach((x) => x.remove()); return c.textContent.replace(/\s*\(\d+\)\s*$/, '').trim(); };
   const selo = (b) => { const n = b.querySelector('.n'); const m = !n && /\((\d+)\)\s*$/.exec(b.textContent); return n ? `<span class="ml-n">${esc(n.textContent.trim())}</span>` : m ? `<span class="ml-n">${m[1]}</span>` : ''; };

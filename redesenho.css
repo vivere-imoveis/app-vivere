@@ -1,0 +1,138 @@
+@charset "UTF-8";
+/* redesenho.css — rodada 1 do redesenho do painel do corretor (22/11/2026, trocas-redesenho-f1). Par do bloco do Início novo
+   no painel.js. Carregado por último: só desenho (cabeçalho, menu do topo, lateral e Início). Fontes hospedadas no próprio app
+   (Jost e Instrument Sans, latim, OFL), sem ida ao Google: menos duas origens no carregamento. */
+
+:root{--rd-r1:10px;--rd-r2:14px}
+.num,.rd-n-v,.rd-g-n{font-family:var(--display);font-variant-numeric:tabular-nums lining-nums}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+/* ---------- cabeçalho: mais baixo, sem caixa alta ---------- */
+@media (min-width:1024px){
+  header.topo .wrap{padding-block:10px 0}
+  .marca{gap:10px}
+  .marca .selo{width:38px;height:38px}
+  .marca h1{font:400 13px/1.2 var(--body);letter-spacing:0;text-transform:none;color:var(--muted)}
+  .marca .nome{font:500 19px/1.2 var(--display);letter-spacing:.01em;margin:0}
+  .volta-inicio{margin:0 0 4px!important;font-size:13px!important}
+  /* menu no topo: abas discretas, sem caixa alta; a aba ativa ganha o fundo suave e o fio de latão */
+  body:not(.ml-on) .abas{gap:2px!important;margin-top:10px}
+  body:not(.ml-on) .abas button[data-aba]{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex!important;align-items:center;gap:8px;min-height:40px;padding:0 12px!important;border-radius:10px 10px 0 0;font:500 14.5px/1 var(--display)!important;letter-spacing:.01em!important;text-transform:none!important;color:var(--muted);border-bottom:2px solid transparent!important;white-space:nowrap;flex:none!important;width:auto!important;background:none!important;box-shadow:none!important}
+  body:not(.ml-on) .abas button[data-aba]:hover{color:var(--ink);background:var(--soft)!important}
+  body:not(.ml-on) .abas button[data-aba][aria-selected="true"]{color:var(--ink);background:var(--soft)!important;border-bottom-color:var(--brass)!important}
+  body:not(.ml-on) .abas.menu-cheio{display:flex!important;flex-wrap:nowrap!important;grid-template-columns:none!important}
+  body:not(.ml-on) .abas .quebra-menu{display:none!important}
+}
+.abas .n{font:600 11.5px/18px var(--body)!important;min-width:19px;height:19px;padding:0 6px!important;border-radius:10px;background:var(--bad)!important;color:#fff!important;text-align:center;letter-spacing:0!important}
+.abas button[data-aba="tarefas"] .n{background:var(--teal)!important}
+
+/* ---------- menu lateral (computador) ---------- */
+body.ml-on #ml{min-width:208px;max-width:240px;padding:16px 12px 24px;gap:2px}
+#ml .ml-tit{text-transform:none;letter-spacing:0;font:500 15px var(--display);color:var(--ink)}
+#ml .ml-g{min-height:44px;padding:0 12px;border-radius:10px;font:500 14.5px/1.2 var(--body);color:var(--muted)}
+#ml .ml-g:hover,#ml .ml-s:hover{border-color:transparent;background:var(--soft);color:var(--ink)}
+#ml .ml-g[aria-current="page"]{border-color:transparent;background:var(--soft);color:var(--ink);font-weight:600}
+#ml .ml-g[aria-current="page"]::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--brass)}
+#ml .ml-ic{width:22px;height:22px;background:none;border-radius:0}
+#ml .ml-s{min-height:36px;padding:0 10px;border-radius:8px;color:var(--muted)}
+#ml .ml-s[aria-selected="true"]{border-color:transparent;background:var(--soft);color:var(--ink)}
+#ml .ml-subs{margin:2px 0 8px 22px;border-left:1px solid var(--line)}
+#ml .ml-n{min-width:19px;height:19px;line-height:19px;padding:0 6px;border-radius:10px;font:600 11.5px/19px var(--body);color:#fff}
+#ml .ml-sep{text-transform:none;letter-spacing:0;font-size:13px;margin:14px 6px 6px}
+#ml .ml-app .ml-tx::after{content:none}
+#ml .ml-g[data-ml-href*="acaptar"]{color:var(--brass);border:1px solid color-mix(in srgb,var(--brass) 55%,transparent);margin:4px 0}
+
+/* ---------- Início ---------- */
+.rd-inicio{display:grid;gap:20px}
+.rd-inicio h2{font:500 22px/1.15 var(--display);letter-spacing:0;text-transform:none;margin:0 0 12px;color:var(--ink)}
+.rd-inicio h2 small{font:400 15px var(--body);color:var(--muted);margin-left:6px}
+.rd-ola{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.rd-ola h1{font:500 32px/1.05 var(--display);letter-spacing:-.01em;margin:0;text-transform:none;color:var(--ink)}
+.rd-ola p{margin:4px 0 0;color:var(--muted)}
+.rd-acoes{display:flex;flex-wrap:wrap;gap:8px}
+.rd-acoes .b{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 16px;border-radius:12px;text-decoration:none}
+.rd-acoes .b .ic{width:18px;height:18px}
+.rd-acoes .rd-ico{width:44px;padding:0;justify-content:center}
+.rd-grade{display:grid;gap:24px;align-items:start}
+@media (min-width:1100px){.rd-grade{grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr)}}
+.rd-col2{display:grid;gap:24px}
+
+/* grupos que abrem no toque */
+.rd-grupos{margin-top:0;border:1px solid var(--line);border-radius:var(--rd-r2);background:var(--panel);overflow:hidden}
+.rd-g+.rd-g{border-top:1px solid var(--line)}
+.rd-g summary{list-style:none;display:flex;align-items:center;gap:14px;min-height:60px;padding:12px 16px;cursor:pointer}
+.rd-g summary::-webkit-details-marker{display:none}
+.rd-g summary:hover{background:var(--soft)}
+.rd-g-n{font-weight:500;font-size:24px;line-height:1;width:2.4ch;text-align:right;flex:none}
+.rd-g-t{flex:1;min-width:0}
+.rd-g-t b{display:block;font-weight:600}
+.rd-g-t span{font-size:13.5px;color:var(--muted)}
+.rd-g-seta{width:10px;height:10px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .2s;flex:none;margin-right:4px}
+.rd-g[open] .rd-g-seta{transform:rotate(45deg)}
+.rd-g-atrasados .rd-g-n,.rd-g-contato .rd-g-n{color:var(--bad)}
+.rd-g-contato .rd-g-n{color:var(--brass)}
+.rd-g-hoje .rd-g-n{color:var(--teal)}
+.rd-g-semacao .rd-g-n,.rd-g-retomar .rd-g-n,.rd-g-agenc .rd-g-n{color:var(--muted)}
+.rd-g-c{padding:0 0 6px}
+.rd-it{display:flex;align-items:center;gap:12px;padding:10px 16px 10px calc(16px + 2.4ch + 14px);border-top:1px dashed var(--line)}
+.rd-it-tf{padding-left:calc(16px + 2.4ch + 14px - 40px)}
+.rd-it-t{flex:1;min-width:0}
+.rd-it-t b{font-weight:500;display:block}
+.rd-it-t span{display:block;font-size:13.5px;color:var(--muted);overflow-wrap:anywhere}
+.rd-it .b{flex:none;min-height:40px}
+.rd-it .tf-ok{flex:none;width:28px;height:28px;margin-right:0}
+.rd-nota{font-size:13.5px;color:var(--muted);margin:0;padding:10px 16px 8px calc(16px + 2.4ch + 14px)}
+.rd-fixo{display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:10px;border:1px solid color-mix(in srgb,var(--bad) 45%,var(--line));border-left:3px solid var(--bad);border-radius:var(--rd-r1);background:var(--panel)}
+.rd-fixo>div{flex:1;min-width:0}
+.rd-fixo span{display:block;font-size:13.5px;color:var(--muted)}
+
+/* números compactos: uma grade de 2, separada por fios */
+.rd-numeros{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--rd-r2);overflow:hidden}
+.rd-numeros.rd-impar>:last-child{grid-column:1/-1}
+.rd-n{all:unset;box-sizing:border-box;cursor:pointer;display:block;background:var(--panel);padding:14px 16px;min-height:84px}
+.rd-n:hover{background:var(--soft)}
+.rd-n:focus-visible{outline:2px solid var(--brass);outline-offset:-2px}
+.rd-n-v{display:block;font-size:30px;font-weight:500;line-height:1.05;color:var(--ink)}
+.rd-n-r{display:block;font-size:13.5px;color:var(--muted);margin-top:4px}
+.rd-n.rd-ruim .rd-n-v{color:var(--bad)}
+.rd-prev{margin-top:12px}
+.rd-prev .cartao{border-radius:var(--rd-r2)}
+.rd-prev .cartao .r,.rd-inicio .cartao .r{text-transform:none;letter-spacing:0;font:400 13.5px var(--body)}
+@media (min-width:700px) and (max-width:1099px){.rd-numeros{grid-template-columns:repeat(4,minmax(0,1fr))}.rd-numeros.rd-impar>:last-child{grid-column:auto}}
+
+/* metas, dentro do Início */
+.rd-metas .painel{border-radius:var(--rd-r2);margin:0}
+.rd-metas h2{font:500 22px var(--display)!important;letter-spacing:0!important;text-transform:none!important}
+.rd-metas .mt-grade{grid-template-columns:minmax(0,1fr)!important}
+.rd-metas .barra-prog{height:8px;border-radius:4px}
+.rd-metas .barra-prog i{border-radius:4px}
+.rd-inicio .status{margin:0;font-size:13.5px}
+
+/* celular */
+@media (max-width:699px){
+  .rd-ola h1{font-size:28px}
+  .rd-acoes .b{flex:1 1 auto;justify-content:center}
+  .rd-acoes .rd-ico{flex:0 0 44px}
+  .rd-ola .rd-acoes{width:100%}
+  .rd-prox{padding:16px}
+  .rd-prox h3{font-size:22px}
+  .rd-it,.rd-nota{padding-left:16px}
+  .rd-it-tf{padding-left:12px}
+  .rd-g summary{padding:12px 14px;gap:12px}
+}
+@media (prefers-reduced-motion:reduce){.rd-g-seta{transition:none}}
+.rd-n{text-align:left}
+.rd-inicio .rd-metas .mt-bloco h2{font:500 22px/1.15 var(--display)!important;letter-spacing:0!important;text-transform:none!important}
+/* com a lateral, os atalhos que já estão nela saem do cabeçalho (A CAPTAR, ACM, Vistorias, Pendências) */
+@media (min-width:1024px){
+  body.ml-on #btnAcapApp,body.ml-on #btnAcmApp,body.ml-on #btnVistApp,body.ml-on #btnPendApp{display:none!important}
+  body.ml-on .marca{flex-wrap:nowrap}
+}
+.rd-n .num,.rd-n .rd-n-v{text-align:left}
+/* sub-abas de Imóveis (8): uma fileira que rola de lado no celular e no tablet, em vez de 4 linhas de botões */
+@media (max-width:1023px){
+  .chips.sub-op{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;gap:6px!important;padding-bottom:2px;scrollbar-width:none;grid-template-columns:none!important;margin-inline:-16px!important;padding-inline:16px!important;scroll-padding-inline:16px}
+  .chips.sub-op::-webkit-scrollbar{display:none}
+  .chips.sub-op button{flex:none!important;width:auto!important;min-height:40px;white-space:nowrap}
+}
+.marca #btnPrazosApp{display:none!important}

@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -1626,19 +1626,19 @@ document.addEventListener('input', (e) => { const t = e.target; if (!t || !t.dat
 
 
 // ---------- Abas ----------
-const ABAS = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['tarefas', 'Tarefas'], ['leads', 'Meus leads'], ['pesquisa', 'Pesquisar imóveis'], ['imoveis', 'Meus imóveis'], ['semresp', 'Imóveis sem responsável'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['oportunidades', 'Ofertas'], ['demandas', 'Demandas extras'], ['demandas_auto', 'Demandas automáticas'], ['solicitacoes', 'Solicitações']]; // ordem do menu (03/11/2026; 🎯 A CAPTAR logo depois do Início desde 09/11/2026)
+const ABAS = [['inicio', 'Início'], ['leads', 'Leads'], ['tarefas', 'Tarefas'], ['oportunidades', 'Imóveis'], ['pesquisa', 'Pesquisar'], ['imoveis', 'Meus imóveis'], ['semresp', 'Imóveis sem responsável'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['demandas', 'Demandas extras'], ['demandas_auto', 'Demandas automáticas'], ['solicitacoes', 'Solicitações'], ['acaptar', 'A CAPTAR']]; /* trocas-redesenho-f1 */ // ordem do menu (03/11/2026; 🎯 A CAPTAR logo depois do Início desde 09/11/2026)
 const abasOrdenadas = () => ReordAbas.ordena(ABAS.map((a) => a[0]), S.ordemAbas).map((k) => ABAS.find((a) => a[0] === k));
 function desenharAbas() {
   if (ReordAbas.ativo()) return; // não redesenha no meio do arraste
-  const alt = todosAvisos().filter((a) => a.p === 'alta').length;
+  const alt = todosAvisos().filter((a) => a.p === 'alta' && !a.imv).length; /* trocas-redesenho-f1 */
   const sts = Object.entries(S.sol).map(([id, s]) => statusDe(id, s));
   const pend = S.ehDono ? sts.filter((x) => x === 'pendente').length : sts.filter((x) => x === 'complemento').length;
   // 03/11/2026 (pedido do Cleiton): Demandas virou a sub-aba "Demandas extras" dentro de Oportunidades — sai do menu e soma o selo em Oportunidades
   // 03/11/2026: Pesquisar imóveis também ganhou sub-abas (Meus imóveis · Empreendimentos · Mapa) — tabela SUBS_P
   const dentro = Object.values(SUBS_P).flatMap((s) => s[1].map((x) => x[0]));
   document.getElementById('abas').innerHTML = abasOrdenadas().filter(([k]) => !dentro.includes(k)).map(([k, l]) => {
-    const nop = k === 'oportunidades' ? leadsComOfertas().length + DEM.novas() + DEM.pedAbertos() : 0;   // demandas: novas não vistas + pedidos de alteração em aberto
-    const n = k === 'acaptar' ? (S.acap && acapContas().livres ? `<span class="n n-acap" title="Imóveis livres para captar">${acapContas().livres}</span>` : '') : k === 'tarefas' && TF.selo() ? `<span class="n">${TF.selo()}</span>` : k === 'leads' && alt ? `<span class="n">${alt}</span>` : k === 'solicitacoes' && pend ? `<span class="n">${pend}</span>` : nop ? `<span class="n" style="background:var(--warn-bg);color:var(--warn)">${nop}</span>` : '';
+    const nop = k === 'oportunidades' ? DEM.novas() + DEM.pedAbertos() : 0; /* trocas-redesenho-f1 */   // demandas: novas não vistas + pedidos de alteração em aberto
+    const n = k === 'acaptar' ? '' : k === 'tarefas' && TF.selo() ? `<span class="n">${TF.selo()}</span>` : k === 'leads' && alt ? `<span class="n">${alt}</span>` : k === 'solicitacoes' && pend ? `<span class="n">${pend}</span>` : nop ? `<span class="n" style="background:var(--warn-bg);color:var(--warn)">${nop}</span>` : '';
     return `<button type="button" role="tab" data-aba="${k}" aria-selected="${S.aba === k || paiP(S.aba) === k}">${l}${n}</button>`;
   }).join('') + (S.ordemAbas ? ReordAbas.botao() : ''); // ↺ Ordem padrão sempre no fim do próprio menu (31/10/2026); na ordem original o clique não faz nada
 }
@@ -1664,7 +1664,7 @@ const baImv = (m) => { const pr = m.proprietario || {}; return { txt: [m.ref, m.
   docs: [pr.celular, pr.cpf, m.cep], valores: [m.valor], nums: { dorm: m.dorm, suites: m.suites, banh: m.banh, vagas: m.vagas } }; };
 
 // sub-abas (03/11/2026): aba-mãe → [rótulo, filhas]; cada filha continua com a aba própria por baixo
-const SUBS_P = { oportunidades: ['Ofertas', [['demandas', 'Demandas extras'], ['demandas_auto', 'Demandas automáticas']]], pesquisa: ['Pesquisar imóveis', [['imoveis', 'Meus imóveis'], ['semresp', 'Imóveis sem responsável'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa']]] };
+const SUBS_P = { oportunidades: ['Ofertas', [['pesquisa', 'Pesquisar'], ['imoveis', 'Meus imóveis'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['semresp', 'Sem responsável'], ['demandas', 'Demandas extras'], ['demandas_auto', 'Demandas automáticas']]] }; /* trocas-redesenho-f1 */
 const paiP = (k) => Object.keys(SUBS_P).find((m) => SUBS_P[m][1].some((x) => x[0] === k)) || '';
 function subOp() { const pai = SUBS_P[S.aba] ? S.aba : paiP(S.aba); if (!pai) return '';
   const n = (k) => k === 'demandas' ? DEM.novas() + DEM.pedAbertos() : 0;
@@ -4569,7 +4569,7 @@ document.addEventListener('change', (ev) => {
 // ---------- Gavetas ----------
 function abrir(tipo, id, semFoco) {
   S.aberto = { tipo, id };
-  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'base' ? gavetaBase(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'pfconf' ? gavetaPfConf() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : tipo === 'rel' ? gavetaRel() : tipo === 'metasvid' ? gavetaMetasVid(id) : gavetaVitrine(id);
+  const html = tipo === 'tarefa' ? TF.gaveta(id) : tipo === 'atrib' ? TF.gavetaAtrib() : tipo === 'meu' ? gavetaMeu(id) : tipo === 'base' ? gavetaBase(id) : tipo === 'lead' ? gavetaLead(id) : tipo === 'novo' ? gavetaLead(null) : tipo === 'alt' ? gavetaAlterar(id) : tipo === 'novoimv' ? gavetaNovoImovel() : tipo === 'fotosimv' ? gavetaFotosImv() : tipo === 'sol' ? gavetaSol(id) : tipo === 'agenc' ? gavetaAgenc(id) : tipo === 'conversa' ? gavetaConversa(id) : tipo === 'voz' ? gavetaVoz() : tipo === 'pfconf' ? gavetaPfConf() : tipo === 'prazos' ? gavetaPrazosRD() : tipo === 'emp' ? gavetaEmp(id) : tipo === 'cons' ? gavetaCons(id) : tipo === 'tela' ? gavetaTela(id) : tipo === 'rel' ? gavetaRel() : tipo === 'metasvid' ? gavetaMetasVid(id) : gavetaVitrine(id);
   const so = document.getElementById('sobre');
   so.innerHTML = `<div class="sobre" data-fundo>${html}</div>`;
   if (!semFoco) { const pri = so.querySelector('input,select,textarea,button'); if (pri) pri.focus(); }
@@ -4829,7 +4829,7 @@ document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && S.aber
 const TELA_LS = 'painel.tela_crm';
 const TELA_BLOCOS = {
   inicio_cartoes: [['abertos', 'Leads em aberto'], ['atrasados', 'Atrasados'], ['hoje', 'Para hoje'], ['previsao', 'Previsão do mês'], ['imoveis', 'Meus imóveis'], ['ofertas', 'Ofertas'], ['acaptar', 'A CAPTAR'], ['solic', 'Solicitações']],
-  inicio_secoes: [['metas', 'Minhas metas'], ['tarefas', 'Tarefas de hoje'], ['fazer', 'O que fazer agora'], ['prazos', 'Prazos da Vivere']],
+  inicio_secoes: [['fazer', 'Agora (o que fazer)'], ['tarefas', 'Tarefas de hoje, dentro de Agora'], ['metas', 'Minhas metas']], /* trocas-redesenho-f1 */
   leads_blocos: [['previsao', 'Previsão do mês'], ['interesse', 'Filtro por interesse'], ['etapas', 'Filtro por etapa (na Lista)']],
   colunas: [['telefone', 'Telefone'], ['_f', 'Funil (em Todos e na busca)'], ['interesse', 'Interesse'], ['etapa', 'Etapa'], ['valor', 'Valor'], ['prob', 'Probabilidade'], ['receita', 'Receita estimada'], ['fechamento_prev', 'Fechamento previsto'], ['data_prox', 'Próxima ação'], ['_ult', 'Último registro'], ['entrada', 'Entrada'], ['campanha', 'Origem']],
   cartao: [['interesse', 'Interesse'], ['alertas', 'Alertas (atrasado, parado, sem próxima ação)'], ['origem', 'Origem e imóvel de interesse'], ['valor', 'Valor e probabilidade'], ['fechamento', 'Fechamento previsto'], ['proxima', 'Próxima ação'], ['autor', 'Quem cadastrou ou moveu']],
@@ -5347,6 +5347,115 @@ window.VZ_CFG={ ids:['qAba'], idAbas:'qAba',
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(agenda);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
   window.TabelaCartao = { atualiza: agenda };
+})();
+
+/* trocas-redesenho-f1 (22/11/2026, sessão "VIS - Design - Painel Corretores e HUB"): Início novo do painel, aprovado no
+   PROTÓTIPO · PAINEL DO CORRETOR. A fila "Agora" (grupos que abrem no toque; sem cartão de destaque em outra cor, a pedido do
+   Cleiton em 22/11/2026: o primeiro grupo com itens já vem aberto) junta o antigo
+   "O que fazer agora" e as tarefas de hoje; os números ficam compactos ao lado das metas. Prazos da Vivere e as regras por
+   etapa saem do Início e abrem numa gaveta (link no fim do Início e no Mais do celular). Só desenho: nenhum dado muda. */
+S.rdAbertos = S.rdAbertos || null;   // null = ninguém mexeu ainda: abre o primeiro grupo com itens (decisão de 22/11/2026: sem cartão de destaque)
+const RD_GRUPOS = [
+  ['atrasados', 'Retornos atrasados', 'Ação vencida ou negociação parada'],
+  ['contato', 'Primeiro contato', 'Leads que ainda esperam o seu primeiro contato'],
+  ['hoje', 'Para hoje', 'Ações marcadas nos leads e as suas tarefas'],
+  ['semacao', 'Leads sem próxima ação', 'Defina o próximo passo para não perder o lead'],
+  ['retomar', 'Para retomar', 'Leads sem registro há algum tempo'],
+  ['agenc', 'Agenciamentos a atualizar', 'O prazo conta desde o último registro do imóvel'],
+];
+const rdGrupoDe = (a) => {
+  if (a.imv) return 'agenc';
+  if (a.t === 'Primeiro contato atrasado') return 'contato';
+  if (a.t === 'Próxima ação vencida' || (/^Parado em /.test(a.t) && a.p === 'alta')) return 'atrasados';
+  if (a.t === 'Ação para hoje') return 'hoje';
+  if (a.t === 'Sem próxima ação') return 'semacao';
+  return 'retomar';
+};
+const rdIc = (n) => (window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(n) : '');
+function rdItemAviso(a) {
+  return `<div class="rd-it"><div class="rd-it-t"><b class="sens">${esc(a.nome || '')}</b>${hitBA(a)}<span>${a.imv ? esc(a.t) + ': ' : a.t === 'Próxima ação vencida' || a.t === 'Ação para hoje' || a.t === 'Primeiro contato atrasado' || a.t === 'Sem próxima ação' ? '' : esc(a.t) + ' · '}${esc(a.o)}</span></div>${a.imv ? `<button class="b" type="button" data-agenc="${esc(a.imv)}">Atualizar</button>` : `<button class="b" type="button" data-lead="${esc(a.id)}">Abrir</button>`}</div>`;
+}
+function rdItemTarefa(t) {
+  return `<div class="rd-it rd-it-tf"><button type="button" class="tf-ok" data-tf-ok="${esc(t.id)}" aria-pressed="false" aria-label="Marcar como feita: ${esc(t.titulo)}" title="Marcar como feita">✓</button><div class="rd-it-t"><b>${esc(t.titulo)}</b><span>${TF.atrasada(t) ? 'Atrasada · ' : ''}${esc(t.hora ? 'às ' + t.hora : 'sem hora')}${t.origem && t.origem !== 'corretor' ? ' · ' + esc(t.origem === 'diretoria' ? 'da diretoria' : 'da Vivian') : ''}</span></div><button class="b" type="button" data-abre="tarefa:${esc(t.id)}">Abrir</button></div>`;
+}
+function vInicioRD() {
+  const L = Object.values(S.leads), av0 = todosAvisos();
+  const fAv = BA.filtra(av0, qDe(), (a) => { const l = S.leads[a.id] || {}, m = a.imv ? S.meus[a.imv] || {} : null; if (m) { const x = baImv({ ...m, descricao: '' }); return { ...x, txt: [a.t, a.o, x.txt].join(' · ') }; } return { ...baLead(l), txt: [a.t, a.o, baLead(l).txt].join(' · ') }; });
+  const av = fAv.lista; qInfo(fAv, 'avisos');
+  const secs = telaOrdem('inicio_secoes'), comTf = secs.includes('tarefas'), comFila = secs.includes('fazer');
+  const G = {}; av.forEach((a) => { const k = rdGrupoDe(a); (G[k] = G[k] || []).push(a); });
+  if (G.atrasados) G.atrasados.sort((a, b) => String((S.leads[a.id] || {}).data_prox || '').localeCompare(String((S.leads[b.id] || {}).data_prox || '')));
+  const tfs = comTf && !qDe() ? TF.lista().filter((t) => TF.atrasada(t) || TF.deHoje(t)).sort((a, b) => String(a.data + (a.hora || '99')).localeCompare(String(b.data + (b.hora || '99')))) : [];
+  const nAgora = (G.atrasados || []).length + (G.contato || []).length + (G.hoje || []).length + tfs.length;
+  // avisos fixos: pedido recusado e pedido para complementar (como antes)
+  const sts = Object.entries(S.sol).map(([id, s]) => statusDe(id, s));
+  const pend = sts.filter((x) => x === 'pendente').length, compl = sts.filter((x) => x === 'complemento').length;
+  let fixos = '';
+  if (!S.ehDono) Object.entries(S.sol).forEach(([sid, s]) => { const dc = S.decisoes[sid]; if (!dc || statusDe(sid, s) !== 'recusada' || !dc.em || dias(dc.em, hojeISO()) > 7) return;
+    fixos += `<div class="rd-fixo"><div><b>Pedido recusado</b> · ${esc(s.ref || 'imóvel')}<span>${esc({ novo_imovel: 'Cadastro', fotos: 'Fotos novas', captacao: 'Captação', corretor_anunciante: 'Aviso de corretor anunciante' }[s.tipo] || 'Alteração')} recusada em ${dt(dc.em)}${dc.resposta ? ': ' + esc(dc.resposta) : ''}</span></div><button class="b" type="button" data-abre="sol:${esc(sid)}">Abrir</button></div>`; });
+  if (compl && !S.ehDono) fixos += `<div class="rd-fixo"><div><b>Pedido para complementar</b><span>A diretoria devolveu ${compl} pedido${compl > 1 ? 's' : ''} pedindo dados, fotos ou documentos.</span></div><button class="b" type="button" data-aba="solicitacoes">Abrir</button></div>`;
+  const grupo = (k, rot, sub) => {
+    const A = G[k] || [], T = k === 'hoje' ? tfs : [], n = A.length + T.length; if (!n) return '';
+    const lim = 8, its = T.map(rdItemTarefa).concat(A.slice(0, Math.max(0, lim - T.length)).map(rdItemAviso)).join('');
+    const resto = n - Math.min(n, lim);
+    const mais = k === 'agenc' ? `<p class="rd-nota">No ${PZ().agenc_limite_dias}º dia sem atualização, o agenciamento passa a ser dividido 50/50 com a Vivere.</p>` : '';
+    const fim = resto > 0 ? `<p class="rd-nota">E mais ${resto}. <button class="copiar" type="button" data-aba="${k === 'agenc' ? 'oportunidades' : 'leads'}">Ver todos em ${k === 'agenc' ? 'Imóveis' : 'Leads'}</button></p>` : '';
+    return `<details class="rd-g rd-g-${k}" data-rd-g="${k}"${(S.rdAbertos ? S.rdAbertos.has(k) : k === prim1) || qDe() ? ' open' : ''}><summary><span class="rd-g-n num">${n}</span><span class="rd-g-t"><b>${rot}</b><span>${sub}</span></span><span class="rd-g-seta" aria-hidden="true"></span></summary><div class="rd-g-c">${mais}${its}${fim}</div></details>`;
+  };
+  const prim1 = (RD_GRUPOS.find(([k]) => (G[k] || []).length || (k === 'hoje' && tfs.length)) || [''])[0];
+  const grupos = RD_GRUPOS.map(([k, r, s]) => grupo(k, r, s)).join('');
+  const fila = comFila ? `<section class="rd-agora" aria-labelledby="rdAgoraT"><h2 id="rdAgoraT">Agora <small>${nAgora ? nAgora + (nAgora === 1 ? ' ação para hoje' : ' ações para hoje') : 'nada vencido'}</small></h2>
+      ${fixos}${grupos ? `<div class="rd-grupos">${grupos}</div>` : fAv.ativo ? '<div class="vazio">Nenhum aviso atende à busca.</div>' : ''}</section>` : (fixos ? `<section class="rd-agora">${fixos}</section>` : '');
+  // números: os mesmos cartões de "Personalizar", em formato compacto
+  const abertos = L.filter(abertaL).length, venc = (G.atrasados || []).length + (G.contato || []).length, nHoje = (G.hoje || []).length;
+  const M = Object.values(S.meus), ativos = M.filter((m) => m.ativo).length, nOp = leadsComOfertas().length;
+  const cel = (aba, v, r, cls) => `<button type="button" class="rd-n${cls ? ' ' + cls : ''}" data-aba="${aba}"><span class="rd-n-v num">${v}</span><span class="rd-n-r">${r}</span></button>`;
+  const NUM = {
+    abertos: () => cel('leads', abertos, `leads em aberto, de ${L.length}`),
+    atrasados: () => cel('leads', venc, venc === 1 ? 'atrasado' : 'atrasados', venc ? 'rd-ruim' : ''),
+    hoje: () => cel('tarefas', nHoje + tfs.length, 'para hoje'),
+    imoveis: () => cel('imoveis', ativos, `imóveis ativos, de ${M.length}`),
+    ofertas: () => cel('oportunidades', S.opsAquecendo ? '…' : nOp, nOp === 1 ? 'lead com ofertas' : 'leads com ofertas'),
+    acaptar: () => (S.acap ? `<a class="rd-n" href="${escUrl(acapUrl())}" data-acapvai><span class="rd-n-v num">${acapMinhas().length}</span><span class="rd-n-r">em captação por você</span></a>` : ''),
+    solic: () => cel('solicitacoes', pend, pend === 1 ? 'solicitação aguardando' : 'solicitações aguardando', compl ? 'rd-ruim' : ''),
+  };
+  const cart = telaOrdem('inicio_cartoes');
+  const nums = cart.map((k) => (NUM[k] ? NUM[k]() : '')).filter(Boolean);
+  const prev = cart.includes('previsao') ? `<div class="rd-prev">${cartaoPrevisaoInicio()}</div>` : '';
+  const numeros = nums.length || prev ? `<section aria-labelledby="rdNumT"><h2 id="rdNumT">Seus números</h2>${nums.length ? `<div class="rd-numeros${nums.length % 2 ? ' rd-impar' : ''}">${nums.join('')}</div>` : ''}${prev}</section>` : '';
+  const metas = secs.includes('metas') && window.MetasCRM ? MetasCRM.bloco({ doc: (S.metas || {}).atual, eq: (S.metasEq || {}).placar, hoje: hojeISO() }) : '';
+  const prim = String(S.info.saudacao || '').trim() || (S.info.corretor || '').split(' ')[0];
+  const data = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return `<section class="rd-inicio">
+    <div class="rd-ola"><div><h1>Olá${prim ? ', ' + esc(prim) : ''}.</h1><p>${esc(data.charAt(0).toUpperCase() + data.slice(1))}</p></div>
+      <div class="rd-acoes"><button class="b p" type="button" data-conversa="">${rdIc('balao')}Registrar conversa</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">${rdIc('microfone')}Por voz</button><button class="b rd-ico" type="button" data-tela="inicio" aria-label="Personalizar o Início" title="Personalizar o Início">${rdIc('blocos')}</button></div></div>
+    <div class="rd-grade">
+      <div class="rd-col1">${fila}</div>
+      <div class="rd-col2">${numeros}${metas ? `<section class="rd-metas">${metas}</section>` : ''}</div>
+    </div>
+    <p class="status">Dados atualizados em ${dt(S.info.atualizado_em)}. <button class="copiar" type="button" data-rd-prazos="">Prazos da Vivere e regras por etapa</button></p></section>`;
+}
+function gavetaPrazosRD() {
+  return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Prazos da Vivere">
+    <div class="cab"><div><p class="mut peq" style="margin:0">Regras que valem para todos os corretores</p><h3>Prazos da Vivere</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
+    ${painelPrazos()}</div>`;
+}
+vInicio = vInicioRD;
+document.addEventListener('toggle', (ev) => { const t = ev.target; if (!t || !t.matches || !t.matches('details[data-rd-g]')) return; const k = t.dataset.rdG; if (!S.rdAbertos) S.rdAbertos = new Set([...document.querySelectorAll('details[data-rd-g][open]')].map((d) => d.dataset.rdG)); if (t.open) S.rdAbertos.add(k); else S.rdAbertos.delete(k); }, true);
+document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-prazos]'); if (!t) return; ev.preventDefault(); abrir('prazos'); });
+window.VIVERE_RD = { prazos: () => abrir('prazos') };
+// "Prazos da Vivere" também no Mais do celular (nav-celular.js espelha #btnPrazosApp) e na lateral do computador
+(function () {
+  const poe = () => { const tema = document.getElementById('btnTema'); if (!tema || document.getElementById('btnPrazosApp')) return;
+    const b = document.createElement('button'); b.type = 'button'; b.id = 'btnPrazosApp'; b.className = 'btn-tema btn-prazos-rd'; b.innerHTML = rdIc('livro') + 'Prazos da Vivere';
+    b.addEventListener('click', () => abrir('prazos')); tema.parentNode.insertBefore(b, tema); };
+  poe(); document.addEventListener('DOMContentLoaded', poe);
+  document.addEventListener('DOMContentLoaded', () => {   // depois do painel-app.js e do pendencias.js, que montam a lista
+    const E0 = window.MENU_LATERAL_EXTRAS;
+    window.MENU_LATERAL_EXTRAS = { itens: () => ((E0 && E0.itens ? E0.itens() || [] : [])).concat([{ id: 'prazos', t: 'Prazos da Vivere', ic: 'livro', href: '#prazos' }]),
+      abre: (h) => (h === '#prazos' ? abrir('prazos') : E0 && E0.abre ? E0.abre(h) : (location.href = h)) };
+    if (window.MenuLateral) MenuLateral.atualiza();
+  });
 })();
 
 if (/[?&]medir=1\b/.test(location.search)) {   // trocas-medir: medição do desenho, só com ?medir=1

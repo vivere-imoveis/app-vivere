@@ -1,0 +1,4 @@
+/* Fontes da Vivere hospedadas no próprio app (22/11/2026, trocas-redesenho-f1): Jost e Instrument Sans, variáveis, só latim
+   (cobre o português), licença OFL (arquivos LICENCA-*.txt). Sem ida ao Google: menos duas origens e nenhum CSS bloqueante de fora. */
+@font-face{font-family:"Jost";font-style:normal;font-weight:100 900;font-display:swap;src:url(jost-latin-wght.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-style:normal;font-weight:400 700;font-display:swap;src:url(instrument-sans-latin-wght.woff2) format("woff2")}
