@@ -8,6 +8,7 @@
    ou na gaveta clica o botão original. As subabas da área continuam no lugar. A partir de 1024 px nada muda além do
    resumo das coletas (pintaColetas, núcleo) e da busca na mesma linha das coletas. ?nav=0 desliga no aparelho.
    2026-11-22.2: barra de baixo e gaveta (pedido do Cleiton às 00h44: o ☰ não levava às áreas).
+   2026-11-22.6: no celular e no tablet os atalhos voltam ao topo, compactos, em 2 linhas (pedido das 01h17).
    2026-11-22.5: sem a busca geral do topo e topo do computador numa linha (pedido das 01h13).
    2026-11-22.3: os cartões grandes do topo só no Início, logo abaixo dos menus (pedido das 00h57), em todos os formatos. */
 (function () {
@@ -40,15 +41,26 @@
     /* botões novos do topo: só no celular e no tablet */
     'html body header.topo>.tp-btn{display:none}',
     /* ---------- até 1023 px ---------- */
-    'html body.tc-on header.topo{flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-start;padding-bottom:10px;position:relative}',
+    'html body.tc-on header.topo{flex-wrap:wrap;gap:8px 6px;align-items:center;justify-content:flex-start;padding-bottom:10px;position:relative}',
     'html body.tc-on header.topo>.marca{flex:1 1 auto;min-width:0;order:-10!important;margin:0;gap:10px}',
     'html body.tc-on header.topo>.marca .selo{width:32px;height:32px}',
     'html body.tc-on header.topo>.marca>div{min-width:0}',
     'html body.tc-on header.topo>.marca h1{font-size:15px;letter-spacing:.2em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     'html body.tc-on header.topo>.marca p{display:none}',
     'html body.tc-on header.topo>.tp-btn{display:inline-flex;position:relative}',
-    'html body.tc-on header.topo>#tema-btn{order:-8!important}html body.tc-on header.topo>#tp-mais{order:-7!important}',
-    'html body.tc-on header.topo>:is(.lk-metas,.lk-paineis,#btnPrivado,#fonte-base,#ml-troca,.coletas){display:none!important}',
+    /* 2026-11-22.6 (pedido das 01h17): no celular e no tablet os atalhos continuam no topo, compactos.
+       1ª linha: selo e nome, olho, fonte da base, tema e ☰; 2ª linha: Metas, Painéis, menu lateral e o resumo das coletas */
+    'html body.tc-on header.topo>#btnPrivado{order:-9!important}html body.tc-on header.topo>#fonte-base{order:-8!important}html body.tc-on header.topo>#tema-btn{order:-7!important}html body.tc-on header.topo>#tp-mais{order:-6!important}',
+    'html body.tc-on header.topo>:is(.tema-btn,.tp-btn){width:34px;height:34px;font-size:15px}',
+    'html body.tc-on header.topo>.lk-metas{order:1!important;height:30px;padding:0 10px;font-size:10.5px;letter-spacing:.08em}',
+    'html body.tc-on header.topo>.lk-paineis{order:2!important}html body.tc-on header.topo>.lk-paineis>summary{height:30px;padding:0 10px;font-size:10.5px;letter-spacing:.08em}',
+    'html body.tc-on header.topo>#ml-troca{order:3!important;width:30px;height:30px}',
+    'html body.tc-on header.topo>.coletas{order:4!important;margin-left:auto;flex:0 1 auto;min-width:0}',
+    'html body.tc-on header.topo>.coletas .col-res>summary{font-size:11.5px;padding:3px 9px}',
+    '@media (max-width:700px){html body.tc-on header.topo>.coletas .col-h{display:none}html body.tc-on header.topo>.coletas .col-res[open]{flex-basis:100%}}',
+    'html body.tc-on header.topo>.coletas .col-det{margin-top:8px}',
+    '@media (max-width:700px){html body.tc-on header.topo::after{content:"";order:0;flex:0 0 100%;height:0}html body.tc-on header.topo>.marca{flex:1 1 0}}',
+    '@media (max-width:440px){html body.tc-on header.topo>.marca{gap:8px}html body.tc-on header.topo>.marca .selo{width:28px;height:28px}html body.tc-on header.topo{column-gap:4px}html body.tc-on header.topo>:is(.tema-btn,.tp-btn){width:32px;height:32px}html body.tc-on header.topo>.marca h1{font-size:12.5px;letter-spacing:.1em}html body.tc-on header.topo>.lk-metas,html body.tc-on header.topo>.lk-paineis>summary{padding:0 8px;letter-spacing:.04em}html body.tc-on header.topo>.coletas .col-res>summary{font-size:10.5px;padding:3px 8px}}',
     'html body.tc-on nav#abas{display:none!important}',
     '#tp-mais svg{width:18px;height:18px}',
     '.tc-ponto{position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--bad)}',
@@ -191,5 +203,5 @@
     modo(); pinta(); kpis();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inicia); else inicia();
-  window.TopoCompacto = { versao: '2026-11-22.5' };
+  window.TopoCompacto = { versao: '2026-11-22.6' };
 })();
