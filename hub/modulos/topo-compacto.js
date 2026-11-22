@@ -7,7 +7,8 @@
    Tudo só espelha os botões originais (o menu de áreas e os botões do topo seguem no HTML, escondidos): o toque na barra
    ou na gaveta clica o botão original. As subabas da área continuam no lugar. A partir de 1024 px nada muda além do
    resumo das coletas (pintaColetas, núcleo) e da busca na mesma linha das coletas. ?nav=0 desliga no aparelho.
-   2026-11-22.2: barra de baixo e gaveta (pedido do Cleiton às 00h44: o ☰ não levava às áreas). */
+   2026-11-22.2: barra de baixo e gaveta (pedido do Cleiton às 00h44: o ☰ não levava às áreas).
+   2026-11-22.3: os cartões grandes do topo só no Início, logo abaixo dos menus (pedido das 00h57), em todos os formatos. */
 (function () {
   'use strict';
   if (window.TopoCompacto) return;
@@ -27,6 +28,9 @@
     '.col-det{display:flex;flex-wrap:wrap;gap:6px}',
     '@media (min-width:1024px){.coletas .col-det{position:absolute;right:0;top:calc(100% + 6px);z-index:45;width:max-content;max-width:min(560px,90vw);padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.16)}}',
     '#ml-troca[hidden]{display:none!important}',
+    /* 2026-11-22.3: os cartões grandes do topo (#kpis) ficam só no Início, logo abaixo dos menus */
+    'body.tc-kpi-fora #kpis{display:none!important}',
+    '#kpis.tc-kpi-baixo{margin-top:14px}',
     /* computador: busca e resumo das coletas dividem a 2ª linha */
     '@media (min-width:1024px){html body header.topo>.busca{order:10;flex:1 1 320px;max-width:none;margin-left:0}html body header.topo>.coletas{order:11;margin-left:0;flex:none}}',
     /* botões novos do topo: só no celular e no tablet */
@@ -95,6 +99,11 @@
   function ativo() { var a = abas && abas.querySelector('button[data-grupo][aria-selected="true"]'); return a ? a.getAttribute('data-grupo') : ''; }
   function falhou() { var c = document.getElementById('coletas'); return !!(c && c.classList.contains('com-falha')); }
 
+  function kpis() {   // cartões grandes só no Início, abaixo dos menus (pedido do Cleiton, 22/11/2026 00h57)
+    var k = document.getElementById('kpis'), sub = document.getElementById('subabas');
+    if (k && sub && sub.parentNode && k.previousElementSibling !== sub) { sub.parentNode.insertBefore(k, sub.nextSibling); k.classList.add('tc-kpi-baixo'); }
+    var g = ativo(); document.body.classList.toggle('tc-kpi-fora', !!g && g !== 'inicio');
+  }
   function pinta() {
     if (!barra || !abas) return;
     var at = ativo(), naBarra = BARRA.some(function (b) { return b[0] === at; });
@@ -178,14 +187,14 @@
     mais.addEventListener('click', abrir);
     document.addEventListener('click', clique);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fechar(); });
-    var pedido = 0, agenda = function () { if (!pedido) pedido = requestAnimationFrame(function () { pedido = 0; pinta(); }); };
+    var pedido = 0, agenda = function () { if (!pedido) pedido = requestAnimationFrame(function () { pedido = 0; pinta(); kpis(); }); };
     new MutationObserver(agenda).observe(abas, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-selected'] });
     var col = document.getElementById('coletas');
     if (col) new MutationObserver(agenda).observe(col, { attributes: true, attributeFilter: ['class'] });
     var modo = function () { document.body.classList.toggle('tc-on', mq.matches); if (!mq.matches) { fechar(); t.classList.remove('tp-busca'); } };
     if (mq.addEventListener) mq.addEventListener('change', modo); else mq.addListener(modo);
-    modo(); pinta();
+    modo(); pinta(); kpis();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inicia); else inicia();
-  window.TopoCompacto = { versao: '2026-11-22.2' };
+  window.TopoCompacto = { versao: '2026-11-22.3' };
 })();
