@@ -266,3 +266,16 @@ thead th{font:500 11px var(--display);letter-spacing:.14em;text-transform:upperc
 }
 /* Ofertas: legenda mais compacta no celular (densidade, 22/11/2026) */
 @media (max-width:560px){#conteudo .op-leg{font-size:12px;line-height:1.4;padding:8px 10px;gap:4px}}
+/* Início › Agora: quando o grupo fica largo (tablet, ou a coluna inteira), os itens vão em 2 colunas em vez de linhas de
+   ponta a ponta com pouca coisa; o último, se sobrar sozinho, ocupa a linha (densidade, 22/11/2026). */
+.rd-g{container-type:inline-size}
+@container (min-width:640px){
+  .rd-g-c{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:0}
+  .rd-g-c>:not(.rd-it){grid-column:1/-1}
+  .rd-g-c>.rd-it{padding-left:16px}
+  .rd-g-c>.rd-it:nth-child(even of .rd-it){border-left:1px dashed var(--line)}
+  .rd-g-c>.rd-it:last-of-type:nth-child(odd of .rd-it){grid-column:1/-1}
+}
+/* "Ver como" no tablet e no celular: o seletor e o "Ao vivo · só leitura" na mesma linha quando cabem (densidade, 22/11/2026) */
+body .g-barra .g-sel.g-sel{flex:1 1 220px!important;width:auto!important;min-width:0;padding:5px 8px!important;font-size:15px!important}
+body .g-barra>span:last-child{white-space:nowrap}
