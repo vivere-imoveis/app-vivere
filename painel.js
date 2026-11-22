@@ -3063,7 +3063,7 @@ function faltaProp(pr) {
 function camposAlterar(m) {
   const v = (k) => k === 'situacao' ? (m.ativo ? 'Ativo' : 'Inativo') : (m[k] ?? '');
   return `<fieldset class="inteiro prop-alt"><legend>Dados do proprietário${faltaProp(m.proprietario).length ? ` · faltam: ${esc(faltaProp(m.proprietario).join(', '))}` : ''}</legend>${CAMPOS_PROP.map(([k, l, t]) => `<label class="c">${l}<input id="ap_${k}" type="${t}" ${t === 'tel' ? 'inputmode="tel"' : ''} autocomplete="off" value="${esc((m.proprietario || {})[k] || '')}"></label>`).join('')}</fieldset>
-      ${CAMPOS_ALT.map(([k, l, t]) => t === 'texto' ? `<label class="c inteiro">${l}<textarea id="a_${k}" rows="8">${esc(v(k))}</textarea></label><div class="inteiro linha"><button class="b" type="button" data-ia="a_descricao">${S.ia ? '✦ Reescrever a descrição com IA' : 'Pedir nova descrição à Vivere'}</button></div>` : t === 'sel' ? `<label class="c">${l}<select id="a_${k}">${['Ativo', 'Inativo'].map((o) => `<option ${o === v(k) ? 'selected' : ''}>${o}</option>`).join('')}</select></label>` : `<label class="c">${l}<input id="a_${k}" ${VLR_ALT.has(k) ? `${VLR} value="${esc(fmtVlr(v(k)))}"` : `type="number" step="any" inputmode="decimal" value="${esc(v(k))}"`}></label>`).join('')}`;
+      ${CAMPOS_ALT.map(([k, l, t]) => t === 'texto' ? `<label class="c inteiro">${l}<textarea id="a_${k}" rows="8">${esc(v(k))}</textarea></label><div class="inteiro linha"><button class="b" type="button" data-ia="a_descricao">${iaDesc() ? '✦ Reescrever a descrição com IA' : 'Pedir nova descrição à Vivere'}</button></div>` : t === 'sel' ? `<label class="c">${l}<select id="a_${k}">${['Ativo', 'Inativo'].map((o) => `<option ${o === v(k) ? 'selected' : ''}>${o}</option>`).join('')}</select></label>` : `<label class="c">${l}<input id="a_${k}" ${VLR_ALT.has(k) ? `${VLR} value="${esc(fmtVlr(v(k)))}"` : `type="number" step="any" inputmode="decimal" value="${esc(v(k))}"`}></label>`).join('')}`;
 }
 // compara o formulário com o imóvel: { campo: {de, para} } (mesma regra do envio antigo)
 function lerAlteracoes(m) {
@@ -3489,7 +3489,7 @@ function gavetaNovoImovel() {
       </fieldset>
       <fieldset class="sec-f"><legend>Descrição do anúncio</legend>
         <textarea id="c_descricao" data-raiz="descricao" rows="10" placeholder="Escreva a descrição ou use o botão para gerar um rascunho">${esc(n.descricao || '')}</textarea>
-        <div class="linha"><button class="b" type="button" data-ia="c_descricao">${S.ia ? '✦ Gerar descrição com IA' : 'Pedir a descrição à Vivere'}</button><span class="mut peq" id="iaStatus">${n.pede_descricao ? 'A Vivere vai escrever a descrição na aprovação.' : ''}</span></div>
+        <div class="linha"><button class="b" type="button" data-ia="c_descricao">${iaDesc() ? '✦ Gerar descrição com IA' : 'Pedir a descrição à Vivere'}</button><span class="mut peq" id="iaStatus">${n.pede_descricao ? 'A Vivere vai escrever a descrição na aprovação.' : ''}</span></div>
       </fieldset>
       <div class="linha"><button class="b" type="button" id="salvarRasc">Salvar rascunho</button><button class="b p" type="button" id="enviarNovo">${n.status_atual === 'complemento' ? 'Reenviar com o complemento' : 'Enviar para aprovação'}</button><span class="erro" id="eNovo"></span></div>
     </form></div>`;
@@ -3575,9 +3575,12 @@ Responda só com o texto do anúncio.
 Dados do imóvel (JSON):
 ${JSON.stringify(base)}`;
 }
+// 22/11/2026 (F3 do agenciamento pelo celular): no app (sem S.ia) a descrição sai pela painel-ia (ponte ia.texto, 30 por dia)
+function iaDesc() { return S.ia || (S.iaApp && S.iaApp.texto ? (p, op) => S.iaApp.texto(p, { tipo: 'descricao', signal: op && op.signal }) : null); }
 async function gerarIA(alvo) {
   const ta = document.getElementById(alvo), st = document.getElementById('iaStatus') || document.getElementById('eAlt');
-  if (!S.ia) {
+  const ia = iaDesc();
+  if (!ia) {
     if (S.novo) { S.novo.pede_descricao = true; await gravarNovo('rascunho', true); atualizarArquivos(); }
     if (st) st.textContent = 'Pedido registrado: a Vivere vai escrever a descrição na aprovação.';
     if (!S.novo) { ta.value = (ta.value ? ta.value + '\n\n' : '') + '[Pedido: a Vivere escreve a descrição]'; }
@@ -3586,12 +3589,14 @@ async function gerarIA(alvo) {
   const m = S.aberto && (S.aberto.tipo === 'alt' || S.aberto.tipo === 'meu') ? S.meus[S.aberto.id] : null;
   if (st) st.textContent = 'Gerando o rascunho…';
   try {
-    const r = await S.ia(textoParaIA(S.novo ? S.novo.dados : {}, m), { modelTier: 'default', onText: ({ text }) => { ta.value = text; } });
+    const r = await ia(textoParaIA(S.novo ? S.novo.dados : {}, m), { modelTier: 'default', onText: ({ text }) => { ta.value = text; } });
     ta.value = r.text.trim();
+    if (!ta.value) throw Object.assign(new Error('vazio'), { code: 'unavailable' });
     if (S.novo) { S.novo.descricao = ta.value; S.novo.descricao_origem = 'ia'; S.novo.pede_descricao = false; await gravarNovo('rascunho', true); atualizarArquivos(); }
-    if (st) st.textContent = 'Rascunho gerado. Revise antes de enviar: a diretoria aprova o texto.';
+    const u = !S.ia && S.iaApp && S.iaApp.ultimo;
+    if (st) st.textContent = 'Rascunho gerado. Revise antes de enviar: a diretoria aprova o texto.' + (u && u.usados ? ` Descrições hoje: ${u.usados} de ${u.limite}.` : '');
   } catch (e) {
-    if (st) st.textContent = e && e.code === 'rate_limited' ? 'Limite de uso da IA atingido agora. Tente mais tarde ou escreva o texto.' : 'Não foi possível gerar agora. Escreva o texto ou tente mais tarde.';
+    if (st) st.textContent = e && e.code === 'rate_limited' ? (!S.ia ? `Você usou as ${e.limite || 30} descrições com IA de hoje. Amanhã libera de novo; até lá, escreva o texto ou peça à Vivere.` : 'Limite de uso da IA atingido agora. Tente mais tarde ou escreva o texto.') : 'Não foi possível gerar agora. Escreva o texto ou tente mais tarde.';
   }
 }
 

@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-21.4'; // páginas de leitura 4 de cada vez (carregamento F1e) · antes: 'ponte 2026-11-21.3'; // marca acessos.hub no estado, para o botão HUB do painel (hub-web-diretoria F3) · antes: 'ponte 2026-11-21.2'; // _chegada_em dos leads pela coluna criado_em (trocas-usabilidade-f3, Lucas #4) · antes: 'ponte 2026-11-21.1'; // segmentos e remarketing da base de leads (trocas-followup-app) · antes: 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-22.1'; // ia.texto: descrição do anúncio pela painel-ia (tipo descricao, F3 do agenciamento pelo celular) · antes: 'ponte 2026-11-21.4'; // páginas de leitura 4 de cada vez (carregamento F1e) · antes: 'ponte 2026-11-21.3'; // marca acessos.hub no estado, para o botão HUB do painel (hub-web-diretoria F3) · antes: 'ponte 2026-11-21.2'; // _chegada_em dos leads pela coluna criado_em (trocas-usabilidade-f3, Lucas #4) · antes: 'ponte 2026-11-21.1'; // segmentos e remarketing da base de leads (trocas-followup-app) · antes: 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1, metas_equipes: 1 };   // metas_equipes: fatia 7 do CRM (placar das equipes, sem nomes)
@@ -800,7 +800,14 @@
       ia.ultimo = { usados: j.usados, limite: j.limite };
       return j.dados;
     },
-    limits: async function () { var j = await chamarIA({ tipo: 'limites' }); return { images: j.imagens, limite: j.limite, usados: j.usados }; }
+    limits: async function () { var j = await chamarIA({ tipo: 'limites' }); return { images: j.imagens, limite: j.limite, usados: j.usados }; },
+    // 22/11/2026 (F3 do agenciamento pelo celular): texto livre, hoje só a descrição do anúncio (tipo descricao, 30 por pessoa por dia)
+    texto: async function (prompt, op) {
+      op = op || {};
+      var j = await chamarIA({ tipo: op.tipo || 'descricao', prompt: String(prompt) }, op.signal);
+      ia.ultimo = { usados: j.usados, limite: j.limite };
+      return { text: String((j.dados && j.dados.texto) || '') };
+    }
   };
   /* trocas-demandas-auto */ function demandasAuto() { return sb.rpc('demandas_automaticas').then(function (r) { if (r.error) throw r.error; return r.data; }); }
   /* trocas-base-app */ function baseLeads(op, id, dados) { var q = op === 'lista' ? sb.rpc('base_leads_lista') : op === 'pessoa' ? sb.rpc('base_leads_pessoa', { p_id: String(id) }) : sb.rpc('base_leads_acao', { p_id: String(id), p_dados: dados || {} }); return q.then(function (r) { if (r.error) throw r.error; return r.data; }); }
