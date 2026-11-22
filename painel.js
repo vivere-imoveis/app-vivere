@@ -3188,7 +3188,7 @@ function galRedesenha(id) {
   document.querySelectorAll('[data-galbloco]').forEach((el) => { if (el.dataset.galbloco === id && v) el.outerHTML = galeriaHTML(v); });
   if (GAL.id === id && document.getElementById('gal-vis') && GALF[id] && GALF[id].p.length) { GAL.dados = GALF[id].p; galDesenha(); }
 }
-function galUrl(f) { return (S.galCdn || 'https://www.viverenapraia.com.br/imagens/imoveis/') + (/\.[a-z]{3,4}$/i.test(f) ? f : f + '.jpg'); }
+function galUrl(f) { if (/^https:\/\//.test(f)) return f; /* foto do site novo (endereço completo, 22/11/2026) */ return (S.galCdn || 'https://www.viverenapraia.com.br/imagens/imoveis/') + (/\.[a-z]{3,4}$/i.test(f) ? f : f + '.jpg'); }
 function galeriaHTML(v) {
   const g = (S.galeria || {})['i-' + v.id]; if (!g) return '';
   const F = g.f || []; const n = F.length; const ver = F.slice(0, 9);
