@@ -37,9 +37,9 @@
       + '.m3d-pop.maplibregl-popup-anchor-top .maplibregl-popup-tip,.m3d-pop.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,.m3d-pop.maplibregl-popup-anchor-top-right .maplibregl-popup-tip{border-bottom-color:var(--panel,#fff)}'
       + '.m3d-pop.maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--panel,#fff)}.m3d-pop.maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:var(--panel,#fff)}'
       + '.m3d-parar{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:3;border:1px solid var(--line,#d5d9e0);border-radius:999px;background:var(--panel,#fff);color:var(--ink,#1c2739);font:inherit;font-size:13px;font-weight:600;padding:7px 14px;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer}.m3d-parar[hidden]{display:none}'
-      + '.m3d-perto{position:absolute;top:10px;right:10px;z-index:3;max-width:calc(100% - 64px);display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:13px}'
+      + '.m3d-perto{position:absolute;top:10px;right:10px;z-index:3;max-width:calc(100% - 64px);max-height:calc(100% - 46px);display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:13px}'
       + '.m3d-perto-b{border:1px solid var(--line,#d5d9e0);border-radius:999px;background:var(--panel,#fff);color:var(--ink,#1c2739);font:inherit;font-weight:600;padding:6px 12px;box-shadow:0 3px 10px rgba(0,0,0,.15);cursor:pointer}.m3d-perto-b[aria-expanded=true]{border-color:var(--brass,#b08d57)}'
-      + '.m3d-perto-p{width:290px;max-width:100%;max-height:calc(100% - 20px);overflow:auto;background:var(--panel,#fff);color:var(--ink,#1c2739);border:1px solid var(--line,#d5d9e0);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.18);padding:10px 12px}.m3d-perto-p[hidden]{display:none}'
+      + '.m3d-perto-p{width:290px;max-width:100%;min-height:0;flex:0 1 auto;overflow:auto;background:var(--panel,#fff);color:var(--ink,#1c2739);border:1px solid var(--line,#d5d9e0);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.18);padding:10px 12px}.m3d-perto-p[hidden]{display:none}'
       + '.m3d-perto-t{font-weight:700;margin:0 0 6px}.m3d-perto-c{display:flex;flex-wrap:wrap;gap:5px}.m3d-perto-c button{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line,#d5d9e0);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:12px;padding:4px 9px;cursor:pointer;opacity:.62}'
       + '.m3d-perto-c button[aria-pressed=true]{opacity:1;border-color:currentColor;font-weight:600}.m3d-perto-c i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}'
       + '.m3d-perto-l{margin:8px 0 0;padding:0;list-style:none}.m3d-perto-l li{display:flex;gap:6px;align-items:baseline;padding:3px 0;border-top:1px solid var(--line,#e4e7ec);font-size:12px;line-height:1.35}.m3d-perto-l li:first-child{border-top:0}.m3d-perto-l b{white-space:nowrap}.m3d-perto-l span{flex:1;min-width:0;overflow-wrap:anywhere}.m3d-perto-l em{font-style:normal;white-space:nowrap;color:var(--muted,#6b7280)}'
@@ -109,7 +109,7 @@
     op = op || {}; el.classList.add('m3d-caixa');
     const ml = await carregar(op.vendor || VENDOR);
     let tema = temaEscuro() ? 'escuro' : 'claro', lista = [], rota = [], vivo = true, popup = null, falhou = false;
-    let girando = false, tourPend = null, pertoPend = false, ref = null, pertoAberto = false, pertoT = null;
+    let ok3d = false, girando = false, tourPend = null, pertoPend = false, ref = null, pertoAberto = false, pertoT = null;
     let pertoOn = new Set(); try { const g = JSON.parse(localStorage.getItem(CHAVE_PERTO) || 'null'); if (Array.isArray(g)) g.forEach((t) => TIPOS.some((x) => x.id === t) && pertoOn.add(t)); } catch (e) {}
     const mapa = new ml.Map({ container: el, style: ESTILO[tema], bounds: ILHA, maxZoom: 18, minZoom: 8, maxPitch: 75,
       attributionControl: { compact: true, customAttribution: 'Relevo: Terrain Tiles (AWS)' } });
@@ -164,6 +164,7 @@
         layout: { 'icon-image': ['get', 'ic'], 'icon-allow-overlap': true, 'icon-ignore-placement': true }, paint: { 'icon-opacity': ['case', ['==', ['get', 'aprox'], 1], 0.55, 1] } });
       camadasRota();
       camadasPerto(vet && vet[0]);
+      ok3d = true;
     }
     function camadasRota() {
       if (!mapa.getSource('rota')) mapa.addSource('rota', { type: 'geojson', data: dadosRota() });
@@ -187,17 +188,17 @@
         paint: { 'line-color': claro ? '#1C2739' : '#d8c3a5', 'line-width': 1.6, 'line-opacity': 0.55, 'line-dasharray': [3, 2] } }, 'grupos');
       const cor = ['case']; TIPOS.forEach((t) => { if (t.id !== 'praia') cor.push(condTipo(t), t.cor); }); cor.push('#7a8699');
       if (!mapa.getLayer('perto-poi')) mapa.addLayer({ id: 'perto-poi', type: 'circle', source: fonte, 'source-layer': 'poi', layout: { visibility: 'none' },
-        filter: ['==', 1, 0], paint: { 'circle-color': cor, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3.5, 16, 6.5], 'circle-stroke-color': claro ? '#ffffff' : '#0f1620', 'circle-stroke-width': 1.4, 'circle-pitch-alignment': 'viewport' } }, 'grupos');
+        filter: ['==', ['literal', 1], 0], paint: { 'circle-color': cor, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3.5, 16, 6.5], 'circle-stroke-color': claro ? '#ffffff' : '#0f1620', 'circle-stroke-width': 1.4, 'circle-pitch-alignment': 'viewport' } }, 'grupos');
       if (!mapa.getLayer('perto-poi-t')) mapa.addLayer({ id: 'perto-poi-t', type: 'symbol', source: fonte, 'source-layer': 'poi', minzoom: 15, layout: { visibility: 'none',
         'text-field': ['coalesce', ['get', 'name'], ''], 'text-size': 11, 'text-font': ['Noto Sans Regular'], 'text-offset': [0, 0.9], 'text-anchor': 'top', 'text-max-width': 9, 'text-optional': true },
-        filter: ['==', 1, 0], paint: { 'text-color': claro ? '#33404f' : '#dfe5ee', 'text-halo-color': claro ? '#ffffff' : '#0f1620', 'text-halo-width': 1.3 } }, 'grupos');
+        filter: ['==', ['literal', 1], 0], paint: { 'text-color': claro ? '#33404f' : '#dfe5ee', 'text-halo-color': claro ? '#ffffff' : '#0f1620', 'text-halo-width': 1.3 } }, 'grupos');
       aplicaPerto();
     }
     // liga/desliga as camadas conforme os tipos marcados e redesenha o seletor
     function aplicaPerto() {
       if (!mapa.getLayer('perto-poi')) return;
       const ts = TIPOS.filter((t) => t.id !== 'praia' && pertoOn.has(t.id)), vis = (b) => (b ? 'visible' : 'none');
-      const f = ts.length ? ['any'].concat(ts.map(condTipo)) : ['==', 1, 0];
+      const f = ts.length ? ['any'].concat(ts.map(condTipo)) : ['==', ['literal', 1], 0];
       mapa.setFilter('perto-poi', f); mapa.setFilter('perto-poi-t', f);
       mapa.setLayoutProperty('perto-poi', 'visibility', vis(ts.length)); mapa.setLayoutProperty('perto-poi-t', 'visibility', vis(ts.length));
       mapa.setLayoutProperty('perto-praia', 'visibility', vis(pertoOn.has('praia'))); mapa.setLayoutProperty('perto-praia-t', 'visibility', vis(pertoOn.has('praia')));
@@ -245,7 +246,7 @@
     ['mousedown', 'touchstart', 'wheel', 'keydown'].forEach((ev) => el.addEventListener(ev, (e) => { if (girando && e.target !== parar) pararTour(); }, { passive: true }));
     parar.addEventListener('click', pararTour);
     const achar = (id) => lista.find((y) => y && String(y.id) === String(id) && y.lat != null);
-    const pronto = () => mapa.isStyleLoaded() && !!mapa.getSource('pontos');
+    const pronto = () => ok3d && vivo; // ligado no fim de camadas(); desligado na troca de tema (o isStyleLoaded fica falso enquanto carrega pedaços)
     function tour(id) {
       const x = achar(id); if (!x) return false;
       if (!pronto()) { tourPend = id; return true; }
@@ -268,11 +269,13 @@
       if (x) mapa.easeTo({ center: [+x.lng, +x.lat], zoom: 15.3, pitch: 50, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: semAnimacao() ? 0 : 1000 });
       return !!x;
     }
+    // pedidos que chegaram antes de o mapa ficar pronto (abrir o 3D pelo cartão, troca de tema)
+    function rodaPend() { const tp = tourPend, pp = pertoPend; tourPend = null; pertoPend = false;
+      if (pp) perto(pp === true ? null : pp); if (tp) tour(tp); }
     function inclinar(dur) { mapa.easeTo({ pitch: 60, bearing: -18, duration: dur }); }
 
     mapa.on('load', () => { clearTimeout(tempo); if (!vivo) return; const at = el.querySelector('.maplibregl-ctrl-attrib'); if (at) at.classList.remove('maplibregl-compact-show'); camadas(); inclinar(semAnimacao() ? 0 : 1200); if (op.aoAbrir) op.aoAbrir();
-      if (pertoPend) { const p = pertoPend; pertoPend = false; perto(p === true ? null : p); }
-      if (tourPend) { const t = tourPend; tourPend = null; tour(t); } });
+      rodaPend(); });
     mapa.on('click', 'grupos', async (e) => {
       const f = e.features && e.features[0]; if (!f) return;
       const z = await mapa.getSource('pontos').getClusterExpansionZoom(f.properties.cluster_id);
@@ -289,7 +292,7 @@
     // tema claro/escuro acompanha o botão do app
     const trocaTema = () => {
       const t = temaEscuro() ? 'escuro' : 'claro'; if (t === tema || !vivo) return; tema = t;
-      mapa.once('style.load', () => { camadas(); }); mapa.setStyle(ESTILO[tema], { diff: false });
+      pararTour(); ok3d = false; mapa.once('style.load', () => { camadas(); rodaPend(); }); mapa.setStyle(ESTILO[tema], { diff: false });
     };
     const obs = new MutationObserver(trocaTema);
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
