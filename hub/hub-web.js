@@ -45,11 +45,18 @@
   }
   function recusaGravar(onde) { ctx.recusas++; if (onde) ctx.ultimaRecusa = onde; aviso(SO_LEITURA); return Promise.reject(erro(SO_LEITURA, 'permission-denied')); }
 
+  function aparelhoValido() {   /* 23/11/2026: mesma regra do seguranca.js › aparelho (15 dias marcado; senão, só com o navegador aberto) */
+    var l = null; try { l = JSON.parse(localStorage.getItem('vivere-lembrar') || 'null'); } catch (e) { }
+    if (l === null) { try { localStorage.setItem('vivere-lembrar', JSON.stringify({ ate: Date.now() + 15 * 864e5, migrado: true })); } catch (e) { } return true; }
+    if (l.ate && l.ate > Date.now()) return true;
+    return /(?:^|;\s*)vivere_sessao=1(?:;|$)/.test(document.cookie || '');
+  }
   /* ---------- entrada: sessão do app e marca de acesso ao HUB ---------- */
   var entrou = (async function () {
     var s = await sb.auth.getSession();
     var sessao = s && s.data && s.data.session;
     if (!sessao) { location.replace('../index.html'); return nunca(); }
+    if (!aparelhoValido()) { location.replace('../index.html'); return nunca(); }   /* o início encerra a sessão e pede a senha */
     /* 23/11/2026 (2FA): conta com autenticador e sessão sem o código → volta ao início do app, que pede o código */
     try { var aal = await sb.auth.mfa.getAuthenticatorAssuranceLevel(); if (aal && aal.data && aal.data.nextLevel === 'aal2' && aal.data.currentLevel !== 'aal2') { location.replace('../index.html'); return nunca(); } } catch (e) { }
     ctx.uid = sessao.user.id;

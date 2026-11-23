@@ -41,6 +41,13 @@
     return erro(m || 'erro desconhecido');
   }
   function paraOInicio() { location.replace('index.html'); return nunca(); }
+  function aparelhoValido() {   /* 23/11/2026: mesma regra do seguranca.js › aparelho (15 dias marcado; senão, só com o navegador aberto) */
+    var l = null; try { l = JSON.parse(localStorage.getItem('vivere-lembrar') || 'null'); } catch (e) { }
+    if (l === null) { try { localStorage.setItem('vivere-lembrar', JSON.stringify({ ate: Date.now() + 15 * 864e5, migrado: true })); } catch (e) { } return true; }
+    if (l.ate && l.ate > Date.now()) return true;
+    return /(?:^|;\s*)vivere_sessao=1(?:;|$)/.test(document.cookie || '');
+  }
+
   function fatal(texto) {
     var el = document.getElementById('conteudo');
     if (el) el.innerHTML = '<div class="vazio">' + esc(texto) + '<br><br><a class="b p" href="index.html">Voltar ao início</a></div>';
@@ -52,6 +59,7 @@
     var s = await sb.auth.getSession();
     var sessao = s && s.data && s.data.session;
     if (!sessao) return paraOInicio();
+    if (!window.__artefatoLoja && !aparelhoValido()) return paraOInicio();   /* o início encerra a sessão e pede a senha */
     /* 23/11/2026 (2FA): conta com autenticador e sessão sem o código → volta ao início, que pede o código */
     /* no PAINEL DO GESTOR do claude.ai quem cobra o código é o conector (sessão aal2 no servidor, janela própria do artefato) */
     if (!window.__artefatoLoja) try { var aal = await sb.auth.mfa.getAuthenticatorAssuranceLevel(); if (aal && aal.data && aal.data.nextLevel === 'aal2' && aal.data.currentLevel !== 'aal2') return paraOInicio(); } catch (e) { }

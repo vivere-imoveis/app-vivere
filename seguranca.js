@@ -21,6 +21,52 @@
     return 'Não deu certo: ' + m;
   }
 
+  /* ---------- Aparelho de confiança (23/11/2026, decisão do Cleiton) ----------
+     Caixa "Lembrar este aparelho por 15 dias" no login e na tela do código, para todos (com ou sem 2FA).
+     Marcada: o aparelho fica conectado 15 dias (abre app, painel e HUB sem senha e sem código) e o e-mail fica lembrado;
+     no 16º dia pede tudo de novo. Desmarcada: a conexão vale só enquanto o navegador estiver aberto (cookie de sessão).
+     "Sair" sempre exige senha (e código) de novo. A senha nunca fica com o app: fica com o "Salvar senha" do aparelho.
+     localStorage 'vivere-lembrar' = { ate: ms } (ate 0 = escolheu não lembrar ou saiu); 'vivere-email'; cookie vivere_sessao. */
+  var DIAS = 15, CHAVE = 'vivere-lembrar', CHAVE_EMAIL = 'vivere-email', ESCOLHA = 'vivere-lembrar-escolha';
+  function lerLembrar() { try { return JSON.parse(localStorage.getItem(CHAVE) || 'null'); } catch (e) { return null; } }
+  function gravarLembrar(v) { try { localStorage.setItem(CHAVE, JSON.stringify(v)); } catch (e) { } }
+  function cookieSessao(ligar) {
+    try { document.cookie = 'vivere_sessao=' + (ligar ? '1' : '') + '; path=/; SameSite=Strict; Secure' + (ligar ? '' : '; Max-Age=0'); } catch (e) { }
+  }
+  var aparelho = {
+    /* sessão pode continuar neste aparelho? (quem já estava conectado antes desta mudança ganha os 15 dias uma vez) */
+    valido: function () {
+      var l = lerLembrar();
+      if (l === null) { gravarLembrar({ ate: Date.now() + DIAS * 864e5, migrado: true }); return true; }
+      if (l.ate && l.ate > Date.now()) return true;
+      return /(?:^|;\s*)vivere_sessao=1(?:;|$)/.test(document.cookie || '');
+    },
+    expirou: function () { var l = lerLembrar(); return !!(l && l.ate && l.ate <= Date.now()); },
+    /* login com senha deu certo (ou chegou pelo link do e-mail): vale enquanto o navegador estiver aberto */
+    abrirSessao: function () { cookieSessao(true); },
+    /* escolha da caixa, aplicada só depois da entrada completa (com o código, para quem tem 2FA) */
+    guardarEscolha: function (marcada, email) { try { sessionStorage.setItem(ESCOLHA, JSON.stringify({ m: !!marcada, e: String(email || '') })); } catch (e) { } },
+    escolha: function () { try { return JSON.parse(sessionStorage.getItem(ESCOLHA) || 'null'); } catch (e) { return null; } },
+    aplicar: function (marcada, email) {
+      var esc = aparelho.escolha() || {};
+      if (marcada === undefined) marcada = !!esc.m;
+      email = email || esc.e || '';
+      try { sessionStorage.removeItem(ESCOLHA); } catch (e) { }
+      cookieSessao(true);
+      if (marcada) { gravarLembrar({ ate: Date.now() + DIAS * 864e5 }); try { if (email) localStorage.setItem(CHAVE_EMAIL, email); } catch (e) { } }
+      else { gravarLembrar({ ate: 0 }); try { localStorage.removeItem(CHAVE_EMAIL); } catch (e) { } }
+    },
+    pendente: function () { return !!aparelho.escolha(); },
+    esquecer: function () { gravarLembrar({ ate: 0 }); cookieSessao(false); try { sessionStorage.removeItem(ESCOLHA); } catch (e) { } },
+    email: function () { try { return localStorage.getItem(CHAVE_EMAIL) || ''; } catch (e) { return ''; } },
+    lembrado: function () { var l = lerLembrar(); return !!(l && l.ate && l.ate > Date.now() && !l.migrado); },
+    caixa: function (marcada) {
+      return '<label class="lembrar"><input type="checkbox" name="lembrar"' + (marcada ? ' checked' : '') + '> Lembrar este aparelho por ' + DIAS + ' dias</label>' +
+        '<p class="s lembrar-dica">Só em aparelho seu. Para não digitar a senha, deixe o celular ou o navegador salvá-la.</p>';
+    },
+    DIAS: DIAS
+  };
+
   async function precisaCodigo(sb) {
     try {
       var r = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -47,7 +93,7 @@
     var escolha = L.length > 1 ? '<label>Aparelho<select name="fator">' + L.map(function (f) { return '<option value="' + esc(f.id) + '">' + esc(f.friendly_name || 'Autenticador') + '</option>'; }).join('') + '</select></label>' : '';
     raiz.innerHTML = '<form class="form cartao tela-codigo" novalidate><h2>Código do autenticador</h2>' +
       '<p class="s">Esta conta tem a verificação em duas etapas ligada. Abra o aplicativo autenticador no celular e digite o código da Vivere.</p>' +
-      escolha + campoCodigo('codigo') + '<div class="msg-cod" role="status" aria-live="polite"></div>' +
+      escolha + campoCodigo('codigo') + aparelho.caixa(((aparelho.escolha() || {}).m) || aparelho.lembrado()) + '<div class="msg-cod" role="status" aria-live="polite"></div>' +
       '<button class="btn pri" type="submit">Confirmar</button>' +
       '<details class="s" style="margin-top:10px"><summary>Perdi o celular ou troquei de aparelho</summary><p>Se você cadastrou um 2º aparelho, use o código dele. Se não, peça ao gestor da Vivere para zerar o seu 2FA na tela Acessos; depois você cadastra de novo em Minha conta.</p></details>' +
       '<button class="link" type="button" data-sair>Sair</button></form>';
@@ -68,6 +114,7 @@
       try { r = await ctx.sb.auth.mfa.challengeAndVerify({ factorId: id, code: v }); } catch (x) { r = { error: x }; }
       enviando = false; b.disabled = false; cod.value = '';
       if (r.error) { m.innerHTML = '<div class="msg erro">' + esc(msgErro(r.error)) + '</div>'; cod.focus(); return; }
+      aparelho.aplicar(!!(f.lembrar && f.lembrar.checked));
       if (aoEntrar) aoEntrar();
     };
   }
@@ -171,5 +218,5 @@
     };
   }
 
-  window.SEGURANCA = { precisaCodigo: precisaCodigo, telaCodigo: telaCodigo, tela: tela, sair: function () { ativo.cadastro = null; ativo.raiz = null; } };
+  window.SEGURANCA = { aparelho: aparelho, precisaCodigo: precisaCodigo, telaCodigo: telaCodigo, tela: tela, sair: function () { ativo.cadastro = null; ativo.raiz = null; } };
 })();

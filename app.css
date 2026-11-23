@@ -251,3 +251,8 @@ html.embed main#conteudo{padding-top:14px}
 .seg2fa .fator{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--linha,#ddd);border-radius:8px}
 .seg2fa .fator .s{display:block}
 .seg2fa .passos{padding-left:20px;margin:8px 0 14px}
+
+/* 23/11/2026 — Lembrar este aparelho por 15 dias */
+.lembrar{display:flex!important;align-items:center;gap:8px;font-weight:500;margin-top:6px;cursor:pointer}
+.lembrar input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 18px}
+.lembrar-dica{margin:2px 0 8px}

@@ -17,7 +17,7 @@
       if (/^painel\.html/.test(h) && !a.target) { ev.preventDefault(); try { window.parent.postMessage({ vivere: 'fechar-janela' }, location.origin); } catch (e) { } }
     }, true);
   }
-  var VERSAO = 'app-vivere 2026-11-23.1'; // 2FA: código do autenticador no login e Segurança da conta (seguranca.js) · antes: 'app-vivere 2026-11-22.2'; // Site sem os Destaques (ficam só no HUB) · 2026-11-22.1: central de login: só a escolha de painel, HUB e site (tarefa vis-app-inicio-central-login) · antes: 'app-vivere 2026-11-19.1'; // melhorias 122 (só o V no cabeçalho) e 123 (menu lateral com animação leve) · antes: // aba Estudo de Mercado (ACM, tarefa vivere-parecer-preco-comparaveis)
+  var VERSAO = 'app-vivere 2026-11-23.2'; // .2: Lembrar este aparelho por 15 dias e e-mail lembrado · antes: 'app-vivere 2026-11-23.1'; // 2FA: código do autenticador no login e Segurança da conta (seguranca.js) · antes: 'app-vivere 2026-11-22.2'; // Site sem os Destaques (ficam só no HUB) · 2026-11-22.1: central de login: só a escolha de painel, HUB e site (tarefa vis-app-inicio-central-login) · antes: 'app-vivere 2026-11-19.1'; // melhorias 122 (só o V no cabeçalho) e 123 (menu lateral com animação leve) · antes: // aba Estudo de Mercado (ACM, tarefa vivere-parecer-preco-comparaveis)
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -66,9 +66,21 @@
   async function iniciar() {
     var r = await sb.auth.getSession();
     estado.sessao = r.data.session;
+    /* 23/11/2026: aparelho de confiança (15 dias) ou só enquanto o navegador estiver aberto (seguranca.js › aparelho) */
+    var AP = window.SEGURANCA && window.SEGURANCA.aparelho;
+    if (AP && estado.sessao) {
+      if (modoSenha) AP.abrirSessao();   /* chegou pelo link do e-mail (convite ou nova senha) */
+      else if (!AP.valido()) {
+        var venceu = AP.expirou();   /* o app pode rodar o início duas vezes seguidas: o aviso dos 15 dias não é trocado pelo genérico */
+        if (venceu || !estado.avisoEntrar) estado.avisoEntrar = venceu ? 'Passaram ' + AP.DIAS + ' dias neste aparelho: entre de novo com a senha (e o código, se tiver 2FA).' : 'Por segurança, entre de novo.';
+        AP.esquecer(); try { await sb.auth.signOut({ scope: 'local' }); } catch (e) { }
+        estado.sessao = null; estado.eu = null; return desenhar();
+      }
+    }
     /* 23/11/2026 (2FA, fatia 1): conta com autenticador e sessão ainda sem o código → nada é lido antes do código */
     estado.precisaCodigo = !!estado.sessao && !!window.SEGURANCA && await window.SEGURANCA.precisaCodigo(sb);
     if (estado.precisaCodigo) { estado.eu = null; return desenhar(); }
+    if (AP && estado.sessao && AP.pendente()) AP.aplicar();   /* sem 2FA: a escolha da caixa do login vale já */
     if (estado.sessao && !estado.eu) {
       var q = await sb.from('acessos').select('email,nome,papel,painel,ativo,hub').eq('user_id', estado.sessao.user.id).maybeSingle();
       estado.eu = q.data || null;
@@ -150,15 +162,18 @@
       };
       return;
     }
-    main.innerHTML = '<form class="form cartao" id="f" novalidate><h2>Entrar</h2>' +
-      '<label>E-mail<input type="email" name="email" autocomplete="username" required></label>' +
-      campoSenha('Senha', 'senha', 'current-password') + '<div id="m"></div>' +
+    var AP = window.SEGURANCA && window.SEGURANCA.aparelho, emailSalvo = AP ? AP.email() : '';
+    main.innerHTML = '<form class="form cartao" id="f" novalidate><h2>Entrar</h2>' + (estado.avisoEntrar ? '<div class="msg aviso">' + esc(estado.avisoEntrar) + '</div>' : '') +
+      '<label>E-mail<input type="email" name="email" autocomplete="username" required value="' + esc(emailSalvo) + '"></label>' +
+      campoSenha('Senha', 'senha', 'current-password') + (AP ? AP.caixa(!!emailSalvo) : '') + '<div id="m"></div>' +
       '<button class="btn pri" type="submit">Entrar</button><button class="link" type="button" id="esq">Esqueci minha senha</button></form>';
     $('#esq').onclick = function () { telaEntrar(main, true); };
     $('#f').onsubmit = async function (e) {
       e.preventDefault(); var email = this.email.value.trim().toLowerCase(), senha = this.senha.value;
       if (!email || !senha) { $('#m').innerHTML = '<div class="msg erro">Preencha e-mail e senha.</div>'; return; }
       var b = this.querySelector('button[type=submit]'); b.disabled = true;
+      if (AP) { AP.guardarEscolha(!!(this.lembrar && this.lembrar.checked), email); AP.abrirSessao(); }
+      estado.avisoEntrar = '';
       var r = await sb.auth.signInWithPassword({ email: email, password: senha });
       b.disabled = false;
       if (r.error) { $('#m').innerHTML = '<div class="msg erro">' + (/banned/i.test(r.error.message) ? 'Este acesso foi desligado.' : 'E-mail ou senha não conferem.') + '</div>'; return; }
@@ -252,7 +267,7 @@
 
   function contexto() { return { sb: sb, eu: estado.eu, sessaoUid: estado.sessao.user.id, esc: esc, toast: toast, titulo: titulo }; }
 
-  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.SEMRESP) window.SEMRESP.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); if (window.ACM) window.ACM.sair(); if (window.ACESSOS) window.ACESSOS.sair(); if (window.SEGURANCA) window.SEGURANCA.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
+  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.SEMRESP) window.SEMRESP.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); if (window.ACM) window.ACM.sair(); if (window.ACESSOS) window.ACESSOS.sair(); if (window.SEGURANCA) { window.SEGURANCA.sair(); window.SEGURANCA.aparelho.esquecer(); } try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
 
   iniciar();
 })();
