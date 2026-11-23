@@ -20,6 +20,7 @@
     return;
   }
   var sb = window.supabase.createClient(SB_URL, SB_CHAVE, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
+  window.__hubWebSb = sb;   /* 23/11/2026: o módulo Acessos e Segurança usa o mesmo login (só o gestor vê a aba) */
   var ctx = { uid: null, usuario: null, colecoes: null, semAcesso: {}, recusas: 0 };
   var nunca = function () { return new Promise(function () { }); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
