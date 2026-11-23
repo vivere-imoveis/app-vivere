@@ -722,7 +722,7 @@ window.MultiSel = window.MultiSel || (function () {
 
   // ------------------------------------------------------------ vista 3D (23/11/2026, tarefa vis-mapa-3d-hub-painel)
   // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026, ao lado do 2D.
-  const MP3D_V = '584c9f13';
+  const MP3D_V = 'd9148f71';
   let MP3D = null, MP3D_EST = 'fechado', MP3D_FOCO = null, MP3D_L = [];
   const mp3dLigado = () => { try { return localStorage.getItem('hubv.mapa.vista') === '3d'; } catch (_) { return false; } };
   function mp3dGuarda(V, v) {
@@ -736,7 +736,7 @@ window.MultiSel = window.MultiSel || (function () {
     c2.hidden = tres; c2.style.display = tres ? 'none' : ''; c3.hidden = !tres; c3.style.display = tres ? '' : 'none';
     ROOT.querySelectorAll('[data-mp="v2d"],[data-mp="v3d"]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.mp === 'v3d') === tres))); return mudou; }
   function mp3dFalhou(msg) {
-    MP3D_EST = 'falhou'; MP3D_FOCO = null; if (MP3D) { try { MP3D.destruir(); } catch (_) {} MP3D = null; }
+    MP3D_EST = 'falhou'; MP3D_FOCO = null; MP3D_ACAO = null; if (MP3D) { try { MP3D.destruir(); } catch (_) {} MP3D = null; }
     mp3dMostra(false); if (MAP) setTimeout(() => MAP.invalidateSize(), 30);
     mp3dAviso((msg || 'Não consegui abrir o mapa 3D agora.') + ' Voltei para a vista 2D; clique em 3D para tentar de novo.', !/github\.io$/.test(location.hostname));
   }
