@@ -1,7 +1,7 @@
 /* MultiSel — seleção de vários valores (ex.: bairros) com busca, comum ao HUB e aos painéis (26/10/2026, pedido do Cleiton).
    Uso: MultiSel.html(id, [[valor, rótulo], ...], [valores marcados], 'Todos', 'bairros') devolve o HTML;
    cada mudança dispara o evento 'ms-change' (bubbles) com detail {id, valores}. O estado aberto/fechado e o texto
-   da busca ficam guardados por id, então o redesenho da tela não fecha a lista. */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */
+   da busca ficam guardados por id, então o redesenho da tela não fecha a lista. */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */
 window.MultiSel = window.MultiSel || (function () {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const semAc = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -620,7 +620,7 @@ window.MultiSel = window.MultiSel || (function () {
         ${ok('partes') ? linha(it.camada === 'locacao' ? 'Locatário' : 'Comprador', esc(it.parte || '')) : ''}
         ${pr ? linha('Ponto', `<span class="pill ${(PREC[pr] || PREC.rua)[1]}">${esc((PREC[pr] || PREC.rua)[0])}</span>` + (it.manual && it.manual.fonte && !v.g ? ` <span class="s">${esc(it.manual.fonte)}</span>` : '')) : ''}
       </div>
-      <div class="mp-acoes">${mapa ? `<span class="mp-gm">Google Maps ${mapa}</span>` : ''}${links}${mpRotBtn(it)}</div>
+      <div class="mp-acoes">${mapa ? `<span class="mp-gm">Google Maps ${mapa}</span>` : ''}${links}${mpRotBtn(it)}${mp3dBtns(it)}</div>
       ${v.g ? `<p class="nota">Vendo como <b>${esc(v.nome)}</b>: só aparece o que a matriz libera para esse grupo.</p>` : ''}`;
     if (it.camada === 'anuncio' && ok('foto') && FOTO[it.imovel] === undefined) buscaFoto(it.imovel);
   }
@@ -722,7 +722,7 @@ window.MultiSel = window.MultiSel || (function () {
 
   // ------------------------------------------------------------ vista 3D (23/11/2026, tarefa vis-mapa-3d-hub-painel)
   // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026, ao lado do 2D.
-  const MP3D_V = '46e69271';
+  const MP3D_V = '584c9f13';
   let MP3D = null, MP3D_EST = 'fechado', MP3D_FOCO = null, MP3D_L = [];
   const mp3dLigado = () => { try { return localStorage.getItem('hubv.mapa.vista') === '3d'; } catch (_) { return false; } };
   function mp3dGuarda(V, v) {
@@ -746,15 +746,25 @@ window.MultiSel = window.MultiSel || (function () {
     if (ESTADO !== 'pronto') return;
     const mudou = mp3dMostra(tres); if (mudou === null) return;
     if (!tres) { if (MP3D_EST !== 'falhou' || x === '2d') mp3dAviso(''); if (mudou && MAP) setTimeout(() => MAP.invalidateSize(), 30); return; }
-    if (MP3D) { if (mudou) setTimeout(() => MP3D && MP3D.redimensionar(), 30); if (MP3D_FOCO) { const f = MP3D_FOCO; MP3D_FOCO = null; MP3D.focar(f); } return; }
+    if (MP3D) { setTimeout(() => { if (!MP3D) return; if (mudou) MP3D.redimensionar(); mp3dRodaAcao(); }, 30); if (MP3D_FOCO) { const f = MP3D_FOCO; MP3D_FOCO = null; MP3D.focar(f); } return; }
     if (MP3D_EST === 'abrindo') return; MP3D_EST = 'abrindo'; mp3dAviso('Abrindo o mapa 3D…');
     (window.VivereMapa3D ? Promise.resolve() : script('modulos/mapa3d.js?v=' + MP3D_V))
       .then(() => window.VivereMapa3D.montar(c3, { aoClicar: (id) => { seleciona(id); return null; }, aoFalhar: mp3dFalhou,
         aoAbrir: () => { if (MP3D_EST === 'falhou') return; mp3dAviso(''); if (MP3D) MP3D.pontos(MP3D_L); if (MP3D_FOCO && MP3D) { const f = MP3D_FOCO; MP3D_FOCO = null; MP3D.focar(f); } } }))
-      .then((m) => { if (MP3D_EST === 'falhou') { m.destruir(); return; } MP3D = m; MP3D_EST = 'aberto'; m.pontos(MP3D_L); if (MPR) m.roteiro(MPR.lista()); })
+      .then((m) => { if (MP3D_EST === 'falhou') { m.destruir(); return; } MP3D = m; MP3D_EST = 'aberto'; m.pontos(MP3D_L); if (MPR) m.roteiro(MPR.lista()); mp3dRodaAcao(); })
       .catch(() => mp3dFalhou(''));
   }
   (function () { if (document.getElementById('mp3d-css')) return; const st = document.createElement('style'); st.id = 'mp3d-css'; st.textContent = '#mp-raiz .mp-vista-l{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:6px 0}#mp-raiz .mp-vista-l .mp-resumo{margin:0}#mp-raiz .m3d-vista .mp-chip{font-weight:600;min-width:42px;justify-content:center}'; document.head.appendChild(st); })();
+
+  // ------------------------------------------------------------ tour 3D e o que há por perto (23/11/2026, fatias 2 e 3)
+  let MP3D_ACAO = null;
+  function mp3dBtns(it) { if (!it || !MP3D_L.some((x) => String(x.id) === String(it.id))) return '';
+    return `<button class="btn" type="button" data-mp-tour="${esc(it.id)}" title="Abre a vista 3D e gira em volta do ponto">🎥 Tour 3D</button>`
+      + `<button class="btn" type="button" data-mp-perto="${esc(it.id)}" title="Praias, mercados, escolas, farmácias e saúde perto do ponto">📍 O que há por perto</button>`; }
+  function mp3dRodaAcao() { if (!MP3D || !MP3D_ACAO) return; const [t, id] = MP3D_ACAO; MP3D_ACAO = null; MP3D[t](id); }
+  function mp3dAcao(t, id) { MP3D_ACAO = [t, id];
+    if (!mp3dLigado() || MP3D_EST !== 'aberto') mp3dVista('3d'); else mp3dRodaAcao();
+    if (window.innerWidth < 900) { const c = $('mp-mapa3d'); if (c && !c.hidden) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }
 
   // ------------------------------------------------------------ roteiro de visitas (23/11/2026, vis-mapa-crm-video-otimizacao, fatia 1)
   let MPR = null, MPR_L = null;
@@ -821,6 +831,8 @@ window.MultiSel = window.MultiSel || (function () {
     if (b.dataset.mpAnuncios) { const it = (itens() || []).find((x) => x.id === b.dataset.mpAnuncios); if (it) H.abrirImovel(it.anuncios, 'Anúncios de ' + it.titulo + ' (do mapa)'); return; }
     const a = b.dataset.mp;
     if (b.dataset.mpRot !== undefined || b.dataset.mpRotTira !== undefined || b.dataset.mpRotAcao !== undefined) return mpRotClique(b.dataset);
+    if (b.dataset.mpTour !== undefined) return mp3dAcao('tour', b.dataset.mpTour);
+    if (b.dataset.mpPerto !== undefined) return mp3dAcao('perto', b.dataset.mpPerto);
     if (a === 'v2d' || a === 'v3d') return mp3dVista(a === 'v3d' ? '3d' : '2d');
     if (a === 'limpar') { const ver = F.ver; F = JSON.parse(JSON.stringify(F0)); F.ver = ver; CAR_SUJO = true; return muda(); }
     if (a === 'fechar') { SEL = null; ROOT.querySelectorAll('.mp-ponto.mp-sel').forEach((x) => x.classList.remove('mp-sel')); return pintaPainel(); }
