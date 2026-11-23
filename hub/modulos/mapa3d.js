@@ -12,7 +12,7 @@
    pasta vendor/): o HUB e o painel a carregam pelo endereço VENDOR abaixo, inclusive no claude.ai. */
 (function () {
   if (window.VivereMapa3D) return;
-  const VERSAO = '2026-11-23.1';
+  const VERSAO = '2026-11-23.2';
   const VENDOR = 'https://vivere-imoveis.github.io/app-vivere/vendor/';
   const ESTILO = { claro: 'https://tiles.openfreemap.org/styles/positron', escuro: 'https://tiles.openfreemap.org/styles/dark' };
   const RELEVO = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png';
@@ -82,7 +82,7 @@
       attributionControl: { compact: true, customAttribution: 'Relevo: Terrain Tiles (AWS)' } });
     mapa.addControl(new ml.NavigationControl({ showCompass: true, visualizePitch: true }), 'top-left');
     const falha = (msg) => { if (falhou || !vivo) return; falhou = true; if (op.aoFalhar) op.aoFalhar(msg); };
-    const tempo = setTimeout(() => { if (!mapa.isStyleLoaded()) falha('O mapa 3D não respondeu: a rede deste aparelho ou desta página pode estar bloqueando os mapas.'); }, 15000);
+    const tempo = setTimeout(() => { if (!mapa.isStyleLoaded()) falha('O mapa 3D não respondeu: a rede deste aparelho ou desta página pode estar bloqueando os mapas.'); }, 30000);
     mapa.on('error', (e) => { const msg0 = String((e && e.error && e.error.message) || ''); if (/worker/i.test(msg0) || (!mapa.isStyleLoaded() && /fetch|Failed|NetworkError|style|CSP|Refused/i.test(msg0))) falha('Não consegui abrir o mapa 3D aqui: ' + msg0 + '.'); });
 
     function dados() {
@@ -148,7 +148,7 @@
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null; if (mq && mq.addEventListener) mq.addEventListener('change', trocaTema);
 
-    return {
+    const inst = {
       versao: VERSAO, mapa,
       pontos(L) { lista = Array.isArray(L) ? L : []; if (!mapa.isStyleLoaded() || !mapa.getSource('pontos')) return; imagens(); mapa.getSource('pontos').setData(dados()); },
       focar(id) {
@@ -157,8 +157,10 @@
         if (op.aoClicar) { const html = op.aoClicar(x.id); if (popup) popup.remove(); popup = html ? new ml.Popup({ maxWidth: '290px', offset: 12, className: 'm3d-pop' }).setLngLat([+x.lng, +x.lat]).setHTML(html).addTo(mapa) : null; }
       },
       redimensionar() { mapa.resize(); },
-      destruir() { vivo = false; clearTimeout(tempo); obs.disconnect(); if (mq && mq.removeEventListener) mq.removeEventListener('change', trocaTema); if (popup) popup.remove(); mapa.remove(); },
+      destruir() { if (window.VivereMapa3D.ultimo === inst) window.VivereMapa3D.ultimo = null; vivo = false; clearTimeout(tempo); obs.disconnect(); if (mq && mq.removeEventListener) mq.removeEventListener('change', trocaTema); if (popup) popup.remove(); mapa.remove(); },
     };
+    window.VivereMapa3D.ultimo = inst; // para conferência pelo console
+    return inst;
   }
 
   window.VivereMapa3D = { montar, versao: VERSAO, VENDOR };

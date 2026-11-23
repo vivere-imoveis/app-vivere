@@ -4385,7 +4385,7 @@ function montaMapa() {
 // ---------- Vista 3D ao lado do mapa 2D (23/11/2026, tarefa vis-mapa-3d-hub-painel) ----------
 // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026. Recebe os mesmos
 // pontos já filtrados do 2D; a escolha 2D/3D fica guardada no aparelho.
-const PM3D_V = '76b9b264';
+const PM3D_V = '055fdee3';
 let PM3D = null, PM3D_EST = 'fechado', PM3D_FOCO = null, PM3D_L = [], PM3D_IX = new Map();
 const pm3dLigado = () => { try { return localStorage.getItem('painel.mapa.vista') === '3d'; } catch (e) { return false; } };
 function pm3dGuarda(its, ems) {

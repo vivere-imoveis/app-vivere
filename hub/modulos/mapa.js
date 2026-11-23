@@ -720,7 +720,7 @@ window.MultiSel = window.MultiSel || (function () {
 
   // ------------------------------------------------------------ vista 3D (23/11/2026, tarefa vis-mapa-3d-hub-painel)
   // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026, ao lado do 2D.
-  const MP3D_V = '76b9b264';
+  const MP3D_V = '055fdee3';
   let MP3D = null, MP3D_EST = 'fechado', MP3D_FOCO = null, MP3D_L = [];
   const mp3dLigado = () => { try { return localStorage.getItem('hubv.mapa.vista') === '3d'; } catch (_) { return false; } };
   function mp3dGuarda(V, v) {
