@@ -97,11 +97,18 @@
      com o CSS do app restrito à janela em app-nativo.css). Vale no app e no PAINEL DO GESTOR do claude.ai. */
   var NATIVO = { acaptar: ['ACAPTAR', 'acaptar.js'], acm: ['ACM', 'acm.js'], semresp: ['SEMRESP', 'semresp.js'], senha: ['SENHA', 'senha.js'], acessos: ['ACESSOS', 'acessos.js'] }; /* 22/11/2026: Minha senha e Acessos também nativos (no Gestor pela ponte do conector) */
   var carregados = {};
+  /* 23/11/2026: as telas carregadas na hora (Acessos, Minha senha, A CAPTAR…) vinham sem ?v= e o navegador podia usar a
+     cópia antiga depois de uma publicação; a versão de cada uma fica no <meta name="vivere-nativos"> do painel.html */
+  function comVersao(src) {
+    var m = document.querySelector('meta[name="vivere-nativos"]'), c = m ? m.getAttribute('content') || '' : '';
+    var x = new RegExp('(?:^|\\s)' + src.replace(/\./g, '\\.') + '\\?v=([0-9a-f]{8})').exec(c);
+    return x ? src + '?v=' + x[1] : src;
+  }
   function carrega(src, css) {
     if (carregados[src]) return carregados[src];
     carregados[src] = new Promise(function (ok, erro) {
       var el = css ? document.createElement('link') : document.createElement('script');
-      if (css) { el.rel = 'stylesheet'; el.href = src; } else { el.src = src; el.charset = 'utf-8'; }
+      if (css) { el.rel = 'stylesheet'; el.href = comVersao(src); } else { el.src = comVersao(src); el.charset = 'utf-8'; }
       el.onload = function () { ok(); }; el.onerror = function () { delete carregados[src]; erro(new Error('não carregou ' + src)); };
       document.head.appendChild(el);
     });
