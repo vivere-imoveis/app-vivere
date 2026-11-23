@@ -8,7 +8,7 @@
 (function () {
   'use strict';
   const H = window.HUB; if (!H) return;
-  const ID = 'central-vivian', SERV = 'Vivere Conversas', VERSAO = '2026-11-23.2';
+  const ID = 'central-vivian', SERV = 'Vivere Conversas', VERSAO = '2026-11-23.5';
   const HUB_CLAUDE = 'https://claude.ai/artifact/LR3j38He26qquNQHKunkMx';
   const WEB = () => !!window.__hubWebSb;
   const E = { quadro: null, altura: 0 };

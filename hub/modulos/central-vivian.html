@@ -454,7 +454,7 @@ html[data-privado="1"] .btn-privado .olho-fechado{display:block}
   </form>
 </dialog>
 
-<script>/* 23/11/2026: dentro do HUB VIVERE (modulos/central-vivian.js) a Central usa a ligação do HUB com o conector */try{if(!window.claude&&window.parent!==window&&window.parent.claude)window.claude=window.parent.claude;}catch(e){}</script>
+<script>/* 23/11/2026: dentro do HUB VIVERE (modulos/central-vivian.js) a Central usa a ligação do HUB com o conector: o claude.ai põe um window.claude próprio (sem conector) em cada página, então a Central chama o do HUB por CLAUDE_HUB */var CLAUDE_HUB=(function(){try{if(window.parent!==window&&window.parent.claude)return window.parent.claude;}catch(e){}return window.claude;})();</script>
 <script>
 // ---------- tema ----------
 (function(){
@@ -1277,9 +1277,9 @@ function histAssinar(){ if(!db){histDesenhar();return;} var t=setTimeout(functio
 
 // ---------- início ----------
 (async function(){
-  try{mcp=await claude.use('mcp');}catch(e){mcp=null;}
-  claude.use('sample').then(function(sm){sample=sm;if(!sample||!mcp)iaSemClaude();},function(){sample=null;iaSemClaude();});
-  claude.use('db').then(function(d){db=d;histAssinar();},function(){db=null;histAssinar();});
+  try{mcp=await CLAUDE_HUB.use('mcp');}catch(e){mcp=null;}
+  CLAUDE_HUB.use('sample').then(function(sm){sample=sm;if(!sample||!mcp)iaSemClaude();},function(){sample=null;iaSemClaude();});
+  CLAUDE_HUB.use('db').then(function(d){db=d;histAssinar();},function(){db=null;histAssinar();});
   if(!mcp){$('itens').innerHTML='<div class="aviso erro"><b>Conectores desligados nesta visualização</b><span>Abra o painel no claude.ai, com a sua conta.</span></div>';estado('sem conector');return;}
   vigiarLista();
   atualizarSug();
@@ -1533,7 +1533,7 @@ function histAssinar(){ if(!db){histDesenhar();return;} var t=setTimeout(functio
   function parar(){try{if(V.d&&V.ouvindo)V.d.stop().catch(function(){});}catch(e){}}
   function atalho(msg){var ta=$('pvTxt');ta.focus();try{var n=ta.value.length;ta.setSelectionRange(n,n);}catch(e){}
     avisoRapido(msg||'Ditado indisponível nesta tela: use o microfone do teclado do celular (ou Win+H no PC).');}
-  try{if(typeof claude!=='undefined'&&claude.use)Promise.resolve(claude.use('dictation')).then(function(d){V.d=d||null;if(!d)return;
+  try{if(typeof CLAUDE_HUB!=='undefined'&&claude.use)Promise.resolve(CLAUDE_HUB.use('dictation')).then(function(d){V.d=d||null;if(!d)return;
     d.onPartial(function(o){if(!V.ouvindo&&!V.iniciando)return;V.parcial=String(o&&o.text||'').trim();escrever();});
     d.onFinal(function(o){var t=String(o&&o.text||'').trim();V.parcial='';if(t)V.fim=(V.fim?V.fim+' ':'')+t;escrever();});
     d.onState(function(o){var era=V.ouvindo;V.ouvindo=!!o&&o.state==='listening';if(V.ouvindo||(o&&o.state==='idle'))V.iniciando=false;botao();if(era&&!V.ouvindo){V.parcial='';$('pvTxt').focus();}});
