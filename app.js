@@ -106,6 +106,7 @@
     var dst = window.DESTAQUES && window.DESTAQUES.pode(estado.eu);
     var NOMES = { acaptar: 'A CAPTAR', semresp: 'Imóveis sem responsável', acm: 'Estudo de Mercado', senha: 'Minha senha', acessos: 'Acessos', destaques: 'Destaques do site', site: 'Site' };
     if (estado.aba === 'site' && !souDiretoria()) estado.aba = 'inicio';
+    if ((estado.aba === 'destaques' && !dst) || (estado.aba === 'acessos' && estado.eu.papel !== 'gestor')) estado.aba = 'inicio';
     if (estado.aba === 'inicio' || !NOMES[estado.aba]) { estado.aba = 'inicio'; abas.hidden = true; abas.innerHTML = ''; }
     else {
       var lista = [['inicio', 'Central']];
