@@ -376,3 +376,5 @@ html.com-aba-app:not([data-aba-app="semresp"]) .abas button[aria-selected="true"
   #abas>button.aba-esp .ab-ic svg{width:16px;height:16px}
 }
 @media (min-width:1024px) and (max-width:1279px){#abas>button.aba-esp .ab-t{display:none}}
+/* 22/11/2026 (revisão de responsividade): aba Gestor na tela cheia — "Ver como" e "Abrir o painel" um sobre o outro, cada um numa linha só (antes quebravam em 2 linhas e a linha da tabela ficava com ~127 px) */
+@media (min-width:1100px){.tabela:has([data-ord^="gestor|"]) td[data-l="Ações"] .b{display:block;white-space:nowrap;font-size:12px;padding:3px 8px;margin:2px 0;text-align:center}}
