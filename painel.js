@@ -2764,7 +2764,7 @@ function gavetaLead(id) {
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillFunil(l) + pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>${autorLin(l, 'mut peq', 1)}`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoRespLead(id)}${blocoResumoIA(id)}${blocoPerfilIA(id)}${blocoCorAnun(id, l)}`}
     <form id="fLead" class="form" data-id="${esc(id || '')}">
-      ${novo ? `<label class="c inteiro">Nome<input id="lNome" required></label><label class="c">Telefone<input id="lTel" inputmode="tel" required></label><label class="c">Origem<select id="lOrig">${['Indicação', 'Plantão', 'Portal', 'Instagram', 'Site', 'Outro'].map((o) => `<option>${o}</option>`).join('')}</select></label>` : ''}
+      ${novo ? `<label class="c inteiro">Nome<input id="lNome" required></label><label class="c">Telefone<input id="lTel" inputmode="tel" required></label><label class="c">Origem<select id="lOrig">${['Indicação', 'Plantão', 'Portal', 'Instagram', 'Site', 'Outro'].map((o) => `<option>${o}</option>`).join('')}</select></label>` : `<label class="c inteiro">Nome<input id="lNomeEd" value="${esc(l.nome || '')}" required></label><label class="c">Telefone<input id="lTelEd" inputmode="tel" value="${esc(l.telefone || '')}"></label><label class="c">E-mail<input id="lMailEd" type="email" value="${esc(l.email || '')}"></label>`}
       <label class="c">Interesse<select id="lInt">${optInt(novo ? 'a_definir' : interesseDe(l))}</select></label>
       <label class="c">Etapa<select id="lEtapa">${optEtapas(novo ? 'definir' : funilDe(l), novo ? 'Novo' : etapaDe(l))}</select></label>
       <label class="c" id="wMotivo" ${etapaDe(l) === 'Perdido' ? '' : 'hidden'}>Motivo da perda<select id="lMotivo"><option value="">Escolha</option>${optMotivos(novo ? 'definir' : funilDe(l), l.motivo)}</select></label>
@@ -4786,8 +4786,21 @@ async function salvarLead(form) {
     if (ok) { fechar(); S.aba = 'leads'; render(); }
   } else {
     const mud = leadMudouDesde(id);   // trocas-usabilidade-f1 (Lucas #3)
+    // pedido nº 151 (Hugo, aprovado pelo Cleiton em 23/11/2026): o corretor corrige nome, telefone e e-mail do próprio lead;
+    // o dado recebido fica guardado em 'original' e cada troca entra em 'alteracoes_contato' e no histórico
+    const l1 = S.leads[id] || {}, nNome = val('lNomeEd').trim(), nTel = digitos(val('lTelEd')), nMail = val('lMailEd').trim();
+    if (!nNome) { err.textContent = 'O nome do lead não pode ficar vazio.'; return; }
+    if (nTel && nTel.length < 10) { err.textContent = 'Telefone com DDD, por favor (10 ou 11 dígitos).'; return; }
+    const trocas = [['nome', l1.nome || '', nNome], ['telefone', digitos(l1.telefone || ''), nTel], ['email', l1.email || '', nMail]].filter(([, a, b]) => a !== b);
+    if (trocas.length) {
+      const quando = agora().slice(0, 16), quem = S.info.slug || 'corretor';
+      if (!l1.original) dados.original = { nome: l1.nome || '', telefone: l1.telefone || '', email: l1.email || '', campanha: l1.campanha || '', guardado_em: quando };
+      dados.alteracoes_contato = [...(Array.isArray(l1.alteracoes_contato) ? l1.alteracoes_contato : []), ...trocas.map(([campo, antes, depois]) => ({ em: quando, por: quem, campo, antes, depois }))];
+      for (const [campo, , depois] of trocas) dados[campo] = depois;
+      dados.historico = [...(dados.historico || histDe(l1)), { em: quando, tipo: 'Observação', texto: 'Contato corrigido pelo corretor: ' + trocas.map(([c, a, b]) => `${c} ${a || '(vazio)'} → ${b || '(vazio)'}`).join('; ') }];
+    }
     if (mud.length && form.dataset.porCima !== '1') { form.dataset.porCima = '1'; err.textContent = `Este lead mudou desde que você abriu (${mud.join(', ')}). Feche e reabra para ver a versão nova, ou toque em Salvar de novo para gravar o que está na tela por cima.`; return; }
-    if (etapa !== ((S.leads[id] || {}).etapa || 'Novo')) { dados.etapa_em = agora(); dados.etapa_por = 'corretor'; const de = etapaDe(S.leads[id] || {}); if (de !== etapa) dados.historico = [...histDe(S.leads[id] || {}), { em: agora().slice(0, 16), tipo: 'Observação', texto: `Etapa: ${de} → ${etapa}${etapa === 'Perdido' && val('lMotivo') ? ' (' + val('lMotivo') + ')' : ''}.` }]; }
+    if (etapa !== ((S.leads[id] || {}).etapa || 'Novo')) { dados.etapa_em = agora(); dados.etapa_por = 'corretor'; const de = etapaDe(S.leads[id] || {}); if (de !== etapa) dados.historico = [...(dados.historico || histDe(S.leads[id] || {})), { em: agora().slice(0, 16), tipo: 'Observação', texto: `Etapa: ${de} → ${etapa}${etapa === 'Perdido' && val('lMotivo') ? ' (' + val('lMotivo') + ')' : ''}.` }]; }
     const ok = await gravar(() => db.collection('leads').doc(id).update(dados), 'Alterações salvas.');
     delete form.dataset.porCima;   // trocas-usabilidade-f1
     if (ok) fechar();
