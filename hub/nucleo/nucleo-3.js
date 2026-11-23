@@ -2001,7 +2001,11 @@ document.addEventListener('keydown',e=>{ if(e.target.id==='ba-q'&&e.key==='Escap
   /* 02/11/2026 (pedido do Cleiton, revoga a F5a): no computador, cartão só com a janela menor que metade da largura da tela; acima disso, lista.
      Lista larga que não cabe: as células quebram linha sem partir palavra (ta-ajusta); se ainda não couber, cartão horizontal (1 por linha). */
   const estreito=()=>innerWidth>760&&!!(screen&&screen.width>0)&&innerWidth<screen.width*0.35; /* 04/11/2026 (pedido do Cleiton): lista até ~35% da tela; cartão abaixo disso ou no celular */
-  function ajusta(bx,t){ bx.classList.remove('ta-ajusta'); if(innerWidth<=760||bx.classList.contains('ta-cartao')) return; if(t.scrollWidth<=bx.clientWidth+2) return; bx.classList.add('ta-ajusta'); if(t.scrollWidth>bx.clientWidth+2){ bx.classList.remove('ta-ajusta'); bx.classList.add('ta-cartao'); } }
+  /* 23/11/2026 (revisão de responsividade, tablet): lista só quando todas as colunas cabem; coluna com menos de 80 px e texto em 3 linhas ou mais = espremida, vira cartão */
+  function espremida(t){ const R=[...(t.tHead?t.tHead.rows:[])]; [...t.tBodies].forEach(b=>R.push(...[...b.rows].slice(0,30))); const rg=document.createRange();
+    for(const r of R){ if(r.cells.length<3) continue; for(const c of r.cells){ const w=c.clientWidth; if(!w||w>=80||c.colSpan>1||!c.textContent.trim()) continue;
+      const cs=getComputedStyle(c); const lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.3||17; rg.selectNodeContents(c); if(rg.getBoundingClientRect().height>lh*2.6) return true; } } return false; }
+  function ajusta(bx,t){ bx.classList.remove('ta-ajusta'); if(innerWidth<=760||bx.classList.contains('ta-cartao')) return; if(t.scrollWidth<=bx.clientWidth+2&&!espremida(t)) return; bx.classList.add('ta-ajusta'); if(t.scrollWidth>bx.clientWidth+2||espremida(t)){ bx.classList.remove('ta-ajusta'); bx.classList.add('ta-cartao'); } }
   function cartaoAuto(){
     document.querySelectorAll('#conteudo table').forEach(t=>{
       if(t.classList.contains('car-cards')&&t.tHead&&t.tHead.rows.length===1){ ordLinha(t,rotulos(t)); const bx=t.closest('.tabela'); if(bx){ bx.classList.toggle('ta-cartao',estreito()); ajusta(bx,t); let nv=bx.previousElementSibling; if(nv&&nv.classList.contains('rolagem-topo')) nv=nv.previousElementSibling; if(nv&&nv.classList.contains('ord-movel-auto')) nv.classList.toggle('ta-mostra',bx.classList.contains('ta-cartao')); } return; }

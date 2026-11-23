@@ -2836,7 +2836,17 @@ const OPL_CSS = `.opl-wrap{container-type:inline-size;min-width:0;display:grid;g
 .opl .c-int .pill{white-space:normal;overflow-wrap:break-word}.opl .falta{color:var(--warn)}.opl .c-seta{color:var(--muted);text-align:right}
 .opl-det{padding:10px;border-top:1px dashed var(--line);background:var(--soft)}.opl-det .op-lead{margin:0}
 .opl-pag{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-@container (max-width:1000px){
+/* 23/11/2026 (revisão de responsividade): no tablet a lista fica em linhas de duas faixas, sem virar cartão; Origem e Entrada sob o nome, Interesse sob a Etapa */
+@container (min-width:640px) and (max-width:1000px){
+  .opl-cab,.opl-lin{grid-template-columns:minmax(0,1.4fr) 132px minmax(0,1.7fr) 56px 72px 12px;grid-template-areas:"nome etapa perfil of ca seta" "meta int perfil of ca seta";gap:3px 10px}
+  .opl-cab{grid-template-areas:"nome etapa perfil of ca seta" "nome int perfil of ca seta"}
+  .opl-cab>:nth-child(1){grid-area:nome}.opl-cab>:nth-child(2){grid-area:etapa}.opl-cab>:nth-child(3),.opl-cab>:nth-child(4){display:none}.opl-cab>:nth-child(5){grid-area:int}
+  .opl-cab>:nth-child(6){grid-area:perfil}.opl-cab>:nth-child(7){grid-area:of}.opl-cab>:nth-child(8){grid-area:ca}.opl-cab>:nth-child(9){grid-area:seta}
+  .opl .c-campanha,.opl .c-data{display:none}
+  .opl .c-meta{display:block;grid-area:meta;color:var(--muted);font-size:12px;white-space:normal}
+  .opl .c-nome{grid-area:nome}.opl .c-etapa{grid-area:etapa}.opl .c-int{grid-area:int}.opl .c-perfil{grid-area:perfil}.opl .c-ofertas{grid-area:of}.opl .c-capt{grid-area:ca}.opl .c-seta{grid-area:seta}
+}
+@container (max-width:639px){
   .opl-cab{display:none}.opl-ord{display:flex}
   .opl-lin{grid-template-columns:minmax(0,1fr) auto auto 12px;grid-template-areas:"nome of ca seta" "int int int int" "meta meta meta meta" "perfil perfil etapa etapa";gap:3px 10px;padding:9px 12px}
   .opl .c-campanha,.opl .c-data{display:none}
