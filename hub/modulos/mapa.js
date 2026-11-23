@@ -1,7 +1,7 @@
 /* MultiSel — seleção de vários valores (ex.: bairros) com busca, comum ao HUB e aos painéis (26/10/2026, pedido do Cleiton).
    Uso: MultiSel.html(id, [[valor, rótulo], ...], [valores marcados], 'Todos', 'bairros') devolve o HTML;
    cada mudança dispara o evento 'ms-change' (bubbles) com detail {id, valores}. O estado aberto/fechado e o texto
-   da busca ficam guardados por id, então o redesenho da tela não fecha a lista. */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */
+   da busca ficam guardados por id, então o redesenho da tela não fecha a lista. */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */
 window.MultiSel = window.MultiSel || (function () {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const semAc = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -620,6 +620,7 @@ window.MultiSel = window.MultiSel || (function () {
         ${ok('partes') ? linha(it.camada === 'locacao' ? 'Locatário' : 'Comprador', esc(it.parte || '')) : ''}
         ${pr ? linha('Ponto', `<span class="pill ${(PREC[pr] || PREC.rua)[1]}">${esc((PREC[pr] || PREC.rua)[0])}</span>` + (it.manual && it.manual.fonte && !v.g ? ` <span class="s">${esc(it.manual.fonte)}</span>` : '')) : ''}
       </div>
+      ${mpPerto(it, ok)}
       <div class="mp-acoes">${mapa ? `<span class="mp-gm">Google Maps ${mapa}</span>` : ''}${links}${mpRotBtn(it)}${mp3dBtns(it)}</div>
       ${v.g ? `<p class="nota">Vendo como <b>${esc(v.nome)}</b>: só aparece o que a matriz libera para esse grupo.</p>` : ''}`;
     if (it.camada === 'anuncio' && ok('foto') && FOTO[it.imovel] === undefined) buscaFoto(it.imovel);
@@ -722,7 +723,7 @@ window.MultiSel = window.MultiSel || (function () {
 
   // ------------------------------------------------------------ vista 3D (23/11/2026, tarefa vis-mapa-3d-hub-painel)
   // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026, ao lado do 2D.
-  const MP3D_V = 'd9148f71';
+  const MP3D_V = '49845bc6';
   let MP3D = null, MP3D_EST = 'fechado', MP3D_FOCO = null, MP3D_L = [];
   const mp3dLigado = () => { try { return localStorage.getItem('hubv.mapa.vista') === '3d'; } catch (_) { return false; } };
   function mp3dGuarda(V, v) {
@@ -760,11 +761,22 @@ window.MultiSel = window.MultiSel || (function () {
   let MP3D_ACAO = null;
   function mp3dBtns(it) { if (!it || !MP3D_L.some((x) => String(x.id) === String(it.id))) return '';
     return `<button class="btn" type="button" data-mp-tour="${esc(it.id)}" title="Abre a vista 3D e gira em volta do ponto">🎥 Tour 3D</button>`
-      + `<button class="btn" type="button" data-mp-perto="${esc(it.id)}" title="Praias, mercados, escolas, farmácias e saúde perto do ponto">📍 O que há por perto</button>`; }
+      + `<button class="btn" type="button" data-mp-perto="${esc(it.id)}" title="Essenciais, lazer, transporte e serviços perto do ponto, no 3D">📍 O que há por perto</button>`; }
   function mp3dRodaAcao() { if (!MP3D || !MP3D_ACAO) return; const [t, id] = MP3D_ACAO; MP3D_ACAO = null; MP3D[t](id); }
   function mp3dAcao(t, id) { MP3D_ACAO = [t, id];
     if (!mp3dLigado() || MP3D_EST !== 'aberto') mp3dVista('3d'); else mp3dRodaAcao();
     if (window.innerWidth < 900) { const c = $('mp-mapa3d'); if (c && !c.hidden) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }
+
+  // ------------------------------------------------------------ perto daqui (23/11/2026, vis-mapa-proximidades-imovel fatia B)
+  const PX_V = '7f0e611c'; let PX_CARGA = null;
+  function mpPertoLeitor(ref) {
+    return window.claude.use('mcp').then((m) => { if (!m) throw new Error('sem conector'); return m.callTool('Vivere Conversas', 'hub_ler', { colecao: 'mapa_proximidades', doc_id: ref, limite: 1 }, { cache: false }); })
+      .then((r) => { let p = r && r.payload; if (typeof p === 'string') { try { p = JSON.parse(p); } catch (e) { p = null; } } const x = ((p || {}).itens || [])[0]; return x ? x.dados : null; }); }
+  function mpPerto(it, ok) {
+    if (!it || it.camada !== 'anuncio' || !it.ref || !ok('endereco') || !window.claude || !window.claude.use) return '';
+    const vai = () => window.VivereProx.encherDepois(mpPertoLeitor);
+    if (window.VivereProx) vai(); else (PX_CARGA || (PX_CARGA = script('modulos/perto-imovel.js?v=' + PX_V).catch((e) => { PX_CARGA = null; throw e; }))).then(vai, () => {});
+    return `<div class="vp-perto" data-vpref="${esc(String(it.ref).toUpperCase())}"></div>`; }
 
   // ------------------------------------------------------------ roteiro de visitas (23/11/2026, vis-mapa-crm-video-otimizacao, fatia 1)
   let MPR = null, MPR_L = null;

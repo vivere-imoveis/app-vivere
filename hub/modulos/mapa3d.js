@@ -14,7 +14,7 @@
    pasta vendor/): o HUB e o painel a carregam pelo endereço VENDOR abaixo, inclusive no claude.ai. */
 (function () {
   if (window.VivereMapa3D) return;
-  const VERSAO = '2026-11-23.5';
+  const VERSAO = '2026-11-23.6'; // .6: por perto com 13 tipos em 4 grupos de um toque (vis-mapa-proximidades-imovel, fatia C)
   const VENDOR = 'https://vivere-imoveis.github.io/app-vivere/vendor/';
   const ESTILO = { claro: 'https://tiles.openfreemap.org/styles/positron', escuro: 'https://tiles.openfreemap.org/styles/dark' };
   const RELEVO = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png';
@@ -42,6 +42,9 @@
       + '.m3d-perto-p{width:290px;max-width:100%;min-height:0;flex:0 1 auto;overflow:auto;background:var(--panel,#fff);color:var(--ink,#1c2739);border:1px solid var(--line,#d5d9e0);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.18);padding:10px 12px}.m3d-perto-p[hidden]{display:none}'
       + '.m3d-perto-t{font-weight:700;margin:0 0 6px}.m3d-perto-c{display:flex;flex-wrap:wrap;gap:5px}.m3d-perto-c button{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line,#d5d9e0);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:12px;padding:4px 9px;cursor:pointer;opacity:.62}'
       + '.m3d-perto-c button[aria-pressed=true]{opacity:1;border-color:currentColor;font-weight:600}.m3d-perto-c i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}'
+      + '.m3d-perto-g{display:grid;grid-template-columns:1fr 1fr;gap:5px}.m3d-perto-g button{border:1px solid var(--line,#d5d9e0);border-radius:8px;background:transparent;color:inherit;font:inherit;font-size:12.5px;font-weight:600;padding:6px 8px;cursor:pointer;text-align:center;opacity:.7}'
+      + '.m3d-perto-g button[aria-pressed=true]{opacity:1;border-color:var(--brass,#b08d57);background:color-mix(in srgb,var(--brass,#b08d57) 16%,transparent)}.m3d-perto-g button[aria-pressed=mixed]{opacity:1;border-style:dashed;border-color:var(--brass,#b08d57)}.m3d-perto-g small{font-weight:400;opacity:.8}'
+      + '.m3d-perto-aj{margin:6px 0 4px;border:0;background:none;padding:0;color:var(--muted,#6b7280);font:inherit;font-size:12px;cursor:pointer;text-decoration:underline}.m3d-perto-c[hidden]{display:none}'
       + '.m3d-perto-l{margin:8px 0 0;padding:0;list-style:none}.m3d-perto-l li{display:flex;gap:6px;align-items:baseline;padding:3px 0;border-top:1px solid var(--line,#e4e7ec);font-size:12px;line-height:1.35}.m3d-perto-l li:first-child{border-top:0}.m3d-perto-l b{white-space:nowrap}.m3d-perto-l span{flex:1;min-width:0;overflow-wrap:anywhere}.m3d-perto-l em{font-style:normal;white-space:nowrap;color:var(--muted,#6b7280)}'
       + '.m3d-perto-r,.m3d-perto-n{margin:6px 0 0;font-size:11px;color:var(--muted,#6b7280)}@media (max-width:560px){.m3d-perto-p{width:250px}}'
       + '.m3d-caixa .maplibregl-ctrl-attrib{font-size:10px;background:color-mix(in srgb,var(--panel,#fff) 88%,transparent)!important;color:var(--muted,#667)}.m3d-caixa .maplibregl-ctrl-attrib a{color:inherit}';
@@ -50,18 +53,38 @@
 
   // O que há por perto (23/11/2026, fatia 3): pontos de interesse do próprio OpenFreeMap (OpenStreetMap), camada 'poi', e as
   // faixas de areia (camada 'landcover', subclasse beach, sem nome). Sem chave nem custo. Escolha dos tipos guardada no aparelho.
+  // 13 tipos em 4 grupos de um toque (23/11/2026, fatia C; decisão do Cleiton às 12h08: "bem simples e rápido organizar os filtros
+  // pra não ficar o mapa muito poluído"). Os mesmos tipos da função proximidades do Supabase (cartão "Perto daqui").
   const TIPOS = [
+    { id: 'mercado', nome: 'Mercados', cor: '#2e8b57', sub: ['supermarket', 'convenience', 'greengrocer', 'grocery'] },
+    { id: 'farmacia', nome: 'Farmácias', cor: '#0f9b9b', cls: ['pharmacy'], sub: ['pharmacy', 'chemist'] },
+    { id: 'saude', nome: 'Saúde', cor: '#d23c3c', cls: ['hospital'], sub: ['hospital', 'clinic'] },
+    { id: 'escola', nome: 'Escolas', cor: '#3b6fd8', cls: ['school', 'college'], sub: ['school', 'kindergarten', 'college', 'university'] },
     { id: 'praia', nome: 'Praias', cor: '#d9a520' },
-    { id: 'mercado', nome: 'Mercados', cor: '#2e8b57', cls: ['grocery'], sub: ['supermarket', 'convenience', 'greengrocer'] },
-    { id: 'escola', nome: 'Escolas', cor: '#3b6fd8', cls: ['school', 'college'] },
-    { id: 'farmacia', nome: 'Farmácias', cor: '#0f9b9b', cls: ['pharmacy'] },
-    { id: 'saude', nome: 'Saúde', cor: '#d23c3c', cls: ['hospital'] },
-    { id: 'restaurante', nome: 'Restaurantes', cor: '#8b5cf6', cls: ['restaurant', 'fast_food'] },
+    { id: 'parque', nome: 'Parques e praças', cor: '#5a9e3a', cls: ['park'], sub: ['park'] },
+    { id: 'academia', nome: 'Academias e clubes', cor: '#e07a1f', sub: ['fitness_centre', 'fitness_station', 'sports_centre'] },
+    { id: 'restaurante', nome: 'Restaurantes', cor: '#8b5cf6', cls: ['restaurant', 'fast_food'], sub: ['restaurant', 'fast_food'] },
+    { id: 'onibus', nome: 'Pontos de ônibus', cor: '#4b5563', sub: ['bus_stop'] },
+    { id: 'terminal', nome: 'Terminais', cor: '#1f2937', sub: ['bus_station'] },
+    { id: 'posto', nome: 'Postos', cor: '#b45309', cls: ['fuel'], sub: ['fuel'] },
+    { id: 'banco', nome: 'Bancos', cor: '#0e7490', cls: ['bank'], sub: ['bank'] },
+    { id: 'shopping', nome: 'Shoppings', cor: '#be185d', sub: ['mall'] },
   ];
-  const TIPOS_PADRAO = ['praia', 'mercado', 'escola', 'farmacia', 'saude'];
+  const GRUPOS = [
+    { id: 'essenciais', nome: 'Essenciais', tipos: ['mercado', 'farmacia', 'saude', 'escola'] },
+    { id: 'lazer', nome: 'Lazer', tipos: ['praia', 'parque', 'academia', 'restaurante'] },
+    { id: 'transporte', nome: 'Transporte', tipos: ['onibus', 'terminal', 'posto'] },
+    { id: 'servicos', nome: 'Serviços', tipos: ['banco', 'shopping'] },
+  ];
+  const TIPOS_PADRAO = ['mercado', 'farmacia', 'saude', 'escola', 'praia']; // Essenciais + praia
   const CHAVE_PERTO = 'vivere.mapa.perto';
-  const condTipo = (t) => ['any', ['in', ['get', 'class'], ['literal', t.cls || []]], ['in', ['get', 'subclass'], ['literal', t.sub || []]]];
-  const tipoDoPoi = (p) => TIPOS.find((t) => t.id !== 'praia' && ((t.cls || []).includes(p.class) || (t.sub || []).includes(p.subclass)));
+  // a subclasse decide primeiro (ponto × terminal de ônibus; loja de departamento não é mercado), como na função do Supabase
+  const tipoDoPoi = (p) => TIPOS.find((t) => t.id !== 'praia' && (t.sub || []).includes(p.subclass)) || TIPOS.find((t) => t.id !== 'praia' && (t.cls || []).includes(p.class));
+  const condTipo = (t) => {
+    const porSub = ['in', ['get', 'subclass'], ['literal', t.sub || []]];
+    // pela classe só quando a subclasse não é de outro tipo (mesma regra do tipoDoPoi)
+    const outros = TIPOS.filter((u) => u !== t && u.id !== 'praia').reduce((a, u) => a.concat(u.sub || []), []);
+    return ['any', porSub, ['all', ['in', ['get', 'class'], ['literal', t.cls || []]], ['!', ['in', ['get', 'subclass'], ['literal', outros]]]]]; };
   function distM(a, b) { const R = 6371000, r = Math.PI / 180, dLa = (b[1] - a[1]) * r, dLo = (b[0] - a[0]) * r;
     const h = Math.sin(dLa / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
   const distTxt = (m) => m < 1000 ? Math.max(10, Math.round(m / 10) * 10) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km';
@@ -208,8 +231,10 @@
     }
     // seletor "Por perto" no canto do mapa: tipos e o mais perto de cada um (a partir do imóvel escolhido ou do centro do mapa)
     const ui = document.createElement('div'); ui.className = 'm3d-perto';
-    ui.innerHTML = '<button type="button" class="m3d-perto-b" aria-expanded="false" title="Praias, mercados, escolas, farmácias e saúde por perto">📍 Por perto</button>'
-      + '<div class="m3d-perto-p" role="group" aria-label="O que há por perto" hidden><p class="m3d-perto-t">O que há por perto</p><div class="m3d-perto-c"></div><ul class="m3d-perto-l"></ul><p class="m3d-perto-r"></p><p class="m3d-perto-n">Lugares do OpenStreetMap: pode faltar algum.</p></div>';
+    ui.innerHTML = '<button type="button" class="m3d-perto-b" aria-expanded="false" title="Essenciais, lazer, transporte e serviços por perto">📍 Por perto</button>'
+      + '<div class="m3d-perto-p" role="group" aria-label="O que há por perto" hidden><p class="m3d-perto-t">O que há por perto</p><div class="m3d-perto-g"></div>'
+      + '<button type="button" class="m3d-perto-aj" aria-expanded="false">Ajustar tipos ▾</button><div class="m3d-perto-c" hidden></div><ul class="m3d-perto-l"></ul><p class="m3d-perto-r"></p><p class="m3d-perto-n">Lugares do OpenStreetMap: pode faltar algum.</p></div>';
+    let ajustar = false;
     const parar = document.createElement('button'); parar.type = 'button'; parar.className = 'm3d-parar'; parar.hidden = true; parar.textContent = '⏹ Parar o tour';
     el.appendChild(ui); el.appendChild(parar);
     function maisPerto() {
@@ -225,7 +250,10 @@
     function pintaPerto() {
       const p = ui.querySelector('.m3d-perto-p'), b = ui.querySelector('.m3d-perto-b'); p.hidden = !pertoAberto; b.setAttribute('aria-expanded', String(pertoAberto));
       if (!pertoAberto) return;
-      ui.querySelector('.m3d-perto-c').innerHTML = TIPOS.map((t) => '<button type="button" data-perto="' + t.id + '" aria-pressed="' + pertoOn.has(t.id) + '"><i style="background:' + t.cor + '"></i>' + esc(t.nome) + '</button>').join('');
+      ui.querySelector('.m3d-perto-g').innerHTML = GRUPOS.map((g) => { const n = g.tipos.filter((k) => pertoOn.has(k)).length;
+        return '<button type="button" data-grupo="' + g.id + '" aria-pressed="' + (n === g.tipos.length ? 'true' : n ? 'mixed' : 'false') + '">' + esc(g.nome) + (n && n < g.tipos.length ? ' <small>' + n + '/' + g.tipos.length + '</small>' : '') + '</button>'; }).join('');
+      const c = ui.querySelector('.m3d-perto-c'), aj = ui.querySelector('.m3d-perto-aj'); c.hidden = !ajustar; aj.setAttribute('aria-expanded', String(ajustar)); aj.textContent = ajustar ? 'Ajustar tipos ▴' : 'Ajustar tipos ▾';
+      c.innerHTML = TIPOS.map((t) => '<button type="button" data-perto="' + t.id + '" aria-pressed="' + pertoOn.has(t.id) + '"><i style="background:' + t.cor + '"></i>' + esc(t.nome) + '</button>').join('');
       const m = maisPerto(), L = TIPOS.filter((t) => pertoOn.has(t.id));
       ui.querySelector('.m3d-perto-l').innerHTML = L.map((t) => '<li><b>' + esc(t.nome) + '</b><span>' + (m[t.id] ? esc(m[t.id].n) : 'nada a até 3 km nesta área do mapa') + '</span>' + (m[t.id] ? '<em>' + distTxt(m[t.id].d) + '</em>' : '') + '</li>').join('');
       ui.querySelector('.m3d-perto-r').textContent = !L.length ? 'Marque os tipos para ver no mapa.' : ref ? 'Distâncias em linha reta a partir de ' + (ref.titulo || 'o imóvel escolhido') + '; o círculo tracejado marca 1 km.' : 'Distâncias em linha reta a partir do centro do mapa.';
@@ -234,6 +262,9 @@
       const t = e.target.closest('button'); if (!t) return;
       if (t.classList.contains('m3d-perto-b')) { pertoAberto = !pertoAberto; if (pertoAberto && !pertoOn.size) TIPOS_PADRAO.forEach((x) => pertoOn.add(x)); }
       else if (t.dataset.perto) { const k = t.dataset.perto; if (pertoOn.has(k)) pertoOn.delete(k); else pertoOn.add(k); }
+      else if (t.dataset.grupo) { const g = GRUPOS.find((x) => x.id === t.dataset.grupo); if (!g) return; // um toque: liga o grupo inteiro; tudo ligado → desliga
+        const todos = g.tipos.every((k) => pertoOn.has(k)); g.tipos.forEach((k) => (todos ? pertoOn.delete(k) : pertoOn.add(k))); }
+      else if (t.classList.contains('m3d-perto-aj')) { ajustar = !ajustar; pintaPerto(); return; }
       else return;
       try { localStorage.setItem(CHAVE_PERTO, JSON.stringify([...pertoOn])); } catch (e2) {}
       aplicaPerto(); if (!mapa.getLayer('perto-poi')) pintaPerto();

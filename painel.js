@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -4326,13 +4326,26 @@ function itensMapa() {
   const its = its0.filter((x) => !(S.pmFinOff || {})[finMapa(x.fin)]);
   const fP = BA.filtra(its, qDe('mapa'), baImv); if (S.aba === 'mapa') qInfo(fP, 'pontos'); return fP.lista;
 }
+// Perto daqui (23/11/2026, vis-mapa-proximidades-imovel fatia B): proximidades prontas do HUB (mapa_proximidades) no cartão.
+const PX_V = '7f0e611c';
+let PX_CARGA = null;
+function pmPertoLeitor(ref) { const P = window.VIVERE_PONTE, sb = P && P.contextoApp && P.contextoApp().sb; if (!sb) return Promise.reject(new Error('sem conexão'));
+  return sb.rpc('hub_consultar', { p_colecao: 'mapa_proximidades', p_doc: ref, p_limite: 1 }).then((r) => { if (r.error) throw r.error; const it = ((r.data || {}).itens || [])[0]; return it ? it.dados : null; }); }
+// sem update(): no Leaflet ele roda de novo a função do bindPopup e recria o bloco (laço; crítico 23/11). Só reposiciona.
+function pmPertoDepois() { try { const p = MP && MP._popup; if (p && p.isOpen()) { p._updateLayout(); p._updatePosition(); if (p._adjustPan) p._adjustPan(); } } catch (e) {} }
+function pmPerto(x) {
+  if (!x || !x.ref || !(window.VIVERE_PONTE && VIVERE_PONTE.contextoApp)) return '';
+  const vai = () => window.VivereProx.encherDepois(pmPertoLeitor, pmPertoDepois);
+  if (window.VivereProx) vai(); else (PX_CARGA || (PX_CARGA = scriptMapa('perto-imovel.js?v=' + PX_V).catch((e) => { PX_CARGA = null; throw e; }))).then(vai, () => {});
+  return `<div class="vp-perto" data-vpref="${esc(String(x.ref).toUpperCase())}"></div>`;
+}
 function popupMapa(x) {
   const fatos = [x.dorm ? `${x.dorm} dorm.` : '', x.suites ? `${x.suites} suíte${x.suites > 1 ? 's' : ''}` : '', x.vagas ? `${x.vagas} vaga${x.vagas > 1 ? 's' : ''}` : '', x.area ? num(x.area, 1) + ' m²' : ''].filter(Boolean).join(' · ');
   // endereço e empreendimento no card (31/10/2026, pedido do Cleiton): só o que a vitrine ou o próprio imóvel do corretor já trazem
   const end = x._meu ? (x.end || [x.logradouro, x.numero, x.complemento].filter(Boolean).join(', ')) : (x.end || '');
   let emp = ''; try { const C = S.prontos.has('empDocs') ? empCtx() : null; const e = C ? (C.empDoAnuncio.get(x.id) || (x.emp ? C.porId.get(x.emp) : null)) : null; emp = (e && e.nome) || (x._meu && x.condominio_nome) || ''; } catch (e) { emp = ''; }
-  return `<div class="pm-pop">${capaHtml(x.id, x, 'pop')}<b class="ref">${esc(x.ref)}</b> · ${esc(x.tipo || '')} · ${esc(x.fin || '')}<br><b>${brl(x.valor)}</b>${m2De(x) != null ? ' · ' + esc(m2Rot(x)) : ''}${fatos ? '<br>' + esc(fatos) : ''}${end ? '<br><span class="peq" data-sens>' + esc(end) + '</span>' : ''}${emp ? '<br><span class="peq">Empreendimento: <b>' + esc(emp) + '</b></span>' : ''}<br><span class="mut">${esc(x.bairro || '')}${x._meu ? ' · agenciado por você' : x.cor ? ' · ' + esc(x.cor) : ''}</span><br><span class="mut peq">Ponto ${esc(PREC[x.prec] || 'aproximado')}</span>
-    <div class="linha" style="margin-top:8px;gap:6px"><button class="b" type="button" data-pmver="${esc(x.id)}">Detalhes</button><button class="b" type="button" data-pmrot="${esc(x.id)}">${pmRot() && pmRot().tem(x.id) ? 'Tirar do roteiro' : '+ Roteiro'}</button><button class="b" type="button" data-pmtour="${esc(x.id)}" title="Abre a vista 3D e gira em volta do imóvel">🎥 Tour 3D</button><button class="b" type="button" data-pmperto="${esc(x.id)}" title="Praias, mercados, escolas, farmácias e saúde perto do imóvel">📍 Por perto</button>${gmapsDe(x) ? `<a class="b" href="${escUrl(gmapsDe(x))}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}</div></div>`;
+  return `<div class="pm-pop">${capaHtml(x.id, x, 'pop')}<b class="ref">${esc(x.ref)}</b> · ${esc(x.tipo || '')} · ${esc(x.fin || '')}<br><b>${brl(x.valor)}</b>${m2De(x) != null ? ' · ' + esc(m2Rot(x)) : ''}${fatos ? '<br>' + esc(fatos) : ''}${end ? '<br><span class="peq" data-sens>' + esc(end) + '</span>' : ''}${emp ? '<br><span class="peq">Empreendimento: <b>' + esc(emp) + '</b></span>' : ''}<br><span class="mut">${esc(x.bairro || '')}${x._meu ? ' · agenciado por você' : x.cor ? ' · ' + esc(x.cor) : ''}</span><br><span class="mut peq">Ponto ${esc(PREC[x.prec] || 'aproximado')}</span>${pmPerto(x)}
+    <div class="linha" style="margin-top:8px;gap:6px"><button class="b" type="button" data-pmver="${esc(x.id)}">Detalhes</button><button class="b" type="button" data-pmrot="${esc(x.id)}">${pmRot() && pmRot().tem(x.id) ? 'Tirar do roteiro' : '+ Roteiro'}</button><button class="b" type="button" data-pmtour="${esc(x.id)}" title="Abre a vista 3D e gira em volta do imóvel">🎥 Tour 3D</button><button class="b" type="button" data-pmperto="${esc(x.id)}" title="Essenciais, lazer, transporte e serviços perto do imóvel, no 3D">📍 Por perto</button>${gmapsDe(x) ? `<a class="b" href="${escUrl(gmapsDe(x))}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}</div></div>`;
 }
 function pontosMapa() {
   if (!MP) return; const L = window.L, its = itensMapa();
@@ -4410,7 +4423,7 @@ function pmRotClique(t, d) {
 // ---------- Vista 3D ao lado do mapa 2D (23/11/2026, tarefa vis-mapa-3d-hub-painel) ----------
 // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026. Recebe os mesmos
 // pontos já filtrados do 2D; a escolha 2D/3D fica guardada no aparelho.
-const PM3D_V = 'd9148f71';
+const PM3D_V = '49845bc6';
 let PM3D = null, PM3D_EST = 'fechado', PM3D_FOCO = null, PM3D_L = [], PM3D_IX = new Map();
 const pm3dLigado = () => { try { return localStorage.getItem('painel.mapa.vista') === '3d'; } catch (e) { return false; } };
 function pm3dGuarda(its, ems) {
