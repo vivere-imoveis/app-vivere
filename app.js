@@ -242,7 +242,7 @@
     main.innerHTML = grade([
       '<div class="cartao"><h3>Site próprio (novo)</h3><p>A versão nova, em construção, com o que já foi publicado.</p><div class="linha-acoes"><a class="btn pri" href="' + SITE_NOVO + '" target="_blank" rel="noopener">Abrir o site novo</a></div></div>',
       '<div class="cartao"><h3>Site atual</h3><p>O site no ar hoje, pelo Imobibrasil, até a virada do domínio.</p><div class="linha-acoes"><a class="btn" href="' + SITE_ATUAL + '" target="_blank" rel="noopener">Abrir o site atual</a></div></div>',
-      (dst ? '<div class="cartao"><h3>Destaques do site</h3><p>Escolha até 8 anúncios para a vitrine da home.</p><div class="linha-acoes"><button class="btn pri" id="irDestaques">Abrir os destaques</button></div></div>' : ''),
+      (dst ? '<div class="cartao"><h3>Destaques do site</h3><p>Escolha e ordene até 10 imóveis para a vitrine da home.</p><div class="linha-acoes"><button class="btn pri" id="irDestaques">Abrir os destaques</button></div></div>' : ''),
       '<div class="cartao"><h3>Construções e melhorias</h3><p>O código e as mudanças do site, no GitHub. Abre só para quem tem acesso ao repositório.</p><div class="linha-acoes"><a class="btn" href="' + SITE_GITHUB + '" target="_blank" rel="noopener">Abrir no GitHub</a></div></div>']);
     if ($('#irDestaques')) $('#irDestaques').onclick = function () { estado.aba = 'destaques'; desenhar(); };
   }

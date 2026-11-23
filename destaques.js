@@ -1,12 +1,15 @@
 /* Destaques do site no app da Vivere (tarefa vis-site-23, 18/11/2026).
    Decisão do Cleiton: até 8 anúncios ativos na vitrine "Imóveis selecionados" da home do site; marcam o Cleiton (gestor),
    o Nícollas e o William. Lê e grava só pelas funções site_destaques_listar e site_destaque_marcar, que conferem quem pode
-   e a trava de 8 no banco. Nenhum dado fica neste arquivo; só o que já é público no anúncio do site. */
+   e a trava de 8 no banco. Nenhum dado fica neste arquivo; só o que já é público no anúncio do site.
+   22/11/2026 (tarefa vis-site-destaques-hub, decisões do Cleiton 1a 2a 3a): uma lista só, ORDENADA, de até 10, a mesma da aba
+   Destaques do site do HUB (site_config/vitrine_home). ⭐ põe no fim; ↑ ↓ reordenam pela função site_vitrine_home_gravar.
+   Imóvel da lista que sai do site: no site, a vaga vai para o mais recente à venda, e aqui aparece o aviso para trocar. */
 (function () {
   'use strict';
   var PODE_PAINEIS = ['nicollas-maraschin', 'william']; // só decide se a aba aparece; quem manda é o banco
   var POR = 50;
-  var D = { itens: [], max: 8, carregado: false, carregando: false, erro: '', q: '', fin: '', pg: 0, ordem: { k: 'cadastrado_em', d: -1 }, ocupado: '', capas: {} };
+  var D = { itens: [], lista: [], max: 10, carregado: false, carregando: false, erro: '', q: '', fin: '', pg: 0, ordem: { k: 'cadastrado_em', d: -1 }, ocupado: '', capas: {} };
   var C = null; // { sb, eu, esc, toast, titulo }
 
   function esc(v) { return C.esc(v); }
@@ -23,7 +26,8 @@
     try {
       var r = await C.sb.rpc('site_destaques_listar');
       if (r.error) throw new Error(r.error.message || 'o banco recusou');
-      D.itens = (r.data && r.data.itens) || []; D.max = (r.data && r.data.max) || 8; D.carregado = true;
+      D.itens = (r.data && r.data.itens) || []; D.max = (r.data && r.data.max) || 10; D.carregado = true;
+      D.lista = ((r.data && r.data.lista) || []).map(function (x) { return String(x).toUpperCase(); });
       await carregarCapas();
     } catch (e) { D.erro = 'Não foi possível carregar os anúncios: ' + (e && e.message || e); }
     D.carregando = false;
@@ -55,7 +59,12 @@
     document.head.appendChild(st);
   }
 
-  function marcados() { return D.itens.filter(function (x) { return x.destaque; }); }
+  // na ordem da lista; código da lista que não veio entre os ativos = saiu do site
+  function marcados() {
+    return D.lista.map(function (ref) {
+      return D.itens.find(function (x) { return String(x.ref || '').toUpperCase() === ref; }) || { id: '', ref: ref, fora: true };
+    });
+  }
   function filtrados() {
     var q = norm(D.q);
     var L = D.itens.filter(function (x) { return !x.destaque; });
@@ -81,24 +90,29 @@
     if (!D.carregado) { main.innerHTML = D.erro ? '<div class="msg erro">' + esc(D.erro) + '</div><button class="btn" id="dstDeNovo">Tentar de novo</button>' : '<div class="vazio">Carregando os anúncios…</div>'; var b = main.querySelector('#dstDeNovo'); if (b) b.onclick = function () { abrir(main); }; return; }
     var M = marcados(), cheio = M.length >= D.max, L = filtrados(), nPg = Math.max(1, Math.ceil(L.length / POR));
     if (D.pg > nPg - 1) D.pg = nPg - 1;
-    var cards = M.map(function (x) {
-      return '<div class="cartao">' + capa(x, 'dst-capa') + '<div class="linha-acoes" style="justify-content:space-between;align-items:flex-start"><div>' + nome(x) +
-        '<span class="s">' + esc([x.bairro, x.cidade].filter(Boolean).join(' · ')) + ' · ' + brl(x.valor) + '</span>' +
-        (x.por ? '<span class="s">marcado por ' + esc(x.por) + (x.em ? ' em ' + dataBR(x.em) : '') + '</span>' : '') + '</div>' +
-        '<span class="pill warn">⭐ destaque</span></div><div class="linha-acoes" style="margin-top:10px">' + verSite(x) +
-        '<button class="btn" data-dst="' + esc(x.id) + '" data-liga="0"' + (D.ocupado ? ' disabled' : '') + '>Tirar do destaque</button></div></div>';
+    var cards = M.map(function (x, i) {
+      var dis = D.ocupado ? ' disabled' : '';
+      return '<div class="cartao"' + (x.fora ? ' style="border-color:var(--warn)"' : '') + '>' + capa(x, 'dst-capa') + '<div class="linha-acoes" style="justify-content:space-between;align-items:flex-start"><div>' +
+        (x.fora ? '<b>' + esc(x.ref) + '</b><span class="s" style="color:var(--warn)">⚠️ Saiu do site: no site, a vaga vai para o imóvel à venda mais recente. Troque por outro.</span>'
+          : nome(x) + '<span class="s">' + esc([x.bairro, x.cidade].filter(Boolean).join(' · ')) + ' · ' + brl(x.valor) + '</span>') +
+        (i >= 8 ? '<span class="s">9º e 10º: só nas telas largas</span>' : '') + '</div>' +
+        '<span class="pill warn">⭐ ' + (i + 1) + 'º</span></div><div class="linha-acoes" style="margin-top:10px">' +
+        '<button class="btn" data-dst-mov="' + i + '" data-para="' + (i - 1) + '" aria-label="Subir ' + esc(x.ref) + '"' + (i === 0 ? ' disabled' : dis) + '>↑</button>' +
+        '<button class="btn" data-dst-mov="' + i + '" data-para="' + (i + 1) + '" aria-label="Descer ' + esc(x.ref) + '"' + (i === M.length - 1 ? ' disabled' : dis) + '>↓</button>' +
+        (x.fora ? '' : verSite(x)) +
+        '<button class="btn" data-dst-tira="' + esc(x.ref) + '"' + dis + '>Tirar da vitrine</button></div></div>';
     }).join('');
     var nav = L.length > POR ? '<div class="linha-acoes" style="margin:8px 0"><button class="btn" data-dst-pg="-1"' + (D.pg ? '' : ' disabled') + '>‹ Anterior</button><span class="s" style="display:inline">' + (D.pg * POR + 1) + '–' + Math.min(L.length, (D.pg + 1) * POR) + ' de ' + L.length + '</span><button class="btn" data-dst-pg="1"' + (D.pg < nPg - 1 ? '' : ' disabled') + '>Próxima ›</button></div>' : '';
     var linhas = L.slice(D.pg * POR, (D.pg + 1) * POR).map(function (x) {
       return '<tr><td class="c-nome"><div class="dst-nome">' + capa(x, 'dst-th') + '<div>' + nome(x) + '</div></div></td><td data-r="Bairro">' + esc([x.bairro, x.cidade].filter(Boolean).join(' · ') || '—') + '</td>' +
         '<td data-r="Valor" class="num">' + brl(x.valor) + '</td><td data-r="Cadastrado">' + (dataBR(x.cadastrado_em) || '—') + '</td>' +
-        '<td class="c-acoes"><div class="linha-acoes">' + verSite(x) + '<button class="btn pri" data-dst="' + esc(x.id) + '" data-liga="1"' + (cheio || D.ocupado ? ' disabled title="Já há ' + D.max + ' destaques: tire um antes"' : '') + '>⭐ Marcar destaque</button></div></td></tr>';
+        '<td class="c-acoes"><div class="linha-acoes">' + verSite(x) + '<button class="btn pri" data-dst="' + esc(x.id) + '" data-liga="1"' + (cheio || D.ocupado ? ' disabled title="Já há ' + D.max + ' destaques: tire um antes"' : '') + '>⭐ Pôr na vitrine</button></div></td></tr>';
     }).join('');
     main.innerHTML =
       '<div class="cartao" style="margin-bottom:14px"><h3 style="margin:0 0 4px">⭐ Destaques do site: ' + M.length + ' de ' + D.max + '</h3>' +
-      '<p class="s" style="margin:0">Os anúncios marcados aparecem na vitrine "Imóveis selecionados" da home do site, em poucos minutos. Sem nenhum marcado, a home mostra os 8 mais recentes à venda. Só anúncio ativo pode ser destaque.</p></div>' +
+      '<p class="s" style="margin:0">Aparecem em "Imóveis selecionados", na home do site, nesta ordem, em até ~10 minutos. Os 8 primeiros aparecem em todas as telas; o 9º e o 10º, só nas telas largas. Vaga livre é preenchida pelo imóvel à venda mais recente. É a mesma lista da aba Destaques do site do HUB.</p></div>' +
       (D.erro ? '<div class="msg erro" style="margin-bottom:10px">' + esc(D.erro) + '</div>' : '') +
-      (M.length ? '<div class="grade" style="margin-bottom:18px">' + cards + '</div>' : '<p class="s" style="margin:0 0 18px">Nenhum destaque marcado ainda.</p>') +
+      (M.length ? '<div class="grade" style="margin-bottom:18px">' + cards + '</div>' : '<p class="s" style="margin:0 0 18px">Nenhum imóvel na vitrine ainda: o site mostra os mais recentes à venda.</p>') +
       '<h3 style="margin:0 0 8px">Anúncios ativos no site</h3>' +
       '<div class="filtros-ac"><input id="dstBusca" type="search" placeholder="Ref., bairro, tipo…" value="' + esc(D.q) + '">' +
       '<select id="dstFin" aria-label="Finalidade"><option value="">Todas as finalidades</option>' + ['Venda', 'Locação', 'Temporada'].map(function (f) { return '<option' + (D.fin === f ? ' selected' : '') + '>' + f + '</option>'; }).join('') + '</select>' +
@@ -118,6 +132,11 @@
     main.querySelectorAll('[data-dst-ord]').forEach(function (b) { b.onclick = function () { var k = b.dataset.dstOrd; D.ordem = D.ordem.k === k ? { k: k, d: -D.ordem.d } : { k: k, d: k === 'valor' || k === 'cadastrado_em' ? -1 : 1 }; D.pg = 0; desenhar(main); }; });
     main.querySelectorAll('[data-dst-pg]').forEach(function (b) { b.onclick = function () { D.pg = Math.max(0, D.pg + Number(b.dataset.dstPg)); desenhar(main); }; });
     main.querySelectorAll('[data-dst]').forEach(function (b) { b.onclick = function () { marcar(main, b.dataset.dst, b.dataset.liga === '1'); }; });
+    main.querySelectorAll('[data-dst-mov]').forEach(function (b) { b.onclick = function () {
+      var L = D.lista.slice(), de = Number(b.dataset.dstMov), para = Number(b.dataset.para); if (para < 0 || para >= L.length) return;
+      var r = L.splice(de, 1)[0]; L.splice(para, 0, r); gravarLista(main, L, r + ' foi para a ' + (para + 1) + 'ª posição.'); }; });
+    main.querySelectorAll('[data-dst-tira]').forEach(function (b) { b.onclick = function () {
+      var r = b.dataset.dstTira; gravarLista(main, D.lista.filter(function (x) { return x !== r; }), r + ' saiu da vitrine.'); }; });
   }
 
   async function marcar(main, id, liga) {
@@ -126,8 +145,18 @@
       var r = await C.sb.rpc('site_destaque_marcar', { p_imovel: id, p_marcar: liga });
       if (r.error) throw new Error(r.error.message || 'o banco recusou');
       var x = D.itens.find(function (i) { return i.id === id; });
-      C.toast((liga ? 'Marcado como destaque: ' : 'Saiu do destaque: ') + ((x && x.ref) || id) + '.');
+      C.toast((liga ? 'Entrou na vitrine: ' : 'Saiu da vitrine: ') + ((x && x.ref) || id) + '.');
       await carregar();
+    } catch (e) { D.erro = 'Não foi possível gravar: ' + (e && e.message || e); }
+    D.ocupado = ''; desenhar(main);
+  }
+
+  async function gravarLista(main, L, msg) {
+    if (D.ocupado) return; D.ocupado = 'lista'; D.erro = ''; desenhar(main);
+    try {
+      var r = await C.sb.rpc('site_vitrine_home_gravar', { p_refs: L });
+      if (r.error) throw new Error(r.error.message || 'o banco recusou');
+      C.toast(msg); await carregar();
     } catch (e) { D.erro = 'Não foi possível gravar: ' + (e && e.message || e); }
     D.ocupado = ''; desenhar(main);
   }

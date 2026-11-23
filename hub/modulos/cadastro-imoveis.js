@@ -18,6 +18,9 @@
 // • 18/11/2026 (tarefa vis-site-23, decisão do Cleiton): ⭐ Destaque no site — até 8 anúncios ATIVOS escolhidos para a vitrine
 //   "Imóveis selecionados" da home do site; grava destaque_site (+ _por, _em) no doc do anúncio (coleção imoveis). Selo ⭐ e filtro
 //   na lista. No app da diretoria, Cleiton, Nícollas e William marcam pela função site_destaque_marcar (mesma trava de 8).
+// • 22/11/2026 (tarefa vis-site-destaques-hub, decisão do Cleiton "2a"): a ⭐ virou atalho da lista única e ordenada
+//   site_config/vitrine_home (até 10; aba Destaques do site): ⭐ põe o imóvel no fim da lista, ☆ tira. O campo destaque_site
+//   deixou de ser usado.
 // • 18/11/2026 (pedido do Cleiton): o cadastro é o ponto MAIS COMPLETO — todos os imóveis (site ativo e inativo, locados, vendidos,
 //   cadastrados) e a ficha completa do Imobibrasil (coleção imoveis_ficha, lida pelo robô: áreas, encargos, mobiliado, ano,
 //   edifício, pavimento, características, descrição). A lista ganhou foto, encargos, agenciador e proprietário/locador.
@@ -206,18 +209,20 @@
     catch (e) { F.erro = 'Não foi possível salvar: ' + (e && e.message || e); H.pede(); return false; } }
 
   // ---------------------------------------------------------------- ⭐ destaque no site (18/11/2026)
-  const DEST_MAX = 8;
-  const ehDest = (x) => !!(x && x.ativo && x.destaque_site === true);
-  const destaques = () => Object.keys(H.S.imoveis || {}).filter((k) => ehDest((H.S.imoveis || {})[k]));
+  const DEST_MAX = 10;
+  const vitrine = () => { const d = (H.S.site_config || {}).vitrine_home; return Array.isArray(d && d.refs) ? d.refs.map((r) => String(r).toUpperCase()) : []; };
+  const ehDest = (x) => !!(x && x.ativo && vitrine().includes(String(x.ref || '').toUpperCase()));
+  const destaques = () => vitrine();
   const temDest = (u) => (u.anuncios || []).some((a) => ehDest((H.S.imoveis || {})[a]));
   async function marcaDestaque(a, liga) { const db = H.db(); const x = (H.S.imoveis || {})[a]; if (!db || !x) { F.erro = 'Banco indisponível nesta visualização.'; H.pede(); return; }
     if (liga && !x.ativo) { F.erro = `O anúncio ${x.ref} está inativo: só anúncio ativo pode ser destaque no site.`; H.pede(); return; }
-    const ja = destaques().filter((k) => k !== a); if (liga && ja.length >= DEST_MAX) { F.erro = `Já há ${DEST_MAX} destaques no site (${ja.map((k) => ((H.S.imoveis || {})[k] || {}).ref || k).join(', ')}). Tire um antes de marcar ${x.ref}.`; H.pede(); return; }
-    const campos = { destaque_site: !!liga, destaque_site_por: 'Cleiton (HUB)', destaque_site_em: new Date().toISOString() };
-    try { await db.doc('imoveis/' + a).update(campos); Object.assign(x, campos); F.erro = ''; H.pede(); }
+    const r = String(x.ref || '').toUpperCase(), L = vitrine(); if (liga === L.includes(r)) { F.erro = ''; H.pede(); return; }
+    if (liga && L.length >= DEST_MAX) { F.erro = `Já há ${DEST_MAX} destaques no site (${L.join(', ')}). Tire um antes de pôr ${x.ref} (aba Destaques do site).`; H.pede(); return; }
+    const dados = { refs: liga ? L.concat(r) : L.filter((k) => k !== r), por: 'Cleiton (HUB)', em: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z') };
+    try { await db.doc('site_config/vitrine_home').set(dados); H.S.site_config = Object.assign({}, H.S.site_config || {}, { vitrine_home: dados }); F.erro = ''; H.pede(); }
     catch (e) { F.erro = 'Não foi possível gravar o destaque: ' + (e && e.message || e); H.pede(); } }
-  function botaoDestaque(a, x) { if (!x || !x.ativo || !H.db()) return ''; const on = x.destaque_site === true;
-    return ` <button class="btn ci-dest${on ? ' on' : ''}" data-ci-dest="${esc(a)}" data-ci-dest-liga="${on ? '0' : '1'}" aria-pressed="${on}" title="${on ? 'Tirar da vitrine \u201cImóveis selecionados\u201d da home do site' : `Pôr na vitrine \u201cImóveis selecionados\u201d da home do site (até ${DEST_MAX})`}">${on ? '⭐ Destaque no site' : '☆ Destaque no site'}</button>`; }
+  function botaoDestaque(a, x) { if (!x || !x.ativo || !H.db()) return ''; const on = ehDest(x); const pos = vitrine().indexOf(String(x.ref || '').toUpperCase()) + 1;
+    return ` <button class="btn ci-dest${on ? ' on' : ''}" data-ci-dest="${esc(a)}" data-ci-dest-liga="${on ? '0' : '1'}" aria-pressed="${on}" title="${on ? `Na vitrine \u201cImóveis selecionados\u201d da home do site, posição ${pos}. Clique para tirar (a ordem fica na aba Destaques do site)` : `Pôr no fim da vitrine \u201cImóveis selecionados\u201d da home do site (até ${DEST_MAX}; a ordem fica na aba Destaques do site)`}">${on ? `⭐ Vitrine do site (${pos}º)` : '☆ Pôr na vitrine do site'}</button>`; }
 
   // ---------------------------------------------------------------- cadastro único no site (18/11/2026, vis-site-24)
   const MOD_NOME = { V: 'Venda', A: 'Anual', T: 'Temporada' };
@@ -241,7 +246,6 @@
   async function marcaSite(a, liga) { const db = H.db(); const x = (H.S.imoveis || {})[a]; if (!db || !x) { F.erro = 'Banco indisponível nesta visualização.'; H.pede(); return; }
     if (!x.ativo) { F.erro = `O anúncio ${x.ref} está inativo no Imobibrasil: não aparece no site.`; H.pede(); return; }
     const campos = { site_oculto: !liga, site_oculto_por: 'Cleiton (HUB)', site_oculto_em: new Date().toISOString() };
-    if (!liga && x.destaque_site === true) campos.destaque_site = false; // fora do site não ocupa vaga de destaque
     try { await db.doc('imoveis/' + a).update(campos); Object.assign(x, campos); F.erro = ''; H.pede(); }
     catch (e) { F.erro = 'Não foi possível gravar a modalidade: ' + (e && e.message || e); H.pede(); } }
   function botaoSite(a, x) { if (!x || !x.ativo || !H.db()) return ''; const on = x.site_oculto !== true; const m = MOD_NOME[finDe(a)] || 'modalidade';
@@ -568,7 +572,7 @@
   const vai = () => setTimeout(() => { const el = document.getElementById('conteudo'); if (el) window.scrollTo(0, Math.max(0, el.getBoundingClientRect().top + window.scrollY - 8)); }, 40);
   // as duas abas usam a mesma lista; trocar de aba volta para a lista (a ficha aberta numa não fica presa na outra)
   const emModo = (m) => () => { if (MODO !== m) { MODO = m; F.sel = ''; F.edit = false; F.novo = false; F.draft = {}; F.erro = ''; F.junta = ''; F.pg = 0; ORD = null; } return render(); };
-  H.registrar({ id: ID, aba: 'Imóveis', grupo: 'cadastros', colecoes: [PC, CF, 'imoveis', FIB, 'contratos_locacao', 'vendas', 'empreendimentos_fichas', 'documentos', DVC, DVP, DVA],
+  H.registrar({ id: ID, aba: 'Imóveis', grupo: 'cadastros', colecoes: [PC, CF, 'imoveis', 'site_config', FIB, 'contratos_locacao', 'vendas', 'empreendimentos_fichas', 'documentos', DVC, DVP, DVA],
     render: emModo('com'), foco(alvo) { if (alvo) { MODO = 'com'; F.sel = alvo; F.edit = false; F.draft = {}; F.erro = ''; F.junta = ''; vai(); } },
     busca(q) { const t = nrm(q); if (t.length < 2) return []; const I = H.S.imoveis || {};
       return todas().filter((u) => nrm([u.titulo, u.emp, u.d.bairro, u.cods.join(' '), u.anuncios.map((a) => (I[a] || {}).ref).join(' '), u.d.matricula, (u.ficha && u.ficha.apelido) || ''].join(' ')).includes(t))
