@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -4271,7 +4271,7 @@ const MP_ROOT = document.createElement('div'); MP_ROOT.id = 'mp-raiz';
 MP_ROOT.innerHTML = `<div class="linha" style="justify-content:space-between;margin-bottom:8px"><span class="mut peq" id="pmResumo"></span>
   <div class="chips m3d-vista" role="group" aria-label="Vista do mapa"><button type="button" data-pmvista="2d" title="Mapa plano">2D</button><button type="button" data-pmvista="3d" title="Maquete 3D com relevo e prédios">3D</button></div><div class="chips" role="group" aria-label="O que mostrar"><button type="button" data-pmcam="todos">Todos os anúncios</button><button type="button" data-pmcam="meus">Só os meus</button><button type="button" data-pmemp="1">◆ Empreendimentos</button></div></div>
   <div class="linha pm-filtros" id="pmChips" role="group" aria-label="Filtrar o mapa" style="margin-bottom:8px"></div>
-  <div id="pm-mapa" role="region" aria-label="Mapa dos imóveis"></div><div id="pm-mapa3d" class="m3d-caixa" role="region" aria-label="Mapa 3D dos imóveis" hidden></div><p class="mut peq m3d-aviso" id="pm3dAviso" hidden></p>
+  <div id="pmRot" class="rot-barra" hidden></div><div id="pm-mapa" role="region" aria-label="Mapa dos imóveis"></div><div id="pm-mapa3d" class="m3d-caixa" role="region" aria-label="Mapa 3D dos imóveis" hidden></div><p class="mut peq m3d-aviso" id="pm3dAviso" hidden></p>
   <div class="mp-legenda"><span><span class="mp-ponto" style="--c:var(--mp-c1)"></span> Venda</span><span><span class="mp-ponto" style="--c:var(--mp-c2)"></span> Locação</span><span><span class="mp-ponto" style="--c:var(--mp-c4)"></span> Temporada</span><span><span class="mp-ponto pm-meu" style="--c:var(--brass)"></span> Agenciado por você</span><span><span class="mp-ponto mp-emp" style="--c:var(--emp-l)"></span> Lançamento</span><span><span class="mp-ponto mp-emp" style="--c:var(--warn)"></span> Em construção</span><span><span class="mp-ponto mp-emp" style="--c:var(--ok)"></span> Entregue</span><span>Ponto vazado = localização aproximada</span></div>`;
 function scriptMapa(src) { return new Promise((ok, er) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => er(new Error(src)); document.head.appendChild(s); }); }
 async function carregaMapa() {
@@ -4281,6 +4281,7 @@ async function carregaMapa() {
     if (!window.L.markerClusterGroup) await scriptMapa(MAPA_CDN[1]);
     if (!window.HUB_MAPA_BASE) await scriptMapa('modulos/mapa-base.js').catch(() => {});
     if (!window.HUB_MAPA_EXTRA) await scriptMapa('modulos/mapa-extra.js').catch(() => {});
+    if (!window.VivereRoteiro) await scriptMapa('roteiro-mapa.js?v=69bb4eae').catch(() => {});
     MP_ESTADO = 'pronto';
   } catch (e) { MP_ESTADO = 'erro'; }
   if (S.aba === 'mapa') render();
@@ -4331,7 +4332,7 @@ function popupMapa(x) {
   const end = x._meu ? (x.end || [x.logradouro, x.numero, x.complemento].filter(Boolean).join(', ')) : (x.end || '');
   let emp = ''; try { const C = S.prontos.has('empDocs') ? empCtx() : null; const e = C ? (C.empDoAnuncio.get(x.id) || (x.emp ? C.porId.get(x.emp) : null)) : null; emp = (e && e.nome) || (x._meu && x.condominio_nome) || ''; } catch (e) { emp = ''; }
   return `<div class="pm-pop">${capaHtml(x.id, x, 'pop')}<b class="ref">${esc(x.ref)}</b> · ${esc(x.tipo || '')} · ${esc(x.fin || '')}<br><b>${brl(x.valor)}</b>${m2De(x) != null ? ' · ' + esc(m2Rot(x)) : ''}${fatos ? '<br>' + esc(fatos) : ''}${end ? '<br><span class="peq" data-sens>' + esc(end) + '</span>' : ''}${emp ? '<br><span class="peq">Empreendimento: <b>' + esc(emp) + '</b></span>' : ''}<br><span class="mut">${esc(x.bairro || '')}${x._meu ? ' · agenciado por você' : x.cor ? ' · ' + esc(x.cor) : ''}</span><br><span class="mut peq">Ponto ${esc(PREC[x.prec] || 'aproximado')}</span>
-    <div class="linha" style="margin-top:8px;gap:6px"><button class="b" type="button" data-pmver="${esc(x.id)}">Detalhes</button>${gmapsDe(x) ? `<a class="b" href="${escUrl(gmapsDe(x))}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}</div></div>`;
+    <div class="linha" style="margin-top:8px;gap:6px"><button class="b" type="button" data-pmver="${esc(x.id)}">Detalhes</button><button class="b" type="button" data-pmrot="${esc(x.id)}">${pmRot() && pmRot().tem(x.id) ? 'Tirar do roteiro' : '+ Roteiro'}</button>${gmapsDe(x) ? `<a class="b" href="${escUrl(gmapsDe(x))}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}</div></div>`;
 }
 function pontosMapa() {
   if (!MP) return; const L = window.L, its = itensMapa();
@@ -4354,6 +4355,7 @@ function pontosMapa() {
   MP_ROOT.querySelectorAll('[data-pmemp]').forEach((b) => b.setAttribute('aria-pressed', String(S.pmEmp !== false)));
   const ch = MP_ROOT.querySelector('#pmChips'); if (ch) ch.innerHTML = chipsMapa();
   pm3dGuarda(its, ems);
+  pmRotPinta();
 }
 // Filtros do mapa como no HUB (05/11/2026, pedido do Cleiton): finalidade dos anúncios e situação dos empreendimentos
 let MP_CONT = {}, MP_CONT_E = {};
@@ -4382,10 +4384,33 @@ function montaMapa() {
     if (mk) setTimeout(() => MPC.zoomToShowLayer(mk, () => mk.openPopup()), 120); else if (x && x.lat != null) setTimeout(() => MP.setView([x.lat, x.lng], 16), 120); }
 }
 
+// ---------- Roteiro de visitas (23/11/2026, tarefa vis-mapa-crm-video-otimizacao, fatia 1) ----------
+// O corretor marca os imóveis (cartão do 2D ou do 3D), o roteiro fica guardado no aparelho e abre a rota no Google Maps.
+let PMR = null, PMR_L = null;
+const pmRot = () => { if (!PMR && window.VivereRoteiro) { PMR = window.VivereRoteiro.criar('painel', () => pmRotPinta());
+  PMR.visivel((id) => { const r = PM3D_IX.get(String(id)); return r && r[0] === 'i' && r[1].lat != null ? { lat: r[1].lat, lng: r[1].lng } : null; }); } return PMR; };
+function pmRotPinta() {
+  const R = pmRot(), el = MP_ROOT.querySelector('#pmRot'); if (!R || !el) return;
+  const h = R.html('pmrot'); el.innerHTML = h; el.hidden = !h;
+  const L = window.L, lista = R.lista();
+  if (MP && L) { if (PMR_L) MP.removeLayer(PMR_L); PMR_L = L.layerGroup().addTo(MP);
+    if (lista.length > 1) L.polyline(lista.map((x) => [x.lat, x.lng]), { color: '#1C2739', weight: 3, dashArray: '6 6', interactive: false }).addTo(PMR_L);
+    lista.forEach((x, i) => L.marker([x.lat, x.lng], { interactive: false, keyboard: false, zIndexOffset: 1000, icon: L.divIcon({ className: 'mp-pino', iconSize: [24, 24], html: `<span class="rot-num">${i + 1}</span>` }) }).addTo(PMR_L)); }
+  if (PM3D) PM3D.roteiro(lista);
+}
+function pmRotClique(t, d) {
+  const R = pmRot(); if (!R) return;
+  if (d.pmrotTira !== undefined) R.tirar(d.pmrotTira);
+  else if (d.pmrotAcao === 'limpar') R.limpar();
+  else if (d.pmrotAcao === 'organizar') R.organizar();
+  else if (d.pmrot !== undefined) { const r = PM3D_IX.get(String(d.pmrot)), x = r && r[1]; if (x) R.alternar({ id: d.pmrot, lat: x.lat, lng: x.lng, titulo: x.ref || x.nome });
+    t.textContent = R.tem(d.pmrot) ? 'Tirar do roteiro' : '+ Roteiro'; }
+}
+
 // ---------- Vista 3D ao lado do mapa 2D (23/11/2026, tarefa vis-mapa-3d-hub-painel) ----------
 // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026. Recebe os mesmos
 // pontos já filtrados do 2D; a escolha 2D/3D fica guardada no aparelho.
-const PM3D_V = 'b50d4ff5';
+const PM3D_V = '46e69271';
 let PM3D = null, PM3D_EST = 'fechado', PM3D_FOCO = null, PM3D_L = [], PM3D_IX = new Map();
 const pm3dLigado = () => { try { return localStorage.getItem('painel.mapa.vista') === '3d'; } catch (e) { return false; } };
 function pm3dGuarda(its, ems) {
@@ -4415,7 +4440,7 @@ function pm3dVista(v) {
   (window.VivereMapa3D ? Promise.resolve() : scriptMapa('mapa3d.js?v=' + PM3D_V))
     .then(() => window.VivereMapa3D.montar(c3, { aoClicar: pm3dCartao, aoFalhar: pm3dFalhou,
       aoAbrir: () => { if (PM3D_EST === 'falhou') return; pm3dAviso(''); if (PM3D) PM3D.pontos(PM3D_L); if (PM3D_FOCO && PM3D) { const f = PM3D_FOCO; PM3D_FOCO = null; PM3D.focar(f); } } }))
-    .then((m) => { if (PM3D_EST === 'falhou') { m.destruir(); return; } PM3D = m; PM3D_EST = 'aberto'; m.pontos(PM3D_L); })
+    .then((m) => { if (PM3D_EST === 'falhou') { m.destruir(); return; } PM3D = m; PM3D_EST = 'aberto'; m.pontos(PM3D_L); if (PMR) m.roteiro(PMR.lista()); })
     .catch(() => pm3dFalhou(''));
 }
 
@@ -4835,6 +4860,7 @@ document.addEventListener('click', async (ev) => {
   if (d.decidir) { const [sid, stt] = d.decidir.split('|'); return decidir(sid, stt); }
   if (d.agenc) { abrir('meu', d.agenc, true); const t2 = document.getElementById('agTexto'); if (t2) { t2.scrollIntoView({ block: 'center' }); t2.focus({ preventScroll: true }); } return; }
   if (d.vermapa) { if (S.aberto) fechar(); S.pmFoco = d.vermapa; if (/^E:/.test(d.vermapa)) { S.pmEmp = true; MP_SIG = ''; } if (!S.meus[d.vermapa] && S.pmCam === 'meus') S.pmCam = 'todos'; S.aba = 'mapa'; try { sessionStorage.setItem('painel.aba', S.aba); } catch (e) {} render(); window.scrollTo(0, 0); return; }
+  if (d.pmrot !== undefined || d.pmrotTira !== undefined || d.pmrotAcao !== undefined) return pmRotClique(t, d);
   if (d.pmvista) return pm3dVista(d.pmvista);
   if (d.pmcam) { S.pmCam = d.pmcam; return pontosMapa(); }
   if (d.pmemp) { S.pmEmp = S.pmEmp === false; MP_SIG = ''; return pontosMapa(); }

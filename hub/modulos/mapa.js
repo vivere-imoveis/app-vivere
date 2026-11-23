@@ -1,7 +1,7 @@
 /* MultiSel — seleção de vários valores (ex.: bairros) com busca, comum ao HUB e aos painéis (26/10/2026, pedido do Cleiton).
    Uso: MultiSel.html(id, [[valor, rótulo], ...], [valores marcados], 'Todos', 'bairros') devolve o HTML;
    cada mudança dispara o evento 'ms-change' (bubbles) com detail {id, valores}. O estado aberto/fechado e o texto
-   da busca ficam guardados por id, então o redesenho da tela não fecha a lista. */ /* trocas-mapa-3d */
+   da busca ficam guardados por id, então o redesenho da tela não fecha a lista. */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */
 window.MultiSel = window.MultiSel || (function () {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const semAc = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -402,6 +402,7 @@ window.MultiSel = window.MultiSel || (function () {
       if (!window.L.markerClusterGroup) await script(CDN[1]);
       if (!window.HUB_MAPA_BASE) await script(BASE_URL).catch(() => {});
       if (!window.HUB_MAPA_EXTRA) await script(EXTRA_URL).catch(() => {});
+      if (!window.VivereRoteiro) await script('modulos/roteiro-mapa.js?v=69bb4eae').catch(() => {});
       ESTADO = 'pronto';
     } catch (e) { ESTADO = 'erro'; ERRO = 'Não consegui carregar a biblioteca do mapa (' + (e && e.message || e) + ').'; }
     H.pede();
@@ -445,6 +446,7 @@ window.MultiSel = window.MultiSel || (function () {
       <div id="mp-car"></div>
     </details>
     <div class="mp-vista-l"><div class="mp-chips m3d-vista" role="group" aria-label="Vista do mapa"><button type="button" class="mp-chip" data-mp="v2d" title="Mapa plano">2D</button><button type="button" class="mp-chip" data-mp="v3d" title="Maquete 3D com relevo e prédios">3D</button></div><div class="mp-resumo" id="mp-resumo" aria-live="polite"></div></div><p class="nota m3d-aviso" id="mp3dAviso" hidden></p>
+    <div id="mp-rot" class="rot-barra" hidden></div>
     <div class="mp-corpo"><div id="mp-mapa" role="region" aria-label="Mapa"></div><div id="mp-mapa3d" class="m3d-caixa" role="region" aria-label="Mapa 3D" hidden></div><aside id="mp-painel" aria-live="polite"></aside></div>
     <div class="mp-legenda" id="mp-legenda"></div>
     <div id="mp-semponto"></div>`;
@@ -618,7 +620,7 @@ window.MultiSel = window.MultiSel || (function () {
         ${ok('partes') ? linha(it.camada === 'locacao' ? 'Locatário' : 'Comprador', esc(it.parte || '')) : ''}
         ${pr ? linha('Ponto', `<span class="pill ${(PREC[pr] || PREC.rua)[1]}">${esc((PREC[pr] || PREC.rua)[0])}</span>` + (it.manual && it.manual.fonte && !v.g ? ` <span class="s">${esc(it.manual.fonte)}</span>` : '')) : ''}
       </div>
-      <div class="mp-acoes">${mapa ? `<span class="mp-gm">Google Maps ${mapa}</span>` : ''}${links}</div>
+      <div class="mp-acoes">${mapa ? `<span class="mp-gm">Google Maps ${mapa}</span>` : ''}${links}${mpRotBtn(it)}</div>
       ${v.g ? `<p class="nota">Vendo como <b>${esc(v.nome)}</b>: só aparece o que a matriz libera para esse grupo.</p>` : ''}`;
     if (it.camada === 'anuncio' && ok('foto') && FOTO[it.imovel] === undefined) buscaFoto(it.imovel);
   }
@@ -720,7 +722,7 @@ window.MultiSel = window.MultiSel || (function () {
 
   // ------------------------------------------------------------ vista 3D (23/11/2026, tarefa vis-mapa-3d-hub-painel)
   // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026, ao lado do 2D.
-  const MP3D_V = 'b50d4ff5';
+  const MP3D_V = '46e69271';
   let MP3D = null, MP3D_EST = 'fechado', MP3D_FOCO = null, MP3D_L = [];
   const mp3dLigado = () => { try { return localStorage.getItem('hubv.mapa.vista') === '3d'; } catch (_) { return false; } };
   function mp3dGuarda(V, v) {
@@ -749,10 +751,36 @@ window.MultiSel = window.MultiSel || (function () {
     (window.VivereMapa3D ? Promise.resolve() : script('modulos/mapa3d.js?v=' + MP3D_V))
       .then(() => window.VivereMapa3D.montar(c3, { aoClicar: (id) => { seleciona(id); return null; }, aoFalhar: mp3dFalhou,
         aoAbrir: () => { if (MP3D_EST === 'falhou') return; mp3dAviso(''); if (MP3D) MP3D.pontos(MP3D_L); if (MP3D_FOCO && MP3D) { const f = MP3D_FOCO; MP3D_FOCO = null; MP3D.focar(f); } } }))
-      .then((m) => { if (MP3D_EST === 'falhou') { m.destruir(); return; } MP3D = m; MP3D_EST = 'aberto'; m.pontos(MP3D_L); })
+      .then((m) => { if (MP3D_EST === 'falhou') { m.destruir(); return; } MP3D = m; MP3D_EST = 'aberto'; m.pontos(MP3D_L); if (MPR) m.roteiro(MPR.lista()); })
       .catch(() => mp3dFalhou(''));
   }
   (function () { if (document.getElementById('mp3d-css')) return; const st = document.createElement('style'); st.id = 'mp3d-css'; st.textContent = '#mp-raiz .mp-vista-l{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:6px 0}#mp-raiz .mp-vista-l .mp-resumo{margin:0}#mp-raiz .m3d-vista .mp-chip{font-weight:600;min-width:42px;justify-content:center}'; document.head.appendChild(st); })();
+
+  // ------------------------------------------------------------ roteiro de visitas (23/11/2026, vis-mapa-crm-video-otimizacao, fatia 1)
+  let MPR = null, MPR_L = null;
+  const mpRot = () => { if (!MPR && window.VivereRoteiro) { MPR = window.VivereRoteiro.criar('hub', () => { mpRotPinta(); pintaPainel(); });
+    MPR.visivel((id) => { const x = MP3D_L.find((y) => String(y.id) === String(id)); return x ? { lat: x.lat, lng: x.lng } : null; }); } return MPR; };
+  function mpRotBtn(it) {
+    const R = mpRot(); if (!R || !it || !MP3D_L.some((x) => String(x.id) === String(it.id))) return '';
+    const tem = R.tem(it.id);
+    return `<button class="btn" type="button" data-mp-rot="${esc(it.id)}">${tem ? 'Tirar do roteiro' : '+ Roteiro de visitas'}</button>`;
+  }
+  function mpRotPinta() {
+    const R = mpRot(), el = $('mp-rot'); if (!R || !el) return;
+    const h = R.html('mp-rot', 'btn'); el.innerHTML = h; el.hidden = !h;
+    const L = window.L, lista = R.lista();
+    if (MAP && L) { if (MPR_L) MAP.removeLayer(MPR_L); MPR_L = L.layerGroup().addTo(MAP);
+      if (lista.length > 1) L.polyline(lista.map((x) => [x.lat, x.lng]), { color: '#1C2739', weight: 3, dashArray: '6 6', interactive: false }).addTo(MPR_L);
+      lista.forEach((x, i) => L.marker([x.lat, x.lng], { interactive: false, keyboard: false, zIndexOffset: 1000, icon: L.divIcon({ className: 'mp-pino', iconSize: [24, 24], html: `<span class="rot-num">${i + 1}</span>` }) }).addTo(MPR_L)); }
+    if (MP3D) MP3D.roteiro(lista);
+  }
+  function mpRotClique(ds) {
+    const R = mpRot(); if (!R) return;
+    if (ds.mpRotTira !== undefined) R.tirar(ds.mpRotTira);
+    else if (ds.mpRotAcao === 'limpar') R.limpar();
+    else if (ds.mpRotAcao === 'organizar') R.organizar();
+    else if (ds.mpRot !== undefined) { const x = MP3D_L.find((y) => String(y.id) === String(ds.mpRot)); if (x) R.alternar({ id: x.id, lat: x.lat, lng: x.lng, titulo: x.titulo }); }
+  }
 
   // ------------------------------------------------------------ ciclo
   function sincroniza() {
@@ -777,6 +805,7 @@ window.MultiSel = window.MultiSel || (function () {
     if (SEL && !V.some((it) => it.id === SEL)) SEL = null;
     pintaPainel();
     mp3dVista(null);
+    mpRotPinta();
   }
   function agenda() { if (ENQ) return; ENQ = true; setTimeout(() => { ENQ = false; sincroniza(); }, 0); }
   function muda() { guarda(); SIG = SIG + '*'; sincroniza(); }
@@ -791,6 +820,7 @@ window.MultiSel = window.MultiSel || (function () {
     if (b.dataset.mpCorrige) { LINKS_ABERTO = true; try { localStorage.setItem('hubv.mapa.links', '1'); } catch (_) {} const LM = window.HUB_LINKMAPA; if (LM && typeof LM.focoSecao === 'function') LM.focoSecao(b.dataset.mpCorrige, true); H.pede(); return; }
     if (b.dataset.mpAnuncios) { const it = (itens() || []).find((x) => x.id === b.dataset.mpAnuncios); if (it) H.abrirImovel(it.anuncios, 'Anúncios de ' + it.titulo + ' (do mapa)'); return; }
     const a = b.dataset.mp;
+    if (b.dataset.mpRot !== undefined || b.dataset.mpRotTira !== undefined || b.dataset.mpRotAcao !== undefined) return mpRotClique(b.dataset);
     if (a === 'v2d' || a === 'v3d') return mp3dVista(a === 'v3d' ? '3d' : '2d');
     if (a === 'limpar') { const ver = F.ver; F = JSON.parse(JSON.stringify(F0)); F.ver = ver; CAR_SUJO = true; return muda(); }
     if (a === 'fechar') { SEL = null; ROOT.querySelectorAll('.mp-ponto.mp-sel').forEach((x) => x.classList.remove('mp-sel')); return pintaPainel(); }

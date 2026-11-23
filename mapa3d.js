@@ -12,7 +12,7 @@
    pasta vendor/): o HUB e o painel a carregam pelo endereço VENDOR abaixo, inclusive no claude.ai. */
 (function () {
   if (window.VivereMapa3D) return;
-  const VERSAO = '2026-11-23.3';
+  const VERSAO = '2026-11-23.4';
   const VENDOR = 'https://vivere-imoveis.github.io/app-vivere/vendor/';
   const ESTILO = { claro: 'https://tiles.openfreemap.org/styles/positron', escuro: 'https://tiles.openfreemap.org/styles/dark' };
   const RELEVO = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png';
@@ -77,7 +77,7 @@
   async function montar(el, op) {
     op = op || {}; el.classList.add('m3d-caixa');
     const ml = await carregar(op.vendor || VENDOR);
-    let tema = temaEscuro() ? 'escuro' : 'claro', lista = [], vivo = true, popup = null, falhou = false;
+    let tema = temaEscuro() ? 'escuro' : 'claro', lista = [], rota = [], vivo = true, popup = null, falhou = false;
     const mapa = new ml.Map({ container: el, style: ESTILO[tema], bounds: ILHA, maxZoom: 18, minZoom: 8, maxPitch: 75,
       attributionControl: { compact: true, customAttribution: 'Relevo: Terrain Tiles (AWS)' } });
     mapa.addControl(new ml.NavigationControl({ showCompass: true, visualizePitch: true }), 'top-left');
@@ -88,6 +88,13 @@
     function dados() {
       const fs = lista.filter((x) => x && x.lat != null && x.lng != null).map((x) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [+x.lng, +x.lat] },
         properties: { id: String(x.id), cor: corReal(el, x.cor), aprox: x.aprox ? 1 : 0, destaque: x.destaque ? 1 : 0, emp: x.emp ? 1 : 0, ic: x.emp ? 'los-' + corReal(el, x.cor) : '', titulo: x.titulo || '' } }));
+      return { type: 'FeatureCollection', features: fs };
+    }
+    // roteiro de visitas: linha tracejada na ordem das paradas e o número de cada uma (roteiro-mapa.js)
+    function dadosRota() {
+      const p = rota.filter((x) => x && x.lat != null).map((x) => [+x.lng, +x.lat]);
+      const fs = p.map((c, i) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: c }, properties: { n: String(i + 1) } }));
+      if (p.length > 1) fs.unshift({ type: 'Feature', geometry: { type: 'LineString', coordinates: p }, properties: {} });
       return { type: 'FeatureCollection', features: fs };
     }
     function imagens() {
@@ -122,6 +129,17 @@
       imagens();
       if (!mapa.getLayer('pontos-e')) mapa.addLayer({ id: 'pontos-e', type: 'symbol', source: 'pontos', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'emp'], 1]],
         layout: { 'icon-image': ['get', 'ic'], 'icon-allow-overlap': true, 'icon-ignore-placement': true }, paint: { 'icon-opacity': ['case', ['==', ['get', 'aprox'], 1], 0.55, 1] } });
+      camadasRota();
+    }
+    function camadasRota() {
+      if (!mapa.getSource('rota')) mapa.addSource('rota', { type: 'geojson', data: dadosRota() });
+      if (!mapa.getLayer('rota-l')) mapa.addLayer({ id: 'rota-l', type: 'line', source: 'rota', filter: ['==', ['geometry-type'], 'LineString'],
+        paint: { 'line-color': tema === 'claro' ? '#1C2739' : '#d8c3a5', 'line-width': 3, 'line-dasharray': [2, 1.5] } });
+      if (!mapa.getLayer('rota-c')) mapa.addLayer({ id: 'rota-c', type: 'circle', source: 'rota', filter: ['==', ['geometry-type'], 'Point'],
+        paint: { 'circle-color': tema === 'claro' ? '#1C2739' : '#d8c3a5', 'circle-radius': 10, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2, 'circle-pitch-alignment': 'viewport' } });
+      if (!mapa.getLayer('rota-t')) mapa.addLayer({ id: 'rota-t', type: 'symbol', source: 'rota', filter: ['==', ['geometry-type'], 'Point'],
+        layout: { 'text-field': ['get', 'n'], 'text-size': 11, 'text-font': ['Noto Sans Bold'], 'text-allow-overlap': true, 'text-ignore-placement': true },
+        paint: { 'text-color': tema === 'claro' ? '#ffffff' : '#1C2739' } });
     }
     function inclinar(dur) { mapa.easeTo({ pitch: 60, bearing: -18, duration: dur }); }
 
@@ -156,6 +174,7 @@
         mapa.easeTo({ center: [+x.lng, +x.lat], zoom: 16.5, pitch: 60, padding: { top: Math.round(el.clientHeight * 0.45), bottom: 0, left: 0, right: 0 }, duration: semAnimacao() ? 0 : 900 });
         if (op.aoClicar) { const html = op.aoClicar(x.id); if (popup) popup.remove(); popup = html ? new ml.Popup({ maxWidth: '290px', offset: 12, className: 'm3d-pop' }).setLngLat([+x.lng, +x.lat]).setHTML(html).addTo(mapa) : null; }
       },
+      roteiro(L) { rota = Array.isArray(L) ? L : []; const f = mapa.getSource('rota'); if (f) f.setData(dadosRota()); },
       redimensionar() { mapa.resize(); },
       destruir() { if (window.VivereMapa3D.ultimo === inst) window.VivereMapa3D.ultimo = null; vivo = false; clearTimeout(tempo); obs.disconnect(); if (mq && mq.removeEventListener) mq.removeEventListener('change', trocaTema); if (popup) popup.remove(); mapa.remove(); },
     };
