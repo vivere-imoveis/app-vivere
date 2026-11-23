@@ -39,13 +39,13 @@
   async function telaCodigo(raiz, ctx, aoEntrar) {
     var esc = ctx.esc || escP, minha = ++vezCodigo;   /* o app pode desenhar duas vezes seguidas: só a última chamada desenha */
     if (ctx.titulo) ctx.titulo('Código do autenticador');
-    if (raiz.querySelector('input[name=codigo]')) return;   /* já está na tela: não apaga o que a pessoa digitou */
+    if (raiz.querySelector('form.tela-codigo')) return;   /* já está na tela: não apaga o que a pessoa digitou */
     raiz.innerHTML = '<div class="form cartao"><div class="vazio">Carregando…</div></div>';
     var L = [];
     try { L = await fatores(ctx.sb); } catch (e) { }
     if (minha !== vezCodigo) return;
     var escolha = L.length > 1 ? '<label>Aparelho<select name="fator">' + L.map(function (f) { return '<option value="' + esc(f.id) + '">' + esc(f.friendly_name || 'Autenticador') + '</option>'; }).join('') + '</select></label>' : '';
-    raiz.innerHTML = '<form class="form cartao" novalidate><h2>Código do autenticador</h2>' +
+    raiz.innerHTML = '<form class="form cartao tela-codigo" novalidate><h2>Código do autenticador</h2>' +
       '<p class="s">Esta conta tem a verificação em duas etapas ligada. Abra o aplicativo autenticador no celular e digite o código da Vivere.</p>' +
       escolha + campoCodigo('codigo') + '<div class="msg-cod" role="status" aria-live="polite"></div>' +
       '<button class="btn pri" type="submit">Confirmar</button>' +
@@ -99,7 +99,7 @@
         ? '<div class="msg ok">Ligada. No login, depois da senha, o app pede o código do autenticador.</div><ul class="fatores">' + lista + '</ul>' +
           '<p class="s">Recomendado: cadastre também um 2º aparelho (outro celular, tablet ou o autenticador de outra pessoa de confiança) para não ficar sem acesso se perder o celular.</p>' +
           '<button class="btn" type="button" id="seg-add">Cadastrar outro aparelho</button>'
-        : '<p>Com ela ligada, quem descobrir a sua senha ainda precisa do código que só o seu celular mostra.</p>' +
+        : '<p>Com ela ligada, o app pede, além da senha, o código de 6 dígitos que só o seu celular mostra.</p>' +
           '<ol class="passos s"><li>Instale no celular o <b>Google Authenticator</b> ou o <b>Microsoft Authenticator</b> (grátis).</li><li>Toque em Ativar e leia o QR Code com o aplicativo.</li><li>Digite o código de 6 dígitos que aparecer.</li></ol>' +
           '<button class="btn pri" type="button" id="seg-add">Ativar</button>') +
       '<div class="msg-seg" role="status" aria-live="polite"></div></div>';
@@ -126,6 +126,10 @@
   async function iniciarCadastro() {
     var ctx = ativo.ctx, raiz = ativo.raiz, esc = ctx.esc || escP, box = raiz.querySelector('.msg-seg');
     var L = []; try { L = await fatores(ctx.sb); } catch (e) { }
+    try {   /* cadastro abandonado (sem Cancelar) deixa autenticador não confirmado: some antes de começar outro */
+      var t = await ctx.sb.auth.mfa.listFactors(), soltos = ((t && t.data && t.data.all) || []).filter(function (f) { return f.status !== 'verified'; });
+      for (var i = 0; i < soltos.length; i++) { try { await ctx.sb.auth.mfa.unenroll({ factorId: soltos[i].id }); } catch (e) { } }
+    } catch (e) { }
     var nome = (L.length ? 'Aparelho ' + (L.length + 1) : 'Celular') + ' · ' + new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     var r; try { r = await ctx.sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: nome, issuer: 'Vivere' }); } catch (x) { r = { error: x }; }
     if (r.error || !r.data || !r.data.totp) { if (box) box.innerHTML = '<div class="msg erro">' + esc(msgErro(r.error || 'sem QR Code')) + '</div>'; return; }
