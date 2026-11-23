@@ -76,7 +76,9 @@
   window.addEventListener('message', function (ev) { if (ev.origin === location.origin && ev.data && ev.data.vivere === 'fechar-janela') fechaDentro(); });
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && document.getElementById('app-dentro')) fechaDentro(); });
   /* clicar numa aba do painel (topo, lateral ou barra do celular) fecha a janela */
-  document.addEventListener('click', function (ev) { var b = ev.target.closest && ev.target.closest('[data-aba]'); if (b && !b.closest('#app-dentro')) fechaDentro(); }, true);
+  /* 23/11/2026: o próprio #aba-app leva data-aba (marca qual tela está aberta) — sem o :not, qualquer clique DENTRO da tela
+     (ex.: "Gerar link" em Acessos) fechava a aba e jogava de volta ao painel. Só os botões de aba fecham. */
+  document.addEventListener('click', function (ev) { var b = ev.target.closest && ev.target.closest('[data-aba]:not(#aba-app)'); if (b && !b.closest('#app-dentro')) fechaDentro(); }, true);
   /* ir(href): no app abre na janela; no PAINEL DO GESTOR (claude.ai), onde script não troca de página, mostra um aviso com
      o link de verdade, que o toque do usuário abre fora */
   function urlFora(href) { return /^hub\//.test(href) ? 'https://claude.ai/artifact/LR3j38He26qquNQHKunkMx' : 'https://vivere-imoveis.github.io/app-vivere/' + href; }
