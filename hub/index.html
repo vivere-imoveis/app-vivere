@@ -155,7 +155,7 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-block}
 .op-card .op-cab{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .op-card .op-cab b{font-size:16px}
 .op-perfil{background:var(--soft);border-radius:6px;padding:10px 12px;font-size:13px;display:grid;gap:4px}
-.op-ofs{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.op-ofs{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr))}
 .op-of{border:1px solid var(--line);border-radius:6px;padding:9px 11px;display:grid;gap:4px;min-width:0;font-size:13px}
 .op-of.ia{border-color:var(--brass)}
 .op-of .l1{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap} .op-of .l1 .v{margin-left:auto;font-weight:600;white-space:nowrap}
@@ -183,7 +183,7 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-block}
 .opl-ord{display:none;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}
 .opl{border:1px solid var(--line);border-radius:6px;background:var(--panel);min-width:0}
 .opl-lin{all:unset;box-sizing:border-box;width:100%;cursor:pointer;position:relative;font-size:13px}
-.opl-cab,.opl-lin{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1.2fr) 88px 132px minmax(0,2fr) 84px 120px 14px;gap:10px;align-items:center;padding:7px 12px}
+.opl-cab,.opl-lin{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.8fr) minmax(0,1.25fr) minmax(0,1.15fr) 88px 132px minmax(0,2.3fr) 64px 80px 14px;gap:10px;align-items:center;padding:7px 12px}
 .opl-cab{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .opl-cab button{all:unset;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.opl-cab button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .opl-cab .hc{display:flex;gap:4px;align-items:center;min-width:0}.opl-cab .hc.n{justify-content:center}
@@ -261,6 +261,7 @@ th.ord:hover{color:var(--ink)} th.ord:focus-visible{outline:2px solid var(--acce
 .pag .pp>span{margin-right:2px}
 .pag .pp .btn{min-width:38px;font-size:12px;padding:4px 8px}
 .pag .pp .btn[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+@media (max-width:600px){.pag{flex-wrap:wrap}.pag>span:not(.pp){min-width:10em;flex:1 1 10em;text-align:center}} /* 22/11/2026: contagem de páginas sem espremer no celular */
 @media (max-width:760px){
   /* 02/11/2026 (pedido do Cleiton): no celular, a barra de páginas e o "Ordenar por" dos Anúncios do site em grade alinhada */
   .pag.imv-pag>span:not(.pp){flex:1;text-align:center}

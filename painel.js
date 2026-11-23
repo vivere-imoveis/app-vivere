@@ -2818,7 +2818,7 @@ const OPL_CSS = `.opl-wrap{container-type:inline-size;min-width:0;display:grid;g
 .opl-ord{display:none;align-items:center;gap:6px;flex-wrap:wrap}
 .opl{border:1px solid var(--line);border-radius:8px;background:var(--panel);min-width:0}
 .opl-lin{all:unset;box-sizing:border-box;width:100%;cursor:pointer;font-size:13px}
-.opl-cab,.opl-lin{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(104px,.9fr) minmax(0,1.3fr) 96px 132px minmax(0,2fr) 84px 120px 14px;gap:10px;align-items:center;padding:7px 12px}
+.opl-cab,.opl-lin{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(104px,.9fr) minmax(0,1.3fr) 96px 132px minmax(0,2.3fr) 64px 104px 14px;gap:10px;align-items:center;padding:7px 12px}
 .opl-cab{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .opl-cab button{all:unset;cursor:pointer;white-space:normal;overflow-wrap:break-word;min-width:0}.opl-cab button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .opl-cab .hc{display:flex;gap:4px;align-items:center;min-width:0}.opl-cab .hc.n{justify-content:center}
