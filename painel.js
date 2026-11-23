@@ -4410,7 +4410,7 @@ function pmRotClique(t, d) {
 // ---------- Vista 3D ao lado do mapa 2D (23/11/2026, tarefa vis-mapa-3d-hub-painel) ----------
 // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026. Recebe os mesmos
 // pontos já filtrados do 2D; a escolha 2D/3D fica guardada no aparelho.
-const PM3D_V = '584c9f13';
+const PM3D_V = 'd9148f71';
 let PM3D = null, PM3D_EST = 'fechado', PM3D_FOCO = null, PM3D_L = [], PM3D_IX = new Map();
 const pm3dLigado = () => { try { return localStorage.getItem('painel.mapa.vista') === '3d'; } catch (e) { return false; } };
 function pm3dGuarda(its, ems) {
@@ -4426,7 +4426,7 @@ function pm3dMostra(tres) { const c2 = MP_ROOT.querySelector('#pm-mapa'), c3 = M
   c2.hidden = tres; c2.style.display = tres ? 'none' : ''; c3.hidden = !tres; c3.style.display = tres ? '' : 'none';
   MP_ROOT.querySelectorAll('[data-pmvista]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.pmvista === '3d') === tres))); return true; }
 function pm3dFalhou(msg) {
-  PM3D_EST = 'falhou'; PM3D_FOCO = null; if (PM3D) { try { PM3D.destruir(); } catch (e) {} PM3D = null; }
+  PM3D_EST = 'falhou'; PM3D_FOCO = null; PM3D_ACAO = null; if (PM3D) { try { PM3D.destruir(); } catch (e) {} PM3D = null; }
   pm3dMostra(false); setTimeout(() => MP && MP.invalidateSize(), 30);
   pm3dAviso((msg || 'Não consegui abrir o mapa 3D agora.') + ' Voltei para a vista 2D; toque em 3D para tentar de novo.');
 }
