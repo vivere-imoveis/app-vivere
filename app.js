@@ -157,13 +157,17 @@
     titulo(esqueci ? 'Esqueci minha senha' : 'Entrar');
     if (esqueci) {
       main.innerHTML = '<form class="form cartao" id="f" novalidate><h2>Esqueci minha senha</h2><p class="s">Digite o e-mail cadastrado na Vivere. Se ele tiver acesso, chega um link para criar uma senha nova.</p>' +
-        '<label>E-mail<input type="email" name="email" autocomplete="email" required></label><div id="m"></div>' +
+        '<label>E-mail<input type="email" name="email" autocomplete="email" required></label><div class="captcha" id="cap"></div><div id="m"></div>' +
         '<button class="btn pri" type="submit">Enviar o link</button><button class="link" type="button" id="volta">Voltar ao login</button></form>';
       $('#volta').onclick = function () { telaEntrar(main, false); };
+      var capE = window.CAPTCHA ? window.CAPTCHA.montar($('#cap')) : null;   /* 23/11/2026: captcha contra robôs (captcha.js) */
       $('#f').onsubmit = async function (e) {
         e.preventDefault(); var email = this.email.value.trim().toLowerCase(); if (!email) return;
         var b = this.querySelector('button[type=submit]'); b.disabled = true;
-        await sb.auth.resetPasswordForEmail(email, { redirectTo: APP_URL });
+        var tokE = capE ? await capE.token() : '';
+        var rE = await sb.auth.resetPasswordForEmail(email, tokE ? { redirectTo: APP_URL, captchaToken: tokE } : { redirectTo: APP_URL });
+        if (capE) capE.reset();
+        if (rE && rE.error && /captcha/i.test(rE.error.message || '')) { $('#m').innerHTML = '<div class="msg erro">Não consegui confirmar que você não é um robô. Espere a caixinha acima ficar verde e tente de novo (ou recarregue a página).</div>'; b.disabled = false; return; }
         $('#m').innerHTML = '<div class="msg ok">Se este e-mail tiver acesso, o link chega em instantes. Confira também a caixa de spam.</div>'; b.disabled = false;
       };
       return;
@@ -171,18 +175,30 @@
     var AP = window.SEGURANCA && window.SEGURANCA.aparelho, emailSalvo = AP ? AP.email() : '';
     main.innerHTML = '<form class="form cartao" id="f" novalidate><h2>Entrar</h2>' + (estado.avisoEntrar ? '<div class="msg aviso">' + esc(estado.avisoEntrar) + '</div>' : '') +
       '<label>E-mail<input type="email" name="email" autocomplete="username" required value="' + esc(emailSalvo) + '"></label>' +
-      campoSenha('Senha', 'senha', 'current-password') + (AP ? AP.caixa(!!emailSalvo) : '') + '<div id="m"></div>' +
+      campoSenha('Senha', 'senha', 'current-password') + (AP ? AP.caixa(!!emailSalvo) : '') + '<div class="captcha" id="cap"></div><div id="m"></div>' +
       '<button class="btn pri" type="submit">Entrar</button><button class="link" type="button" id="esq">Esqueci minha senha</button></form>';
     $('#esq').onclick = function () { telaEntrar(main, true); };
+    var CAP = window.CAPTCHA, cap = CAP ? CAP.montar($('#cap')) : null;   /* 23/11/2026: captcha + espera depois de 5 erros (captcha.js) */
     $('#f').onsubmit = async function (e) {
       e.preventDefault(); var email = this.email.value.trim().toLowerCase(), senha = this.senha.value;
       if (!email || !senha) { $('#m').innerHTML = '<div class="msg erro">Preencha e-mail e senha.</div>'; return; }
+      var falta = CAP ? CAP.espera.falta() : 0;
+      if (falta) { $('#m').innerHTML = '<div class="msg erro">Muitas tentativas erradas seguidas. Espere ' + CAP.espera.texto(falta) + ' e tente de novo.</div>'; return; }
       var b = this.querySelector('button[type=submit]'); b.disabled = true;
       if (AP) { AP.guardarEscolha(!!(this.lembrar && this.lembrar.checked), email); AP.abrirSessao(); }
       estado.avisoEntrar = '';
-      var r = await sb.auth.signInWithPassword({ email: email, password: senha });
+      var tok = cap ? await cap.token() : '';
+      var r = await sb.auth.signInWithPassword(tok ? { email: email, password: senha, options: { captchaToken: tok } } : { email: email, password: senha });
+      if (cap) cap.reset();
       b.disabled = false;
-      if (r.error) { $('#m').innerHTML = '<div class="msg erro">' + (/banned/i.test(r.error.message) ? 'Este acesso foi desligado.' : 'E-mail ou senha não conferem.') + '</div>'; return; }
+      if (r.error) {
+        var m = r.error.message || '';
+        if (/captcha/i.test(m)) { $('#m').innerHTML = '<div class="msg erro">Não consegui confirmar que você não é um robô. Espere a caixinha acima ficar verde e tente de novo (ou recarregue a página).</div>'; return; }
+        var n = CAP && !/banned/i.test(m) ? CAP.espera.erro() : 0, fx = CAP ? CAP.espera.falta() : 0;
+        $('#m').innerHTML = '<div class="msg erro">' + (/banned/i.test(m) ? 'Este acesso foi desligado.' : 'E-mail ou senha não conferem.' + (fx ? ' Foram ' + n + ' tentativas erradas seguidas: espere ' + CAP.espera.texto(fx) + ' para tentar de novo.' : '')) + '</div>';
+        return;
+      }
+      if (CAP) CAP.espera.acerto();
     };
   }
 
