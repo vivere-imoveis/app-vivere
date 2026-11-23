@@ -136,3 +136,25 @@ body.ml-on #ml{min-width:208px;max-width:240px;padding:16px 12px 24px;gap:2px}
   .chips.sub-op button{flex:0 0 auto!important;width:auto!important;min-height:36px;white-space:nowrap;padding:6px 10px!important}
 }
 .marca #btnPrazosApp{display:none!important}
+
+/* trocas-inicio-espaco */ (23/11/2026): metas em 2 cards na coluna da esquerda; pizza e agenda na da direita */
+.rd-inicio .rd-col1{display:grid!important;gap:24px!important;align-content:start}
+.rd-inicio .rd-metas2{margin-top:14px}
+.rd-metas2 .mt-duplo{display:grid;gap:12px}
+.rd-metas2 .mt-cards{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));align-items:stretch}
+.rd-metas2 .mt-card{margin:0;border-radius:var(--rd-r2);display:grid;gap:12px;align-content:start}
+.rd-metas2 .mt-card h3{margin:0;font:500 18px/1.2 var(--display)}
+.rd-inicio .rd-metas2 .mt-card h3 small{display:block;font:400 13px var(--body);color:var(--muted);margin:2px 0 0}
+.rd-inicio .rd-metas2 .mt-duplo-cab small{font:400 15px var(--body)!important;color:var(--muted)}
+.rd-metas2 .mt-grade{grid-template-columns:minmax(0,1fr)!important}
+.rd-metas2 .mt-placar,.rd-metas2 .mt-duplo>p{margin:0}
+.rd-agenc .painel{margin:0;border-radius:var(--rd-r2)}
+.rd-agenda .painel{margin:0;border-radius:var(--rd-r2);display:grid;gap:6px}
+.rd-agenda h2{margin:0 0 4px;font:500 22px/1.15 var(--display)}
+.rd-inicio .rd-agenda h2 small{font:400 15px var(--body);color:var(--muted)}
+.rd-ag-dia{font-weight:600;font-size:13px;margin-top:4px;opacity:.8}
+.rd-agenda .rd-ag-it{display:flex;align-items:center;gap:10px;padding:6px 0!important;margin:0!important}
+.rd-agenda .rd-ag-it .b{padding:4px 12px;min-height:0;font-size:13px}
+.rd-ag-it .rd-it-t{flex:1 1 auto;min-width:0}
+.rd-ag-ic{flex:0 0 18px;text-align:center;opacity:.7}
+@media (max-width:600px){.rd-inicio .rd-metas2 .mt-duplo-cab small{display:block;margin:2px 0 0;white-space:normal}.rd-inicio .rd-metas2 .mt-duplo-cab{white-space:normal}}

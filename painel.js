@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -5547,6 +5547,31 @@ function rdItemAviso(a) {
 function rdItemTarefa(t) {
   return `<div class="rd-it rd-it-tf"><button type="button" class="tf-ok" data-tf-ok="${esc(t.id)}" aria-pressed="false" aria-label="Marcar como feita: ${esc(t.titulo)}" title="Marcar como feita">✓</button><div class="rd-it-t"><b>${esc(t.titulo)}</b><span>${TF.atrasada(t) ? 'Atrasada · ' : ''}${esc(t.hora ? 'às ' + t.hora : 'sem hora')}${t.origem && t.origem !== 'corretor' ? ' · ' + esc(t.origem === 'diretoria' ? 'da diretoria' : 'da Vivian') : ''}</span></div><button class="b" type="button" data-abre="tarefa:${esc(t.id)}">Abrir</button></div>`;
 }
+// trocas-inicio-espaco (23/11/2026): pizza dos agenciamentos e agenda da semana no Início
+function rdPizzaAgenc() {
+  const todos = Object.entries(S.meus || {}).map(([id, m]) => ({ id, ...m, _dag: ultimoAgenc(id).dias }));
+  const h = pizzaAgenc(todos, null); if (!h) return '';
+  return `<section class="rd-agenc" aria-label="Atualização dos agenciamentos">${h.replace(/data-fm="fx\|/g, 'data-rd-fx="').replace('Toque numa cor para ver só esses imóveis.', 'Toque numa cor para abrir esses imóveis.')}</section>`;
+}
+function rdAgendaSemana() {
+  const h = hojeISO(), fim = somaDias(h, 6), amanha = somaDias(h, 1), it = [];
+  Object.entries(S.leads || {}).forEach(([id, l]) => { if (!l || l.arquivado === true || String(l.arquivado) === 'true' || ['Fechado', 'Perdido'].includes(l.etapa)) return;
+    const d = String(l.data_prox || '').slice(0, 10); if (!d || d < h || d > fim) return;
+    it.push({ d, hr: '', t: l.prox_acao || 'Próxima ação', nome: l.nome || 'Lead', visita: /visita/i.test((l.etapa || '') + ' ' + (l.prox_acao || '')), bt: `<button class="b" type="button" data-lead="${esc(id)}">Abrir</button>` }); });
+  TF.lista().forEach((t) => { if (t.situacao === 'feita' || !t.data || t.data < h || t.data > fim) return;
+    it.push({ d: t.data, hr: t.hora || '', t: t.titulo, nome: '', tarefa: true, bt: `<button class="b" type="button" data-abre="tarefa:${esc(t.id)}">Abrir</button>` }); });
+  it.sort((a, b) => (a.d + (a.hr || '99')).localeCompare(b.d + (b.hr || '99')));
+  const rotDia = (d) => d === h ? 'Hoje' : d === amanha ? 'Amanhã' : (() => { const x = new Date(d + 'T12:00'); const w = x.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''); return w.charAt(0).toUpperCase() + w.slice(1) + ', ' + d.slice(8, 10) + '/' + d.slice(5, 7); })();
+  const lim = 5, mostra = it.slice(0, lim); let ult = '', corpo = '';
+  mostra.forEach((x) => { if (x.d !== ult) { ult = x.d; corpo += `<div class="rd-ag-dia">${rotDia(x.d)}</div>`; }
+    corpo += `<div class="rd-it rd-ag-it"><span class="rd-ag-ic" aria-hidden="true">${x.tarefa ? '✓' : x.visita ? '⌂' : '●'}</span><div class="rd-it-t"><b${x.nome ? ' class="sens"' : ''}>${esc(x.nome || x.t)}</b><span>${x.hr ? 'às ' + esc(x.hr) + ' · ' : ''}${x.nome ? esc(x.t) : 'Tarefa'}</span></div>${x.bt}</div>`; });
+  const resto = it.length - mostra.length;
+  return `<section class="rd-agenda" aria-labelledby="rdAgT"><div class="painel"><h2 id="rdAgT">Agenda da semana <small>${it.length ? it.length + (it.length === 1 ? ' compromisso' : ' compromissos') + ' em 7 dias' : 'nada marcado'}</small></h2>
+    ${it.length ? corpo : '<p class="mut peq" style="margin:6px 0 0">Nada marcado para os próximos 7 dias. Defina a próxima ação dos seus leads para ela aparecer aqui.</p>'}
+    ${resto > 0 ? `<p class="rd-nota">E mais ${resto} nos próximos 7 dias. <button class="copiar" type="button" data-aba="tarefas">Ver em Tarefas</button> · <button class="copiar" type="button" data-aba="leads">Ver em Leads</button></p>` : ''}</div></section>`;
+}
+document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-fx]'); if (!t) return; ev.preventDefault();
+  S.fm = S.fm || { fin: '', sit: '' }; S.fm.fx = t.dataset.rdFx; window.PAINEL_IR('imoveis'); });
 function vInicioRD() {
   const L = Object.values(S.leads), av0 = todosAvisos();
   const fAv = BA.filtra(av0, qDe(), (a) => { const l = S.leads[a.id] || {}, m = a.imv ? S.meus[a.imv] || {} : null; if (m) { const x = baImv({ ...m, descricao: '' }); return { ...x, txt: [a.t, a.o, x.txt].join(' · ') }; } return { ...baLead(l), txt: [a.t, a.o, baLead(l).txt].join(' · ') }; });
@@ -5592,15 +5617,15 @@ function vInicioRD() {
   const nums = cart.map((k) => (NUM[k] ? NUM[k]() : '')).filter(Boolean);
   const prev = cart.includes('previsao') ? `<div class="rd-prev">${cartaoPrevisaoInicio()}</div>` : '';
   const numeros = nums.length || prev ? `<section aria-labelledby="rdNumT"><h2 id="rdNumT">Seus números</h2>${nums.length ? `<div class="rd-numeros${nums.length % 2 ? ' rd-impar' : ''}">${nums.join('')}</div>` : ''}${prev}</section>` : '';
-  const metas = secs.includes('metas') && window.MetasCRM ? MetasCRM.bloco({ doc: (S.metas || {}).atual, eq: (S.metasEq || {}).placar, hoje: hojeISO() }) : '';
+  const metas = secs.includes('metas') && window.MetasCRM ? (MetasCRM.blocoDuplo || MetasCRM.bloco)({ doc: (S.metas || {}).atual, eq: (S.metasEq || {}).placar, hoje: hojeISO() }) : '';
   const prim = String(S.info.saudacao || '').trim() || (S.info.corretor || '').split(' ')[0];
   const data = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   return `<section class="rd-inicio">
     <div class="rd-ola"><div><h1>Olá${prim ? ', ' + esc(prim) : ''}.</h1><p>${esc(data.charAt(0).toUpperCase() + data.slice(1))}</p></div>
       <div class="rd-acoes"><button class="b p" type="button" data-conversa="">${rdIc('balao')}Registrar conversa</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">${rdIc('microfone')}Por voz</button><button class="b rd-ico" type="button" data-tela="inicio" aria-label="Personalizar o Início" title="Personalizar o Início">${rdIc('blocos')}</button></div></div>
     <div class="rd-grade">
-      <div class="rd-col1">${fila}</div>
-      <div class="rd-col2">${numeros}${metas ? `<section class="rd-metas">${metas}</section>` : ''}</div>
+      <div class="rd-col1">${fila}${metas ? `<section class="rd-metas rd-metas2">${metas}</section>` : ''}</div>
+      <div class="rd-col2">${numeros}${rdPizzaAgenc()}${rdAgendaSemana()}</div>
     </div>
     <section class="rd-prazos" style="margin-top:16px">${painelPrazos()}</section>
     <p class="status">Dados atualizados em ${dt(S.info.atualizado_em)}.</p></section>`;   // tarefas-prazos: Prazos da Vivere no fim do Início

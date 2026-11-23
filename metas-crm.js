@@ -4,7 +4,7 @@
    o placar das equipes em _comum/metas_equipes/placar. Agenciamentos = imóveis da base com o corretor e cadastro no período;
    visitas e fechamentos = etapas do CRM; VGV = valor das vendas fechadas; vídeos = registros do corretor (story ou vídeo sobre
    imóvel ou sobre a Vivere, marcando @vivere) + saldo até hoje declarado (a diretoria confere no HUB). A conexão com a API do
-   Instagram da Vivere (tarefa vis-instagram-api-mencoes) vai trocar a fonte dos vídeos depois. Sem dependências. */
+   Instagram da Vivere (tarefa vis-instagram-api-mencoes) vai trocar a fonte dos vídeos depois. Sem dependências. */ /* trocas-inicio-espaco */
 (function () {
   if (window.MetasCRM) return;
   const VERSAO = '2026-11-17.1';
@@ -109,5 +109,18 @@
     return { em, tipo: ['story', 'reels', 'video'].includes(v('mvTipo')) ? v('mvTipo') : 'story', sobre, ref: sobre === 'imovel' ? ref : '', qtd, link: link.slice(0, 500),
       marcou_vivere: !!(document.getElementById('mvMarcou') || {}).checked, origem: 'app', criado_em: new Date().toISOString().slice(0, 19) };
   }
-  window.MetasCRM = { VERSAO, CAMPOS, linhas, bloco, gaveta, lerForm, fracao };
+  // trocas-inicio-espaco (23/11/2026): o mesmo conteúdo em 2 cards grandes (Negócios e Atividade), para o Início
+  const GRUPOS2 = [['Negócios', 'vendas, locações e VGV', ['fech_venda', 'fech_loc', 'vgv']], ['Atividade', 'agenciamentos, visitas e vídeos', ['agenciamentos', 'visitas', 'videos']]];
+  function blocoDuplo(o) {
+    const doc = o.doc; if (!doc || doc.sem_meta) return '';
+    const um = bloco(o); if (!um || um.indexOf('mt-grade') < 0) return um;
+    const per = doc.periodo || {}, L = linhas(doc, o.hoje);
+    const tmp = document.createElement('div'); tmp.innerHTML = um;
+    const lins = [...tmp.querySelectorAll('.mt-grade > .mt-lin')], plac = tmp.querySelector('.mt-placar'), nota = tmp.querySelector('.mt-bloco > p.peq');
+    const porK = {}; L.forEach((x, i) => { if (lins[i]) porK[x.k] = lins[i].outerHTML; });
+    const cards = GRUPOS2.map(([t, sub, ks]) => { const h = ks.map((k) => porK[k] || '').join(''); return h ? `<div class="painel mt-card"><h3>${t}<small>${sub}</small></h3><div class="mt-grade">${h}</div></div>` : ''; }).join('');
+    return `<div class="mt-duplo"><h2 class="mt-duplo-cab">🎯 Minhas metas <small>${esc(per.rot || '')} · faltam ${diasRestam(per, o.hoje)} dias</small></h2>
+      <div class="mt-cards">${cards}</div>${plac ? plac.outerHTML : ''}${nota ? nota.outerHTML : ''}</div>`;
+  }
+  window.MetasCRM = { VERSAO, CAMPOS, linhas, bloco, blocoDuplo, gaveta, lerForm, fracao };
 })();
