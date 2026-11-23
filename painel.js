@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -4269,9 +4269,9 @@ const PREC = { numero: 'no número', metrica: 'no número', link: 'marcado no Go
 let MP = null, MPC = null, MPK = {}, MP_ESTADO = 'novo', MP_SIG = '';
 const MP_ROOT = document.createElement('div'); MP_ROOT.id = 'mp-raiz';
 MP_ROOT.innerHTML = `<div class="linha" style="justify-content:space-between;margin-bottom:8px"><span class="mut peq" id="pmResumo"></span>
-  <div class="chips" role="group" aria-label="O que mostrar"><button type="button" data-pmcam="todos">Todos os anúncios</button><button type="button" data-pmcam="meus">Só os meus</button><button type="button" data-pmemp="1">◆ Empreendimentos</button></div></div>
+  <div class="chips m3d-vista" role="group" aria-label="Vista do mapa"><button type="button" data-pmvista="2d" title="Mapa plano">2D</button><button type="button" data-pmvista="3d" title="Maquete 3D com relevo e prédios">3D</button></div><div class="chips" role="group" aria-label="O que mostrar"><button type="button" data-pmcam="todos">Todos os anúncios</button><button type="button" data-pmcam="meus">Só os meus</button><button type="button" data-pmemp="1">◆ Empreendimentos</button></div></div>
   <div class="linha pm-filtros" id="pmChips" role="group" aria-label="Filtrar o mapa" style="margin-bottom:8px"></div>
-  <div id="pm-mapa" role="region" aria-label="Mapa dos imóveis"></div>
+  <div id="pm-mapa" role="region" aria-label="Mapa dos imóveis"></div><div id="pm-mapa3d" class="m3d-caixa" role="region" aria-label="Mapa 3D dos imóveis" hidden></div><p class="mut peq m3d-aviso" id="pm3dAviso" hidden></p>
   <div class="mp-legenda"><span><span class="mp-ponto" style="--c:var(--mp-c1)"></span> Venda</span><span><span class="mp-ponto" style="--c:var(--mp-c2)"></span> Locação</span><span><span class="mp-ponto" style="--c:var(--mp-c4)"></span> Temporada</span><span><span class="mp-ponto pm-meu" style="--c:var(--brass)"></span> Agenciado por você</span><span><span class="mp-ponto mp-emp" style="--c:var(--emp-l)"></span> Lançamento</span><span><span class="mp-ponto mp-emp" style="--c:var(--warn)"></span> Em construção</span><span><span class="mp-ponto mp-emp" style="--c:var(--ok)"></span> Entregue</span><span>Ponto vazado = localização aproximada</span></div>`;
 function scriptMapa(src) { return new Promise((ok, er) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => er(new Error(src)); document.head.appendChild(s); }); }
 async function carregaMapa() {
@@ -4353,6 +4353,7 @@ function pontosMapa() {
   MP_ROOT.querySelectorAll('[data-pmcam]').forEach((b) => b.setAttribute('aria-pressed', String((S.pmCam || 'todos') === b.dataset.pmcam)));
   MP_ROOT.querySelectorAll('[data-pmemp]').forEach((b) => b.setAttribute('aria-pressed', String(S.pmEmp !== false)));
   const ch = MP_ROOT.querySelector('#pmChips'); if (ch) ch.innerHTML = chipsMapa();
+  pm3dGuarda(its, ems);
 }
 // Filtros do mapa como no HUB (05/11/2026, pedido do Cleiton): finalidade dos anúncios e situação dos empreendimentos
 let MP_CONT = {}, MP_CONT_E = {};
@@ -4375,8 +4376,47 @@ function montaMapa() {
   if (MP_ESTADO === 'novo') { carregaMapa(); return; }
   const slot = document.getElementById('pmSlot'); if (!slot) return;
   slot.appendChild(MP_ROOT); iniciaMapa(); MP_SIG = ''; pontosMapa(); setTimeout(() => MP && MP.invalidateSize(), 50);
+  if (S.pmFoco && pm3dLigado()) PM3D_FOCO = S.pmFoco;
+  pm3dVista(null);
   if (S.pmFoco) { const id = S.pmFoco; S.pmFoco = null; const mk = MPK[id], x = [...S.vitrine, ...Object.entries(S.meus).map(([i, m]) => ({ ...m, id: i })), ...(S.prontos.has('empDocs') ? empCtx().emps.map((e) => ({ ...e, id: 'E:' + e.id })) : [])].find((y) => y.id === id);
     if (mk) setTimeout(() => MPC.zoomToShowLayer(mk, () => mk.openPopup()), 120); else if (x && x.lat != null) setTimeout(() => MP.setView([x.lat, x.lng], 16), 120); }
+}
+
+// ---------- Vista 3D ao lado do mapa 2D (23/11/2026, tarefa vis-mapa-3d-hub-painel) ----------
+// Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026. Recebe os mesmos
+// pontos já filtrados do 2D; a escolha 2D/3D fica guardada no aparelho.
+const PM3D_V = '76b9b264';
+let PM3D = null, PM3D_EST = 'fechado', PM3D_FOCO = null, PM3D_L = [], PM3D_IX = new Map();
+const pm3dLigado = () => { try { return localStorage.getItem('painel.mapa.vista') === '3d'; } catch (e) { return false; } };
+function pm3dGuarda(its, ems) {
+  const cor = (f) => /Venda/.test(f || '') ? 'var(--mp-c1)' : /Temporada/.test(f || '') ? 'var(--mp-c4)' : 'var(--mp-c2)';
+  PM3D_IX = new Map(); its.forEach((x) => PM3D_IX.set(String(x.id), ['i', x])); ems.forEach((e) => PM3D_IX.set('E:' + e.id, ['e', e]));
+  PM3D_L = its.map((x) => ({ id: x.id, lat: x.lat, lng: x.lng, cor: x._meu ? 'var(--brass)' : cor(x.fin), aprox: /bairro|cidade/.test(x.prec || ''), destaque: !!x._meu, titulo: x.ref }))
+    .concat(ems.map((e) => ({ id: 'E:' + e.id, lat: e.lat, lng: e.lng, cor: SIT_COR[e.sit] || 'var(--muted)', aprox: /bairro|cidade/.test(e.prec || ''), emp: true, titulo: e.nome })));
+  if (PM3D) PM3D.pontos(PM3D_L);
+}
+function pm3dCartao(id) { const r = PM3D_IX.get(String(id)); return !r ? null : r[0] === 'e' ? popupEmp(r[1]) : popupMapa(r[1]); }
+function pm3dAviso(t) { const a = MP_ROOT.querySelector('#pm3dAviso'); if (a) { a.textContent = t || ''; a.hidden = !t; } }
+function pm3dMostra(tres) { const c2 = MP_ROOT.querySelector('#pm-mapa'), c3 = MP_ROOT.querySelector('#pm-mapa3d'); if (!c2 || !c3) return false;
+  c2.hidden = tres; c2.style.display = tres ? 'none' : ''; c3.hidden = !tres; c3.style.display = tres ? '' : 'none';
+  MP_ROOT.querySelectorAll('[data-pmvista]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.pmvista === '3d') === tres))); return true; }
+function pm3dFalhou(msg) {
+  PM3D_EST = 'falhou'; PM3D_FOCO = null; if (PM3D) { try { PM3D.destruir(); } catch (e) {} PM3D = null; }
+  pm3dMostra(false); setTimeout(() => MP && MP.invalidateSize(), 30);
+  pm3dAviso((msg || 'Não consegui abrir o mapa 3D agora.') + ' Voltei para a vista 2D; toque em 3D para tentar de novo.');
+}
+function pm3dVista(v) {
+  if (v) { try { localStorage.setItem('painel.mapa.vista', v); } catch (e) {} if (v === '3d' && PM3D_EST === 'falhou') PM3D_EST = 'fechado'; }
+  const tres = pm3dLigado() && PM3D_EST !== 'falhou', c3 = MP_ROOT.querySelector('#pm-mapa3d');
+  if (!pm3dMostra(tres)) return;
+  if (!tres) { if (PM3D_EST !== 'falhou' || v === '2d') pm3dAviso(''); setTimeout(() => MP && MP.invalidateSize(), 30); return; }
+  if (PM3D) { setTimeout(() => PM3D && PM3D.redimensionar(), 30); PM3D.pontos(PM3D_L); if (PM3D_FOCO) { const f = PM3D_FOCO; PM3D_FOCO = null; PM3D.focar(f); } return; }
+  if (PM3D_EST === 'abrindo') return; PM3D_EST = 'abrindo'; pm3dAviso('Abrindo o mapa 3D…');
+  (window.VivereMapa3D ? Promise.resolve() : scriptMapa('mapa3d.js?v=' + PM3D_V))
+    .then(() => window.VivereMapa3D.montar(c3, { aoClicar: pm3dCartao, aoFalhar: pm3dFalhou,
+      aoAbrir: () => { if (PM3D_EST === 'falhou') return; pm3dAviso(''); if (PM3D) PM3D.pontos(PM3D_L); if (PM3D_FOCO && PM3D) { const f = PM3D_FOCO; PM3D_FOCO = null; PM3D.focar(f); } } }))
+    .then((m) => { if (PM3D_EST === 'falhou') { m.destruir(); return; } PM3D = m; PM3D_EST = 'aberto'; m.pontos(PM3D_L); })
+    .catch(() => pm3dFalhou(''));
 }
 
 // ---------- Empreendimentos e construtoras (26/10/2026) ----------
@@ -4795,6 +4835,7 @@ document.addEventListener('click', async (ev) => {
   if (d.decidir) { const [sid, stt] = d.decidir.split('|'); return decidir(sid, stt); }
   if (d.agenc) { abrir('meu', d.agenc, true); const t2 = document.getElementById('agTexto'); if (t2) { t2.scrollIntoView({ block: 'center' }); t2.focus({ preventScroll: true }); } return; }
   if (d.vermapa) { if (S.aberto) fechar(); S.pmFoco = d.vermapa; if (/^E:/.test(d.vermapa)) { S.pmEmp = true; MP_SIG = ''; } if (!S.meus[d.vermapa] && S.pmCam === 'meus') S.pmCam = 'todos'; S.aba = 'mapa'; try { sessionStorage.setItem('painel.aba', S.aba); } catch (e) {} render(); window.scrollTo(0, 0); return; }
+  if (d.pmvista) return pm3dVista(d.pmvista);
   if (d.pmcam) { S.pmCam = d.pmcam; return pontosMapa(); }
   if (d.pmemp) { S.pmEmp = S.pmEmp === false; MP_SIG = ''; return pontosMapa(); }
   if (d.pmfin) { const o = Object.assign({}, S.pmFinOff); if (o[d.pmfin]) delete o[d.pmfin]; else o[d.pmfin] = 1; S.pmFinOff = o; MP_SIG = ''; return pontosMapa(); }

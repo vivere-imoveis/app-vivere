@@ -1,7 +1,7 @@
 /* MultiSel — seleção de vários valores (ex.: bairros) com busca, comum ao HUB e aos painéis (26/10/2026, pedido do Cleiton).
    Uso: MultiSel.html(id, [[valor, rótulo], ...], [valores marcados], 'Todos', 'bairros') devolve o HTML;
    cada mudança dispara o evento 'ms-change' (bubbles) com detail {id, valores}. O estado aberto/fechado e o texto
-   da busca ficam guardados por id, então o redesenho da tela não fecha a lista. */
+   da busca ficam guardados por id, então o redesenho da tela não fecha a lista. */ /* trocas-mapa-3d */
 window.MultiSel = window.MultiSel || (function () {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const semAc = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -444,8 +444,8 @@ window.MultiSel = window.MultiSel || (function () {
       </div>
       <div id="mp-car"></div>
     </details>
-    <div class="mp-resumo" id="mp-resumo" aria-live="polite"></div>
-    <div class="mp-corpo"><div id="mp-mapa" role="region" aria-label="Mapa"></div><aside id="mp-painel" aria-live="polite"></aside></div>
+    <div class="mp-vista-l"><div class="mp-chips m3d-vista" role="group" aria-label="Vista do mapa"><button type="button" class="mp-chip" data-mp="v2d" title="Mapa plano">2D</button><button type="button" class="mp-chip" data-mp="v3d" title="Maquete 3D com relevo e prédios">3D</button></div><div class="mp-resumo" id="mp-resumo" aria-live="polite"></div></div><p class="nota m3d-aviso" id="mp3dAviso" hidden></p>
+    <div class="mp-corpo"><div id="mp-mapa" role="region" aria-label="Mapa"></div><div id="mp-mapa3d" class="m3d-caixa" role="region" aria-label="Mapa 3D" hidden></div><aside id="mp-painel" aria-live="polite"></aside></div>
     <div class="mp-legenda" id="mp-legenda"></div>
     <div id="mp-semponto"></div>`;
   const $ = (id) => ROOT.querySelector('#' + id);
@@ -573,6 +573,7 @@ window.MultiSel = window.MultiSel || (function () {
       MK[it.id] = m; ms.push(m);
     });
     CLU.addLayers(ms);
+    mp3dGuarda(V, v);
   }
   function seleciona(id) {
     SEL = id; const k = MK[id];
@@ -717,6 +718,42 @@ window.MultiSel = window.MultiSel || (function () {
       <div class="tabela"><table><thead><tr><th>Item</th><th>Camada</th><th>Bairro</th><th>Motivo</th></tr></thead><tbody>${sem.slice(0, 300).map((it) => `<tr><td>${esc(it.titulo)}</td><td>${esc(CAM[it.camada][0])}</td><td>${esc(it.bairro)}</td><td>${esc(!it.g ? 'sem endereço' : it.pq ? (it.pq.prec === 'cidade' ? 'só a cidade (' + (MOT[it.qual] || it.qual) + ')' : 'endereço não encontrado no mapa') : 'aguardando a rotina')}</td></tr>`).join('')}</tbody></table></div></div>`;
   }
 
+  // ------------------------------------------------------------ vista 3D (23/11/2026, tarefa vis-mapa-3d-hub-painel)
+  // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026, ao lado do 2D.
+  const MP3D_V = '76b9b264';
+  let MP3D = null, MP3D_EST = 'fechado', MP3D_FOCO = null, MP3D_L = [];
+  const mp3dLigado = () => { try { return localStorage.getItem('hubv.mapa.vista') === '3d'; } catch (_) { return false; } };
+  function mp3dGuarda(V, v) {
+    MP3D_L = V.map((it) => { const ll = posicao(it, v); if (!ll) return null; const pr = v.g && v.m.localizacao === 'bairro' ? 'bairro' : it.p.prec;
+      return { id: it.id, lat: ll[0], lng: ll[1], cor: 'var(--' + CAM[it.camada][1] + ')', aprox: /bairro|cidade/.test(pr || ''), emp: it.camada === 'empreendimento', titulo: it.titulo }; }).filter(Boolean);
+    if (MP3D) MP3D.pontos(MP3D_L);
+  }
+  function mp3dAviso(t, web) { const a = $('mp3dAviso'); if (!a) return; a.textContent = t || ''; a.hidden = !t;
+    if (t && web) { const l = document.createElement('a'); l.href = 'https://vivere-imoveis.github.io/app-vivere/hub/'; l.target = '_blank'; l.rel = 'noopener'; l.textContent = ' Abrir o HUB na web, onde o 3D funciona.'; a.appendChild(l); } }
+  function mp3dMostra(tres) { const c2 = $('mp-mapa'), c3 = $('mp-mapa3d'); if (!c2 || !c3) return null; const mudou = c2.hidden !== tres;
+    c2.hidden = tres; c2.style.display = tres ? 'none' : ''; c3.hidden = !tres; c3.style.display = tres ? '' : 'none';
+    ROOT.querySelectorAll('[data-mp="v2d"],[data-mp="v3d"]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.mp === 'v3d') === tres))); return mudou; }
+  function mp3dFalhou(msg) {
+    MP3D_EST = 'falhou'; MP3D_FOCO = null; if (MP3D) { try { MP3D.destruir(); } catch (_) {} MP3D = null; }
+    mp3dMostra(false); if (MAP) setTimeout(() => MAP.invalidateSize(), 30);
+    mp3dAviso((msg || 'Não consegui abrir o mapa 3D agora.') + ' Voltei para a vista 2D; clique em 3D para tentar de novo.', !/github\.io$/.test(location.hostname));
+  }
+  function mp3dVista(x) {
+    if (x) { try { localStorage.setItem('hubv.mapa.vista', x); } catch (_) {} if (x === '3d' && MP3D_EST === 'falhou') MP3D_EST = 'fechado'; }
+    const tres = mp3dLigado() && MP3D_EST !== 'falhou', c3 = $('mp-mapa3d');
+    if (ESTADO !== 'pronto') return;
+    const mudou = mp3dMostra(tres); if (mudou === null) return;
+    if (!tres) { if (MP3D_EST !== 'falhou' || x === '2d') mp3dAviso(''); if (mudou && MAP) setTimeout(() => MAP.invalidateSize(), 30); return; }
+    if (MP3D) { if (mudou) setTimeout(() => MP3D && MP3D.redimensionar(), 30); if (MP3D_FOCO) { const f = MP3D_FOCO; MP3D_FOCO = null; MP3D.focar(f); } return; }
+    if (MP3D_EST === 'abrindo') return; MP3D_EST = 'abrindo'; mp3dAviso('Abrindo o mapa 3D…');
+    (window.VivereMapa3D ? Promise.resolve() : script('modulos/mapa3d.js?v=' + MP3D_V))
+      .then(() => window.VivereMapa3D.montar(c3, { aoClicar: (id) => { seleciona(id); return null; }, aoFalhar: mp3dFalhou,
+        aoAbrir: () => { if (MP3D_EST === 'falhou') return; mp3dAviso(''); if (MP3D) MP3D.pontos(MP3D_L); if (MP3D_FOCO && MP3D) { const f = MP3D_FOCO; MP3D_FOCO = null; MP3D.focar(f); } } }))
+      .then((m) => { if (MP3D_EST === 'falhou') { m.destruir(); return; } MP3D = m; MP3D_EST = 'aberto'; m.pontos(MP3D_L); })
+      .catch(() => mp3dFalhou(''));
+  }
+  (function () { if (document.getElementById('mp3d-css')) return; const st = document.createElement('style'); st.id = 'mp3d-css'; st.textContent = '#mp-raiz .mp-vista-l{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:6px 0}#mp-raiz .mp-vista-l .mp-resumo{margin:0}#mp-raiz .m3d-vista .mp-chip{font-weight:600;min-width:42px;justify-content:center}'; document.head.appendChild(st); })();
+
   // ------------------------------------------------------------ ciclo
   function sincroniza() {
     const host = document.getElementById('mp-host'); if (!host) return;
@@ -735,10 +772,11 @@ window.MultiSel = window.MultiSel || (function () {
     if (fi && fi.p && !V.some((it) => it.id === fi.id)) { const ver = F.ver; F = JSON.parse(JSON.stringify(F0)); F.ver = ver; F.cam[camKey(fi)] = 1; F.sit[fi.sit] = 1; CAR_SUJO = true; guarda(); SIG = SIG + '*'; v = visao(); V = filtra(L, v); }
     pintaFiltros(L, v); pintaMatriz(); atualizaMarcadores(V, v); pintaResumo(L, V, v);
     if (FOCO_ITEM && MAP) { const id = FOCO_ITEM; FOCO_ITEM = null;
-      if (fi && fi.p) { const ll = posicao(fi, v) || [fi.p.lat, fi.p.lng]; MAP.setView(ll, 17); SEL = id; setTimeout(() => seleciona(id), 350); }
+      if (fi && fi.p) { const ll = posicao(fi, v) || [fi.p.lat, fi.p.lng]; if (mp3dLigado()) MP3D_FOCO = id; MAP.setView(ll, 17); SEL = id; setTimeout(() => seleciona(id), 350); }
       else { const av2 = $('mp-aviso'); av2.hidden = false; av2.textContent = (fi ? fi.titulo : id) + ': ainda sem ponto no mapa. Corrija o endereço ou cole o link do Google Maps na seção Links de mapa e localização, no fim desta aba.'; } }
     if (SEL && !V.some((it) => it.id === SEL)) SEL = null;
     pintaPainel();
+    mp3dVista(null);
   }
   function agenda() { if (ENQ) return; ENQ = true; setTimeout(() => { ENQ = false; sincroniza(); }, 0); }
   function muda() { guarda(); SIG = SIG + '*'; sincroniza(); }
@@ -753,6 +791,7 @@ window.MultiSel = window.MultiSel || (function () {
     if (b.dataset.mpCorrige) { LINKS_ABERTO = true; try { localStorage.setItem('hubv.mapa.links', '1'); } catch (_) {} const LM = window.HUB_LINKMAPA; if (LM && typeof LM.focoSecao === 'function') LM.focoSecao(b.dataset.mpCorrige, true); H.pede(); return; }
     if (b.dataset.mpAnuncios) { const it = (itens() || []).find((x) => x.id === b.dataset.mpAnuncios); if (it) H.abrirImovel(it.anuncios, 'Anúncios de ' + it.titulo + ' (do mapa)'); return; }
     const a = b.dataset.mp;
+    if (a === 'v2d' || a === 'v3d') return mp3dVista(a === 'v3d' ? '3d' : '2d');
     if (a === 'limpar') { const ver = F.ver; F = JSON.parse(JSON.stringify(F0)); F.ver = ver; CAR_SUJO = true; return muda(); }
     if (a === 'fechar') { SEL = null; ROOT.querySelectorAll('.mp-ponto.mp-sel').forEach((x) => x.classList.remove('mp-sel')); return pintaPainel(); }
     if (a === 'matriz') { MATRIZ_ABERTA = !MATRIZ_ABERTA; SALVANDO = ''; return pintaMatriz(); }
