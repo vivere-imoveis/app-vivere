@@ -12,7 +12,7 @@
    pasta vendor/): o HUB e o painel a carregam pelo endereço VENDOR abaixo, inclusive no claude.ai. */
 (function () {
   if (window.VivereMapa3D) return;
-  const VERSAO = '2026-11-23.2';
+  const VERSAO = '2026-11-23.3';
   const VENDOR = 'https://vivere-imoveis.github.io/app-vivere/vendor/';
   const ESTILO = { claro: 'https://tiles.openfreemap.org/styles/positron', escuro: 'https://tiles.openfreemap.org/styles/dark' };
   const RELEVO = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png';
@@ -125,7 +125,7 @@
     }
     function inclinar(dur) { mapa.easeTo({ pitch: 60, bearing: -18, duration: dur }); }
 
-    mapa.on('load', () => { clearTimeout(tempo); if (!vivo) return; camadas(); inclinar(semAnimacao() ? 0 : 1200); if (op.aoAbrir) op.aoAbrir(); });
+    mapa.on('load', () => { clearTimeout(tempo); if (!vivo) return; const at = el.querySelector('.maplibregl-ctrl-attrib'); if (at) at.classList.remove('maplibregl-compact-show'); camadas(); inclinar(semAnimacao() ? 0 : 1200); if (op.aoAbrir) op.aoAbrir(); });
     mapa.on('click', 'grupos', async (e) => {
       const f = e.features && e.features[0]; if (!f) return;
       const z = await mapa.getSource('pontos').getClusterExpansionZoom(f.properties.cluster_id);
@@ -153,7 +153,7 @@
       pontos(L) { lista = Array.isArray(L) ? L : []; if (!mapa.isStyleLoaded() || !mapa.getSource('pontos')) return; imagens(); mapa.getSource('pontos').setData(dados()); },
       focar(id) {
         const x = lista.find((y) => y && String(y.id) === String(id)); if (!x || x.lat == null) return;
-        mapa.easeTo({ center: [+x.lng, +x.lat], zoom: 16.5, pitch: 60, duration: semAnimacao() ? 0 : 900 });
+        mapa.easeTo({ center: [+x.lng, +x.lat], zoom: 16.5, pitch: 60, padding: { top: Math.round(el.clientHeight * 0.45), bottom: 0, left: 0, right: 0 }, duration: semAnimacao() ? 0 : 900 });
         if (op.aoClicar) { const html = op.aoClicar(x.id); if (popup) popup.remove(); popup = html ? new ml.Popup({ maxWidth: '290px', offset: 12, className: 'm3d-pop' }).setLngLat([+x.lng, +x.lat]).setHTML(html).addTo(mapa) : null; }
       },
       redimensionar() { mapa.resize(); },
