@@ -374,6 +374,12 @@ nav.medindo>.quebra-menu{display:none}
 .menu-cheio>.quebra-menu{flex:0 0 100%;height:0;margin:0;padding:0;border:0}
 .menu-cheio.medindo>*{flex:0 0 auto}
 .menu-cheio.medindo>.quebra-menu{display:none}
+/* 22/11/2026 (pedido do Cleiton): fim dos menus em linhas cheias — cada botão no tamanho natural, mais próximos, quebrando linha normalmente */
+nav.abas>button,nav.sub>button,.abas>button,.menu-cheio>button,.menu-cheio>a.btn{flex:0 0 auto!important}
+nav.abas,nav.sub,.abas,.filtros,.chips,.ordenar-movel{column-gap:4px!important;row-gap:4px!important}
+.quebra-menu{display:none!important}
+/* transicao-suave (22/11/2026): entrada curta do conteúdo ao trocar de aba */
+@media (prefers-reduced-motion:no-preference){#conteudo.vista-nova{animation:pc-entra .16s ease-out}@keyframes pc-entra{from{opacity:.35;transform:translateY(4px)}}}
 /* COMPONENTE OLHO PRIVADO v1 (03/11/2026) — ocultar valores e dados sensíveis */
 html[data-privado="1"] .sens,
 html[data-privado="1"] [data-sens]{filter:blur(6px);-webkit-user-select:none;user-select:none;transition:filter .15s}
@@ -659,15 +665,9 @@ body.ml-on.ml-min #ml .ml-g{justify-content:center;padding:8px 0}
 body.ml-on.ml-min #ml .ml-g .badge{position:absolute;margin:0 0 18px 26px;font-size:9px;min-width:12px;padding:0 3px}
 body.ml-on.ml-min #ml .ml-topo{justify-content:center}
 .ml-troca{font-size:16px}
-/* 22/11/2026 (pedido do Cleiton): fim dos menus em linhas cheias — cada botão no tamanho natural, mais próximos, quebrando linha normalmente */
-nav.abas>button,nav.sub>button,.abas>button,.menu-cheio>button,.menu-cheio>a.btn{flex:0 0 auto!important}
-nav.abas,nav.sub,.abas,.filtros,.chips,.ordenar-movel{column-gap:4px!important;row-gap:4px!important}
-.quebra-menu{display:none!important}
-/* transicao-suave (22/11/2026): entrada curta do conteúdo ao trocar de aba */
-@media (prefers-reduced-motion:no-preference){#conteudo.vista-nova{animation:pc-entra .16s ease-out}@keyframes pc-entra{from{opacity:.35;transform:translateY(4px)}}}
 </style>
 <script id="icones-vivere" src="nucleo/nucleo-6.js?v=19bd0efa" charset="utf-8"></script>
 <script src="nucleo/nucleo-7.js?v=b72a2264" charset="utf-8"></script>
 <script src="modulos/topo-compacto.js?v=4f7cfb6b"></script>
-<script src="modulos/entrada.js?v=b45a7679"></script>
 <script src="modulos/densidade.js?v=174e274d"></script>
+<script src="modulos/entrada.js?v=b45a7679"></script>
