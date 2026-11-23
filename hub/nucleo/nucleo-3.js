@@ -1801,7 +1801,9 @@ function pintaPaineis(){ const el=document.getElementById('paineis-menu'); if(!e
   let it=Object.entries(A.itens||{}).map(([k,x])=>({nome:(x&&x.nome)||k,url:(x&&x.url)||base+encodeURIComponent(k)}));
   if(!it.length) it=Object.values(d.itens||{}).filter(x=>x&&x.url).map(x=>({nome:x.nome_painel||x.nome,url:x.url}));
   it.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
-  const h=it.map(x=>`<a href="${escUrl(x.url)}" target="_blank" rel="noopener"><span>${esc(x.nome)}</span><span class="s">↗</span></a>`).join('')+`<p>${it.length} painéis no app da Vivere. Cada um abre como o corretor vê.</p>`;
+  // 22/11/2026 (pedido do Cleiton): Painel do gestor em primeiro. No HUB do claude.ai abre o PAINEL DO GESTOR (artefato); no HUB da web (app), o painel do app.
+  const gUrl=/github\.io$/.test(location.hostname)?'https://vivere-imoveis.github.io/app-vivere/painel.html':'https://claude.ai/artifact/EfWNvH7UVZkn2mUyuChf4X';
+  const h=`<a href="${escUrl(gUrl)}" target="_blank" rel="noopener"><span>Painel do gestor</span><span class="s">↗</span></a>`+it.map(x=>`<a href="${escUrl(x.url)}" target="_blank" rel="noopener"><span>${esc(x.nome)}</span><span class="s">↗</span></a>`).join('')+`<p>${it.length} painéis no app da Vivere. Cada um abre como o corretor vê.</p>`;
   if(el.innerHTML!==h) el.innerHTML=h; }
 document.addEventListener('click',e=>{ const d=document.getElementById('lk-paineis'); if(d&&d.open&&!d.contains(e.target)) d.open=false; });
 /* 03/11/2026: menu Painéis dos corretores não sai da tela (a 900 px passava 17 px): ancora à direita do botão quando não cabe à esquerda */

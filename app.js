@@ -17,7 +17,7 @@
       if (/^painel\.html/.test(h) && !a.target) { ev.preventDefault(); try { window.parent.postMessage({ vivere: 'fechar-janela' }, location.origin); } catch (e) { } }
     }, true);
   }
-  var VERSAO = 'app-vivere 2026-11-22.1'; // central de login: só a escolha de painel, HUB e site (tarefa vis-app-inicio-central-login) · antes: 'app-vivere 2026-11-19.1'; // melhorias 122 (só o V no cabeçalho) e 123 (menu lateral com animação leve) · antes: // aba Estudo de Mercado (ACM, tarefa vivere-parecer-preco-comparaveis)
+  var VERSAO = 'app-vivere 2026-11-22.2'; // Site sem os Destaques (ficam só no HUB) · 2026-11-22.1: central de login: só a escolha de painel, HUB e site (tarefa vis-app-inicio-central-login) · antes: 'app-vivere 2026-11-19.1'; // melhorias 122 (só o V no cabeçalho) e 123 (menu lateral com animação leve) · antes: // aba Estudo de Mercado (ACM, tarefa vivere-parecer-preco-comparaveis)
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -193,7 +193,7 @@
   }
   function cartaoSite() {
     if (!souDiretoria()) return '';
-    return '<div class="cartao"><h3>Site</h3><p>Atualizações e construções do site próprio' + (window.DESTAQUES && window.DESTAQUES.pode(estado.eu) ? ', com os destaques da home' : '') + '.</p><div class="linha-acoes"><button class="btn pri" id="irSite">Abrir o site</button></div></div>';
+    return '<div class="cartao"><h3>Site</h3><p>Atualizações e construções do site próprio.</p><div class="linha-acoes"><button class="btn pri" id="irSite">Abrir o site</button></div></div>';
   }
   function cartaoConta() {
     return '<div class="cartao"><h3>Minha conta</h3><p data-sens>' + esc(estado.eu.email) + '</p><div class="linha-acoes"><button class="btn" id="irSenha">Trocar senha</button><button class="btn" id="sair">Sair</button></div></div>';
@@ -234,17 +234,14 @@
     box.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { try { sessionStorage.removeItem('painel.volta'); sessionStorage.removeItem('painel.aba'); } catch (e) { } }); });
   }
 
-  /* Tela Site (22/11/2026): o site no ar, a prévia do site próprio, os destaques da home (gestor, Nícollas e William) e o
-     repositório das construções (só quem tem acesso no GitHub consegue abrir). */
+  /* Tela Site (22/11/2026): o site no ar, a prévia do site próprio e o repositório das construções (só quem tem acesso no
+     GitHub consegue abrir). Os destaques da home ficam só no HUB (pedido do Cleiton, 22/11/2026, 21h49). */
   function telaSite(main) {
     titulo('Site');
-    var dst = window.DESTAQUES && window.DESTAQUES.pode(estado.eu);
     main.innerHTML = grade([
       '<div class="cartao"><h3>Site próprio (novo)</h3><p>A versão nova, em construção, com o que já foi publicado.</p><div class="linha-acoes"><a class="btn pri" href="' + SITE_NOVO + '" target="_blank" rel="noopener">Abrir o site novo</a></div></div>',
       '<div class="cartao"><h3>Site atual</h3><p>O site no ar hoje, pelo Imobibrasil, até a virada do domínio.</p><div class="linha-acoes"><a class="btn" href="' + SITE_ATUAL + '" target="_blank" rel="noopener">Abrir o site atual</a></div></div>',
-      (dst ? '<div class="cartao"><h3>Destaques do site</h3><p>Escolha e ordene até 10 imóveis para a vitrine da home.</p><div class="linha-acoes"><button class="btn pri" id="irDestaques">Abrir os destaques</button></div></div>' : ''),
       '<div class="cartao"><h3>Construções e melhorias</h3><p>O código e as mudanças do site, no GitHub. Abre só para quem tem acesso ao repositório.</p><div class="linha-acoes"><a class="btn" href="' + SITE_GITHUB + '" target="_blank" rel="noopener">Abrir no GitHub</a></div></div>']);
-    if ($('#irDestaques')) $('#irDestaques').onclick = function () { estado.aba = 'destaques'; desenhar(); };
   }
 
   function contexto() { return { sb: sb, eu: estado.eu, sessaoUid: estado.sessao.user.id, esc: esc, toast: toast, titulo: titulo }; }

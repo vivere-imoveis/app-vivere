@@ -6,7 +6,7 @@
  "fora_por_serem_dados": [],
  "arquivos": {
   "hub-web.js": "f91fa1fe6b5ae230",
-  "index.html": "804d85075c450d23",
+  "index.html": "d8f4dd9f54db1ac7",
   "modulos/acm.js": "11d14bfb53c61b00",
   "modulos/app-vivere.js": "931a658f03d65dbe",
   "modulos/base-leads.js": "50324a52b7163808",
@@ -104,7 +104,7 @@
   "modulos/whatsapp-ia.js": "40144c865d007d64",
   "nucleo/nucleo-1.js": "6bdf5597ca821306",
   "nucleo/nucleo-2.js": "9b652a30ae103ad8",
-  "nucleo/nucleo-3.js": "697e40e2214f1042",
+  "nucleo/nucleo-3.js": "aa009c9e7c131ea3",
   "nucleo/nucleo-4.js": "349120117af86574",
   "nucleo/nucleo-5.js": "2ebf5e303ee7a497",
   "nucleo/nucleo-6.js": "19bd0efa85ba6032",
