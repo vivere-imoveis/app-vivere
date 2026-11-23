@@ -51,35 +51,57 @@
   };
 
   function estilo() { if (document.getElementById('ds-css')) return; const s = document.createElement('style'); s.id = 'ds-css';
-    s.textContent = `.ds-lista{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.ds-it{display:grid;grid-template-columns:28px 88px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+    // 22/11/2026 (rodada visual): grade como a home do site — 5 por linha nas telas largas, 2 no tablet, linha compacta no celular;
+    // as vagas livres viram cartões tracejados, para a grade fechar sempre em 10.
+    s.textContent = `.ds-topo h2{margin:0 0 2px}.ds-topo .nota{margin:0}
+.ds-grade{list-style:none;margin:0;padding:0;display:grid;gap:10px;grid-template-columns:repeat(5,minmax(0,1fr))}
+.ds-it{position:relative;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden;min-width:0}
 .ds-it[draggable=true]{cursor:grab}.ds-it.arrastando{opacity:.45}.ds-it.alvo{outline:2px dashed var(--accent);outline-offset:2px}
-.ds-it.fora{border-color:var(--warn);background:var(--warn-bg)}.ds-it.larga{border-style:dashed}
-.ds-n{font-weight:700;font-size:18px;text-align:center;color:var(--muted)}
-.ds-foto{width:88px;height:62px;border-radius:6px;object-fit:cover;background:var(--line);display:block}
-.ds-tx{min-width:0}.ds-tx b{font-size:14px}.ds-tx .s{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
-.ds-ac{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.ds-ac .btn{padding:3px 9px;min-width:34px}
-.ds-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}.ds-add input{flex:1;min-width:160px;max-width:260px}
-.ds-msg{margin:8px 0 0;font-size:13px}.ds-msg.erro{color:var(--bad)}.ds-msg.ok{color:var(--ok)}
-.ds-vaga{padding:10px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:13px}
-@media (max-width:560px){.ds-it{grid-template-columns:24px 72px minmax(0,1fr);}.ds-foto{width:72px;height:52px}.ds-ac{grid-column:1/-1;justify-content:flex-start}}`;
+.ds-it.fora{border-color:var(--warn);background:var(--warn-bg)}
+.ds-ft{position:relative;aspect-ratio:16/10;background:var(--line)}
+.ds-ft::before{content:"🏠";position:absolute;inset:0;display:grid;place-items:center;font-size:22px;opacity:.45}
+.ds-ft img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.ds-n{position:absolute;top:6px;left:6px;z-index:1;min-width:24px;height:24px;padding:0 6px;border-radius:12px;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.ds-larga{position:absolute;top:6px;right:6px;z-index:1;font-size:11px;padding:2px 6px;border-radius:8px;background:var(--panel);color:var(--muted)}
+.ds-tx{flex:1;padding:8px 10px 4px;min-width:0}.ds-tx .t{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.ds-tx .t b{font-size:14px}.ds-tx .p{font-size:13px;white-space:nowrap}
+.ds-tx .s{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ds-tx .av{font-size:12px;color:var(--warn);margin-top:2px}
+.ds-ac{display:flex;gap:4px;padding:4px 10px 8px}.ds-ac .btn{flex:1;padding:3px 0;min-width:0;display:grid;place-items:center;text-align:center;text-decoration:none;line-height:1.3}
+.ds-ac .v{display:none}
+.ds-vaga{border:1px dashed var(--line);border-radius:10px;display:grid;place-items:center;text-align:center;padding:14px 10px;color:var(--muted);font-size:12px;min-height:120px;position:relative}
+.ds-vaga b{display:block;font-size:13px;color:var(--ink);margin-bottom:2px}
+.ds-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.ds-add input{flex:0 1 260px;min-width:0;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit}
+.ds-msg{margin:6px 0 0;font-size:13px}.ds-msg.erro{color:var(--bad)}.ds-msg.ok{color:var(--ok)}.ds-msg.av{color:var(--warn)}
+@media (max-width:899px){.ds-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:639px){.ds-grade{grid-template-columns:1fr;gap:6px}
+ .ds-it{display:grid;grid-template-columns:72px minmax(0,1fr) auto;align-items:center}
+ .ds-ft{aspect-ratio:auto;height:100%;min-height:58px}.ds-n{top:4px;left:4px;min-width:20px;height:20px;font-size:12px}.ds-larga{display:none}
+ .ds-tx{padding:6px 8px}.ds-tx .t{display:block}.ds-tx .t b,.ds-tx .p{display:block}.ds-ac{padding:6px 8px 6px 0;gap:3px}.ds-ac .btn{width:30px;flex:none;padding:5px 0}.ds-ac .ver{display:none}.ds-ac .h{display:none}.ds-ac .v{display:inline}
+ .ds-vaga{min-height:0;padding:10px 10px 10px 36px;display:block;text-align:left}.ds-vaga .ds-n{top:8px!important}.ds-vaga b{display:inline;margin-right:4px}
+ .ds-add input{flex:1 1 160px}}`;
     document.head.appendChild(s); }
 
   function item(ref, i, n) {
-    const x = anuncioDe(ref); const ok = noSite(x); const larga = i >= 8;
-    const sub = x ? [x.tipo, x.bairro, /venda/i.test(x.finalidade || '') ? 'Venda' : (x.finalidade || '')].filter(Boolean).join(' · ') : 'não achei este código nos anúncios';
-    const aviso = !ok ? `<div class="s" style="color:var(--warn)">⚠️ Saiu do site${x && x.site_oculto === true ? ' (tirado do site)' : x ? ' (inativo no Imobibrasil)' : ''}: no site, a vaga vai para o imóvel à venda mais recente. Troque por outro.</div>` : '';
-    return `<li class="ds-it${ok ? '' : ' fora'}${larga ? ' larga' : ''}" draggable="true" data-ds-pos="${i}">
-      <span class="ds-n" title="Posição na vitrine">${i + 1}</span>
-      <img class="ds-foto" src="${FOTO + esc(String(ref).toLowerCase())}/01.jpg" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
-      <div class="ds-tx"><b>${x && x._id ? `<button class="ci-lk" data-ds-abre="${esc(x._id)}" title="Abrir o anúncio">${esc(ref)}</button>` : esc(ref)}</b>${x ? ' · ' + esc(preco(x.valor)) : ''}
-        <div class="s">${esc(sub)}${larga ? ' · só em telas largas' : ''}${ok ? ` · <a href="${SITE + esc(String(ref).toLowerCase())}" target="_blank" rel="noopener">ver no site</a>` : ''}</div>${aviso}</div>
+    const x = anuncioDe(ref); const ok = noSite(x);
+    const fin = x && x.finalidade && !/venda/i.test(x.finalidade) ? x.finalidade : '';
+    const sub = x ? [x.tipo, x.bairro, fin].filter(Boolean).join(' · ') : 'código não achado nos anúncios';
+    const aviso = !ok ? `<div class="av">⚠️ Saiu do site${x && x.site_oculto === true ? ' (tirado do site)' : x ? ' (inativo)' : ''}: no site entra o mais recente à venda. Troque.</div>` : '';
+    const dis = st.salvando ? ' disabled' : '';
+    return `<li class="ds-it${ok ? '' : ' fora'}" draggable="true" data-ds-pos="${i}">
+      <div class="ds-ft"><span class="ds-n" title="Posição na vitrine">${i + 1}</span>${i >= 8 ? '<span class="ds-larga" title="O 9º e o 10º só aparecem nas telas largas">telas largas</span>' : ''}
+        <img src="${FOTO + esc(String(ref).toLowerCase())}/01.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+      <div class="ds-tx"><div class="t"><b>${x && x._id ? `<button class="ci-lk" data-ds-abre="${esc(x._id)}" title="Abrir o anúncio no HUB">${esc(ref)}</button>` : esc(ref)}</b>${x ? `<span class="p">${esc(preco(x.valor))}</span>` : ''}</div>
+        <div class="s" title="${esc(sub)}">${esc(sub)}</div>${aviso}</div>
       <div class="ds-ac">
-        <button class="btn" data-ds-sobe="${i}" ${i === 0 || st.salvando ? 'disabled' : ''} title="Subir uma posição" aria-label="Subir ${esc(ref)}">↑</button>
-        <button class="btn" data-ds-desce="${i}" ${i === n - 1 || st.salvando ? 'disabled' : ''} title="Descer uma posição" aria-label="Descer ${esc(ref)}">↓</button>
-        <button class="btn" data-ds-tira="${esc(ref)}" ${st.salvando ? 'disabled' : ''} title="Tirar da vitrine" aria-label="Tirar ${esc(ref)}">✕</button>
+        <button class="btn" data-ds-sobe="${i}"${i === 0 ? ' disabled' : dis} title="Uma posição antes" aria-label="Pôr ${esc(ref)} uma posição antes"><span class="h">‹</span><span class="v">↑</span></button>
+        <button class="btn" data-ds-desce="${i}"${i === n - 1 ? ' disabled' : dis} title="Uma posição depois" aria-label="Pôr ${esc(ref)} uma posição depois"><span class="h">›</span><span class="v">↓</span></button>
+        ${ok ? `<a class="btn ver" href="${SITE + esc(String(ref).toLowerCase())}" target="_blank" rel="noopener" title="Ver no site" aria-label="Ver ${esc(ref)} no site">↗</a>` : ''}
+        <button class="btn" data-ds-tira="${esc(ref)}"${dis} title="Tirar da vitrine" aria-label="Tirar ${esc(ref)} da vitrine">✕</button>
       </div></li>`;
   }
+  const vaga = (i) => `<li class="ds-vaga"><span class="ds-n" style="position:absolute;top:6px;left:6px">${i + 1}</span><div><b>Vaga livre</b>no site, entra o imóvel à venda mais recente${i >= 8 ? ' (só telas largas)' : ''}</div></li>`;
 
   function render() {
     estilo();
@@ -88,18 +110,17 @@
       .sort((a, b) => String(b.cadastrado_em || '').localeCompare(String(a.cadastrado_em || '')))
       .map((x) => `<option value="${esc(String(x.ref).toUpperCase())}">${esc([x.tipo, x.bairro].filter(Boolean).join(' · '))}</option>`).join('');
     const vagas = MAX - L.length;
-    return `<div class="card"><h2 style="margin:0 0 4px">⭐ Destaques do site: ${L.length} de ${MAX}</h2>
-      <p class="nota" style="margin:0">Os imóveis de "Imóveis selecionados", na home do site, nesta ordem. Os 8 primeiros aparecem em todas as telas; o 9º e o 10º, só nas telas largas. Arraste ou use ↑ ↓ para ordenar. A mesma lista aparece no app (aba Destaques do site) e na ⭐ de Anúncios do site.</p>
-      ${d && d.em ? `<p class="nota" style="margin:4px 0 0">Última mudança: ${esc(d.por || '—')} · ${esc(quando(d.em))}</p>` : ''}
-      ${F.length ? `<p class="ds-msg" style="color:var(--warn)">⚠️ ${F.length === 1 ? '1 imóvel da lista saiu' : F.length + ' imóveis da lista saíram'} do site (${esc(F.join(', '))}): troque por outro.</p>` : ''}
+    return `<div class="card ds-topo"><h2>⭐ Destaques do site · ${L.length} de ${MAX}</h2>
+      <p class="nota">A vitrine "Imóveis selecionados" da home, nesta ordem. Arraste ou use as setas. Do 9º em diante, só nas telas largas. É a mesma lista do app e da ⭐ de Anúncios do site.</p>
+      ${d && d.em ? `<p class="nota">Última mudança: ${esc(d.por || '—')} · ${esc(quando(d.em))}</p>` : ''}
+      ${F.length ? `<p class="ds-msg av">⚠️ ${F.length === 1 ? '1 imóvel saiu' : F.length + ' imóveis saíram'} do site (${esc(F.join(', '))}): troque.</p>` : ''}
       ${st.erro ? `<p class="ds-msg erro" role="alert">${esc(st.erro)}</p>` : st.ok ? `<p class="ds-msg ok" role="status">✅ ${esc(st.ok)}</p>` : ''}
     </div>
-    <div class="card">${d === null && !H.S[C] ? '<p class="nota">Carregando…</p>' : ''}
-      <ol class="ds-lista" aria-label="Ordem da vitrine">${L.map((r, i) => item(r, i, L.length)).join('')}</ol>
-      ${vagas > 0 ? `<p class="ds-vaga" style="margin-top:8px">${vagas === 1 ? '1 vaga livre' : vagas + ' vagas livres'}: no site, ${vagas === 1 ? 'ela é preenchida' : 'elas são preenchidas'} pelos imóveis à venda mais recentes.</p>` : ''}
-      <div class="ds-add"><input id="ds-q" list="ds-opc" placeholder="Código do imóvel (ex.: AP408)" value="${esc(st.q)}" aria-label="Código do imóvel para pôr na vitrine" autocomplete="off" ${vagas <= 0 ? 'disabled' : ''}>
+    <div class="card">${!H.S[C] ? '<p class="nota">Carregando…</p>' : ''}
+      <ol class="ds-grade" aria-label="Ordem da vitrine">${L.map((r, i) => item(r, i, L.length)).join('')}${Array.from({ length: Math.max(0, vagas) }, (_, k) => vaga(L.length + k)).join('')}</ol>
+      <div class="ds-add"><input id="ds-q" type="search" list="ds-opc" placeholder="Código do imóvel (ex.: AP408)" value="${esc(st.q)}" aria-label="Código do imóvel para pôr na vitrine" autocomplete="off"${vagas <= 0 ? ' disabled' : ''}>
         <datalist id="ds-opc">${opcoes}</datalist>
-        <button class="btn pri" data-ds-poe="1" ${vagas <= 0 || st.salvando ? 'disabled' : ''}>Pôr na vitrine</button>
+        <button class="btn pri" data-ds-poe="1"${vagas <= 0 || st.salvando ? ' disabled' : ''}>Pôr na vitrine</button>
         ${vagas <= 0 ? '<span class="nota">Lista cheia: tire um para pôr outro.</span>' : ''}</div>
     </div>`;
   }
