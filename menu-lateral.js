@@ -10,7 +10,7 @@
   const ENCAMINHA = !!(document.currentScript && document.currentScript.hasAttribute('data-encaminha'));
   const ICONE = { inicio: 'casa', acaptar: 'alvo', tarefas: 'prancheta', leads: 'pessoas', pesquisa: 'lupa', imoveis: 'predio', empreendimentos: 'obra',
     mapa: 'mapa', oportunidades: 'etiqueta', demandas: 'lista', solicitacoes: 'balao', painel: 'blocos', senha: 'cadeado', acessos: 'escudo',
-    destaques: 'estrela', acm: 'grafico' };
+    destaques: 'estrela', acm: 'grafico', pendencias: 'alerta' };   /* tarefas-prazos */
   const icone = (aba, t) => window.VIVERE_ICONES && VIVERE_ICONES.html ? VIVERE_ICONES.html(ICONE[aba] || 'blocos') : esc(t.slice(0, 2));
   const LS = 'painel.menuModo', LSM = 'painel.menuMin';
   const ler = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -56,7 +56,7 @@
     const novo = abaApp + '@' + ex.map((x) => x.id + (x.n || '')).join(',') + '§' + gs.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + '#' + ss.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + (min ? 'm' : '');
     if (novo === sig) return; sig = novo;
     const subs = ss.filter((b) => !b.closest('#aba-app'));   /* imoveis-ofertas: sem a aba-mãe na 1ª posição; a cópia da aba do app fica de fora */
-    const PAI_APP = { semresp: 'oportunidades' }, paiApp = PAI_APP[abaApp] || '';   /* imoveis-ofertas: tela do app que é sub-aba de Imóveis */
+    const PAI_APP = { semresp: 'oportunidades', pendencias: 'tarefas' }, paiApp = PAI_APP[abaApp] || '';   /* imoveis-ofertas: tela do app que é sub-aba de Imóveis */
     const selG = (b) => abaApp ? b.dataset.aba === paiApp : b.getAttribute('aria-selected') === 'true';
     const selS = (s) => abaApp ? String(s.dataset.aba === abaApp) : s.getAttribute('aria-selected');
     /* 22/11/2026 (pedido do Cleiton): atalho que abre nesta mesma página e traz "apos" (ex.: Pendências → tarefas,

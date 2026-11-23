@@ -350,7 +350,7 @@ html.com-aba-app #conteudo,html.com-aba-app #barraQ{display:none!important}
 #aba-app[hidden]{display:none}
 #aba-app .aba-app-t{font:500 20px/1.25 var(--display);margin:4px 0 12px;letter-spacing:.02em;color:var(--ink)}
 #aba-app #app-nativo{max-width:none;margin:0;padding:0 0 40px}
-html.com-aba-app:not([data-aba-app="semresp"]) .abas button[aria-selected="true"]{color:var(--muted)!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+html.com-aba-app:not([data-aba-app="semresp"]):not([data-aba-app="pendencias"]) .abas button[aria-selected="true"]{color:var(--muted)!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important}
 .btn-tema[aria-current="page"]{border-color:var(--brass)!important;background:var(--soft)!important}
 .btn-so-mais{display:none!important}
 #aba-app .pend-tela{position:static;inset:auto;z-index:auto;background:none;display:block;padding:0;overflow:visible}

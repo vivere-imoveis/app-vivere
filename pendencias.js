@@ -293,7 +293,7 @@
   /* ---------- lateral (menu-lateral.js) ---------- */
   var E0 = window.MENU_LATERAL_EXTRAS || { itens: function () { return []; }, abre: function (h) { location.href = h; } };
   window.MENU_LATERAL_EXTRAS = {
-    itens: function () { var n = total(); return [{ id: 'pendencias', t: 'Pendências', ic: 'alerta', href: '#pendencias', apos: 'tarefas', n: n == null ? '' : String(n) }].concat(E0.itens ? E0.itens() || [] : []); },
+    itens: function () { return E0.itens ? E0.itens() || [] : []; },   /* tarefas-prazos (22/11/2026): Pendências virou sub-aba de Tarefas */
     abre: function (href) { if (href === '#pendencias') return entrar(); return E0.abre ? E0.abre(href) : (location.href = href); }
   };
 

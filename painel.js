@@ -1676,10 +1676,10 @@ const baImv = (m) => { const pr = m.proprietario || {}; return { txt: [m.ref, m.
   docs: [pr.celular, pr.cpf, m.cep], valores: [m.valor], nums: { dorm: m.dorm, suites: m.suites, banh: m.banh, vagas: m.vagas } }; };
 
 // sub-abas (03/11/2026): aba-mãe → [rótulo, filhas]; cada filha continua com a aba própria por baixo
-const SUBS_P = { oportunidades: ['Imóveis', [['pesquisa', 'Pesquisar'], ['imoveis', 'Meus imóveis'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['oportunidades', 'Ofertas'], ['semresp', 'Sem responsável'], ['demandas', 'Demandas extras'], ['demandas_auto', 'Demandas automáticas']]] }; /* trocas-redesenho-f1 */
+const SUBS_P = { tarefas: ['Tarefas', [['tarefas', 'Tarefas'], ['pendencias', 'Pendências']]], oportunidades: ['Imóveis', [['pesquisa', 'Pesquisar'], ['imoveis', 'Meus imóveis'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['oportunidades', 'Ofertas'], ['semresp', 'Sem responsável'], ['demandas', 'Demandas extras'], ['demandas_auto', 'Demandas automáticas']]] }; /* trocas-redesenho-f1 */
 const paiP = (k) => Object.keys(SUBS_P).find((m) => SUBS_P[m][1].some((x) => x[0] === k)) || '';
 function subOp() { const pai = SUBS_P[S.aba] ? S.aba : paiP(S.aba); if (!pai) return '';
-  const n = (k) => k === 'demandas' ? DEM.novas() + DEM.pedAbertos() : 0;
+  const n = (k) => k === 'demandas' ? DEM.novas() + DEM.pedAbertos() : k === 'pendencias' ? (+((document.querySelector('#btnPendApp .bp-n b') || {}).textContent) || 0) : 0;   // tarefas-prazos: nº de pendências na sub-aba
   const bt = (k, t) => `<button type="button" role="tab" data-aba="${k}" aria-pressed="${S.aba === k}" aria-selected="${S.aba === k}">${t}${n(k) ? ` (${n(k)})` : ''}</button>`;
   return `<div class="chips sub-op" role="tablist" aria-label="${esc(SUBS_P[pai][0])}" style="margin:0 0 12px">${SUBS_P[pai][1].some((x) => x[0] === pai) ? '' : bt(pai, SUBS_P[pai][0])}${SUBS_P[pai][1].map((x) => bt(x[0], x[1])).join('')}</div>`; }
 // ---------- Tarefas e lembretes (08/11/2026, pedido do Cleiton) ----------
@@ -2003,6 +2003,9 @@ function pintaConteudo(el, html) {
 let RL_EM = null;
 function renderLogo() { if (RL_EM) return; RL_EM = setTimeout(() => { RL_EM = null; render(); }, 40); }
 function render() {
+  // tarefas-prazos: enquanto o dono digita um prazo no Início, não redesenha (redesenha ao sair do campo)
+  const foco = document.activeElement; if (S.aba === 'inicio' && foco && /^pz_/.test(foco.id || '')) { if (!foco.dataset.rdEspera) { foco.dataset.rdEspera = '1'; foco.addEventListener('blur', () => { delete foco.dataset.rdEspera; renderLogo(); }, { once: true }); } return; }
+  if (S.aba === 'pendencias') { S.aba = 'tarefas'; try { sessionStorage.setItem('painel.aba', 'tarefas'); } catch (e) {} if (window.ABA_APP) setTimeout(() => window.ABA_APP.abre('pendencias'), 0); }   // tarefas-prazos: Pendências é sub-aba de Tarefas (tela do app)
   if (S.aba === 'semresp') { S.aba = 'imoveis'; try { sessionStorage.setItem('painel.aba', 'imoveis'); sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} if (window.PAINEL_DENTRO && PAINEL_DENTRO.ir) PAINEL_DENTRO.ir('index.html?aba=semresp'); else { location.href = 'index.html?aba=semresp'; return; } } // 19/11/2026: abre no app; 22/11/2026: na janela dentro do painel
   if (S.aba === 'acaptar') { S.aba = 'inicio'; try { sessionStorage.setItem('painel.aba', 'inicio'); sessionStorage.setItem('painel.volta', location.pathname.split('/').pop() + location.search); } catch (e) {} if (window.PAINEL_DENTRO && PAINEL_DENTRO.ir) PAINEL_DENTRO.ir(acapUrl()); else location.href = acapUrl(); }
   desenharAbas();
@@ -5490,7 +5493,8 @@ function vInicioRD() {
       <div class="rd-col1">${fila}</div>
       <div class="rd-col2">${numeros}${metas ? `<section class="rd-metas">${metas}</section>` : ''}</div>
     </div>
-    <p class="status">Dados atualizados em ${dt(S.info.atualizado_em)}. <button class="copiar" type="button" data-rd-prazos="">Prazos da Vivere e regras por etapa</button></p></section>`;
+    <section class="rd-prazos" style="margin-top:16px">${painelPrazos()}</section>
+    <p class="status">Dados atualizados em ${dt(S.info.atualizado_em)}.</p></section>`;   // tarefas-prazos: Prazos da Vivere no fim do Início
 }
 function gavetaPrazosRD() {
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Prazos da Vivere">
@@ -5500,16 +5504,17 @@ function gavetaPrazosRD() {
 vInicio = vInicioRD;
 document.addEventListener('toggle', (ev) => { const t = ev.target; if (!t || !t.matches || !t.matches('details[data-rd-g]')) return; const k = t.dataset.rdG; if (!S.rdAbertos) S.rdAbertos = new Set([...document.querySelectorAll('details[data-rd-g][open]')].map((d) => d.dataset.rdG)); if (t.open) S.rdAbertos.add(k); else S.rdAbertos.delete(k); }, true);
 document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-prazos]'); if (!t) return; ev.preventDefault(); window.VIVERE_RD.prazos(); });
+window.PAINEL_ABA = () => S.aba; window.PAINEL_IR = (k) => { S.aba = k; try { sessionStorage.setItem('painel.aba', k); } catch (e) {} render(); window.scrollTo(0, 0); };   // tarefas-prazos
 window.VIVERE_RD = { prazos: () => (window.ABA_APP ? window.ABA_APP.abre('prazos') : abrir('prazos')), htmlPrazos: () => painelPrazos() }; /* trocas-abas-app */
 // "Prazos da Vivere" também no Mais do celular (nav-celular.js espelha #btnPrazosApp) e na lateral do computador
 (function () {
   const poe = () => { const tema = document.getElementById('btnTema'); if (!tema || document.getElementById('btnPrazosApp')) return;
     const b = document.createElement('button'); b.type = 'button'; b.id = 'btnPrazosApp'; b.className = 'btn-tema btn-prazos-rd'; b.innerHTML = rdIc('livro') + 'Prazos da Vivere';
     b.addEventListener('click', () => window.VIVERE_RD.prazos()); tema.parentNode.insertBefore(b, tema); };
-  poe(); document.addEventListener('DOMContentLoaded', poe);
+  void poe;   // tarefas-prazos (22/11/2026): Prazos da Vivere fica no fim do Início; sem botão no cabeçalho nem no Mais
   document.addEventListener('DOMContentLoaded', () => {   // depois do painel-app.js e do pendencias.js, que montam a lista
     const E0 = window.MENU_LATERAL_EXTRAS;
-    window.MENU_LATERAL_EXTRAS = { itens: () => ((E0 && E0.itens ? E0.itens() || [] : [])).concat([{ id: 'prazos', t: 'Prazos da Vivere', ic: 'livro', href: '#prazos', apos: 'tarefas' }]),
+    window.MENU_LATERAL_EXTRAS = { itens: () => ((E0 && E0.itens ? E0.itens() || [] : [])).concat([]),   // tarefas-prazos: sem o item Prazos da Vivere na lateral
       abre: (h) => (h === '#prazos' ? window.VIVERE_RD.prazos() : E0 && E0.abre ? E0.abre(h) : (location.href = h)) };
     if (window.MenuLateral) MenuLateral.atualiza();
   });

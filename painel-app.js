@@ -53,7 +53,8 @@
   }
   function abreAbaApp(id) {
     if (NATIVO[id]) return abreNativo('index.html?aba=' + id);
-    if (id === 'pendencias' && window.PENDENCIAS && PENDENCIAS.abrirEm) { var c1 = abreAba('pendencias', 'Pendências', function () { PENDENCIAS.sairDaAba(); }); if (c1) PENDENCIAS.abrirEm(c1); return; }
+    if (id === 'pendencias' && window.PAINEL_ABA && window.PAINEL_IR && PAINEL_ABA() !== 'tarefas') return PAINEL_IR('pendencias');   /* tarefas-prazos: abre como sub-aba de Tarefas */
+    if (id === 'pendencias' && window.PENDENCIAS && PENDENCIAS.abrirEm) { var c1 = abreAba('pendencias', 'Pendências', function () { PENDENCIAS.sairDaAba(); }); if (c1) { PENDENCIAS.abrirEm(c1); subsNaAba(document.getElementById('aba-app'), 'pendencias'); } return; }
     if (id === 'vistorias' && window.VistoriaApp && VistoriaApp.abrirEm) { var c2 = abreAba('vistorias', 'Vistorias', function () { VistoriaApp.sairDaAba(); }); if (c2) VistoriaApp.abrirEm(c2); return; }
     if (id === 'prazos' && window.VIVERE_RD && VIVERE_RD.htmlPrazos) { var c3 = abreAba('prazos', 'Prazos da Vivere'); if (c3) c3.innerHTML = VIVERE_RD.htmlPrazos(); return; }
   }
@@ -115,7 +116,7 @@
     var raiz = ov.querySelector('#app-nativo');
     try {
       await carrega('app-nativo.css', true);
-      if (aba === 'semresp' && ABA.id === 'semresp') subsNaAba(ov);   /* imoveis-ofertas: o submenu de Imóveis continua à vista */
+      if (aba === 'semresp' && ABA.id === 'semresp') subsNaAba(ov, 'semresp');   /* imoveis-ofertas: o submenu de Imóveis continua à vista */
       if (!window[cfg[0]]) await carrega(cfg[1]);
       var P = VIVERE_PONTE.contextoApp();
       var ctx = { sb: P.sb, eu: P.eu, sessaoUid: P.sessaoUid, esc: escH,
@@ -132,10 +133,10 @@
   }
   /* imoveis-ofertas (22/11/2026): Sem responsável é sub-aba de Imóveis — a tela do app mostra a mesma fila de sub-abas,
      com Sem responsável marcada (no menu lateral a fila fica escondida, como as outras) */
-  function subsNaAba(h) {
+  function subsNaAba(h, id) {
     var s = document.querySelector('#conteudo .sub-op'); if (!s || !h || h.querySelector('.sub-op')) return;
     var c = s.cloneNode(true);
-    c.querySelectorAll('button[data-aba]').forEach(function (b) { var on = b.getAttribute('data-aba') === 'semresp'; b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-selected', String(on)); });
+    c.querySelectorAll('button[data-aba]').forEach(function (b) { var on = b.getAttribute('data-aba') === id; b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-selected', String(on)); });
     h.insertBefore(c, h.firstChild);
   }
   function ir(href) { if (nativo(href)) return abreNativo(href); if (embutivel(href)) return abreDentro(href); if (!DENTRO) return avisoFora(href); volta(); location.href = href; }
