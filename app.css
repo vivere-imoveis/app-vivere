@@ -235,3 +235,9 @@ body.ml-on.ml-min #ml .ml-topo{justify-content:center}
 html.embed header.topo,html.embed #ml,html.embed .ml-troca{display:none!important}
 html.embed body.ml-on,html.embed body{padding-left:0!important}
 html.embed main#conteudo{padding-top:14px}
+/* Central de login (22/11/2026): cartão dos painéis dos corretores ocupa a linha inteira; um botão por corretor */
+.grade-central>.cartao-largo{grid-column:1/-1}
+.lista-paineis{gap:6px}
+.lista-paineis .btn{font-size:13px;padding:6px 10px}
+@media (min-width:601px){.grade-central{grid-template-columns:repeat(var(--n,3),minmax(0,1fr))}}
+@media (max-width:600px){.grade-central>.estica-cel{grid-column:1/-1}}

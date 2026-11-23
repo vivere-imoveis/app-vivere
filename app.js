@@ -17,7 +17,7 @@
       if (/^painel\.html/.test(h) && !a.target) { ev.preventDefault(); try { window.parent.postMessage({ vivere: 'fechar-janela' }, location.origin); } catch (e) { } }
     }, true);
   }
-  var VERSAO = 'app-vivere 2026-11-19.1'; // melhorias 122 (só o V no cabeçalho) e 123 (menu lateral com animação leve) · antes: // aba Estudo de Mercado (ACM, tarefa vivere-parecer-preco-comparaveis)
+  var VERSAO = 'app-vivere 2026-11-22.1'; // central de login: só a escolha de painel, HUB e site (tarefa vis-app-inicio-central-login) · antes: 'app-vivere 2026-11-19.1'; // melhorias 122 (só o V no cabeçalho) e 123 (menu lateral com animação leve) · antes: // aba Estudo de Mercado (ACM, tarefa vivere-parecer-preco-comparaveis)
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -53,7 +53,7 @@
   var acmParams = abaParam === 'acm' ? { ref: (new URLSearchParams(location.search).get('ref') || '').trim().slice(0, 30), estudo: (new URLSearchParams(location.search).get('estudo') || '').trim().slice(0, 40) } : null;
   if (abaParam) history.replaceState(null, '', APP_URL + location.hash);
 
-  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'acessos' || abaParam === 'destaques' || abaParam === 'acm' || abaParam === 'semresp') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
+  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'acessos' || abaParam === 'destaques' || abaParam === 'acm' || abaParam === 'semresp' || abaParam === 'site') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
 
   sb.auth.onAuthStateChange(function (evento, sessao) {
     if (evento === 'PASSWORD_RECOVERY') modoSenha = true;
@@ -67,7 +67,7 @@
     var r = await sb.auth.getSession();
     estado.sessao = r.data.session;
     if (estado.sessao && !estado.eu) {
-      var q = await sb.from('acessos').select('email,nome,papel,painel,ativo').eq('user_id', estado.sessao.user.id).maybeSingle();
+      var q = await sb.from('acessos').select('email,nome,papel,painel,ativo,hub').eq('user_id', estado.sessao.user.id).maybeSingle();
       estado.eu = q.data || null;
       // painel oficial no app (depois do corte): só então quem não é gestor abre o próprio painel
       estado.oficial = false;
@@ -98,20 +98,25 @@
       main.innerHTML = '<div class="form cartao"><h2>Acesso não liberado</h2><div class="msg erro">Este login não tem acesso ativo ao app da Vivere. Fale com a diretoria.</div><button class="btn" id="sair">Sair</button></div>';
       $('#sair').onclick = sair; return;
     }
-    var lista = [['inicio', 'Início'], ['acaptar', 'A CAPTAR'], ['semresp', 'Imóveis sem responsável'], ['acm', 'Estudo de Mercado'], ['senha', 'Minha senha']]; /* 19/11/2026: aba Imóveis sem responsável */
-    /* quem veio do painel (aba A CAPTAR ou botão Captar) ganha a aba de volta para ele */
+    /* 22/11/2026 (pedido do Cleiton): esta página é a central de login. No Início não há menu: só os cartões de escolha
+       (painel, HUB, site e minha conta). As telas A CAPTAR, Estudo de Mercado, Sem responsável, Minha senha, Acessos e Destaques
+       continuam abrindo pelo endereço (?aba=…), que é como o painel as chama; nelas o menu mostra só a volta à central. */
     var volta = ''; try { volta = sessionStorage.getItem('painel.volta') || ''; } catch (e) { }
     if (!/^painel\.html(\?ver=[a-z0-9_-]{1,40})?$/.test(volta)) volta = '';
-    /* 14/11/2026 (pedido do Cleiton): "Meu painel" sempre no menu para quem já abre o painel (gestor sempre; corretor com o painel oficial). */
-    if (!volta && (estado.eu.papel === 'gestor' || estado.oficial)) volta = 'painel.html';
-    if (volta) lista.splice(1, 0, ['painel', volta.indexOf('?ver=') > 0 ? 'Painel · ' + esc(volta.split('?ver=')[1]) : 'Meu painel']);
-    /* 18/11/2026 (tarefa vis-site-23): Destaques do site para o gestor, o Nícollas e o William; o banco confere de novo */
     var dst = window.DESTAQUES && window.DESTAQUES.pode(estado.eu);
-    if (dst) lista.splice(lista.length - 1, 0, ['destaques', 'Destaques do site']);
-    if (estado.eu.papel === 'gestor') lista.push(['acessos', 'Acessos']);
-    abas.hidden = false;
-    abas.innerHTML = lista.map(function (a) { return '<button role="tab" data-aba="' + a[0] + '" aria-selected="' + (estado.aba === a[0]) + '">' + a[1] + '</button>'; }).join('');
-    abas.querySelectorAll('button').forEach(function (b) { b.onclick = function () { if (b.dataset.aba === 'painel') { location.href = volta; return; } estado.aba = b.dataset.aba; estado.link = null; estado.confirmar = null; desenhar(); }; });
+    var NOMES = { acaptar: 'A CAPTAR', semresp: 'Imóveis sem responsável', acm: 'Estudo de Mercado', senha: 'Minha senha', acessos: 'Acessos', destaques: 'Destaques do site', site: 'Site' };
+    if (estado.aba === 'site' && !souDiretoria()) estado.aba = 'inicio';
+    if (estado.aba === 'inicio' || !NOMES[estado.aba]) { estado.aba = 'inicio'; abas.hidden = true; abas.innerHTML = ''; }
+    else {
+      var lista = [['inicio', 'Central']];
+      if (estado.aba === 'destaques' && souDiretoria()) lista.push(['site', 'Site']);
+      lista.push([estado.aba, NOMES[estado.aba]]);
+      if (volta) lista.push(['painel', volta.indexOf('?ver=') > 0 ? 'Painel · ' + esc(volta.split('?ver=')[1]) : 'Voltar ao painel']);
+      abas.hidden = false;
+      abas.innerHTML = lista.map(function (a) { return '<button role="tab" data-aba="' + a[0] + '" aria-selected="' + (estado.aba === a[0]) + '">' + a[1] + '</button>'; }).join('');
+      abas.querySelectorAll('button').forEach(function (b) { b.onclick = function () { if (b.dataset.aba === 'painel') { location.href = volta; return; } estado.aba = b.dataset.aba; estado.link = null; estado.confirmar = null; desenhar(); }; });
+    }
+    if (estado.aba === 'site') return telaSite(main);
     if (estado.aba === 'senha') return telaSenha(main, false);
     if (estado.aba === 'acessos' && estado.eu.papel === 'gestor' && window.ACESSOS) return window.ACESSOS.tela(main, contexto()); /* 22/11/2026: acessos.js */
     if (estado.aba === 'destaques' && dst) return window.DESTAQUES.tela(main, contexto());
@@ -161,31 +166,84 @@
     });
   }
 
-  /* Painel do corretor no app: o gestor abre sempre (o dele e, pelo Ver como, o de cada um); quem não é gestor abre o próprio
-     depois que o painel dele for marcado como oficial (meu_painel_oficial, no corte de cada painel). */
+  /* ---------- Central (Início) — 22/11/2026 ----------
+     Corretor: o painel dele. Diretoria (diretor e gestor): o próprio painel (com a aba Gestor), a lista dos painéis dos
+     corretores (painel.html?ver=…, o banco confere de novo), o HUB VIVERE (quem tem a marca hub) e a tela Site.
+     Minha conta fica em todos; a segurança da conta (2FA, fatia 1) entra neste mesmo cartão. */
+  var SITE_NOVO = 'https://vivere-site.cleitonpazds.workers.dev/';
+  var SITE_ATUAL = 'https://www.viverenapraia.com.br/';
+  var SITE_GITHUB = 'https://github.com/vivere-imoveis/vivere-site';
+  function souDiretoria() { return !!estado.eu && (estado.eu.papel === 'gestor' || estado.eu.papel === 'diretor'); }
+  function abrePainel() { return estado.eu.papel === 'gestor' || estado.oficial; }
+  function irPainel(aba) { try { sessionStorage.removeItem('painel.volta'); if (aba) sessionStorage.setItem('painel.aba', aba); } catch (e) { } location.href = 'painel.html'; }
+
   function cartaoPainel() {
-    if (estado.eu.papel !== 'gestor' && estado.oficial) return '<div class="cartao"><h3>Meu painel</h3><p>Seus leads, imóveis, ofertas e tarefas.</p><div class="linha-acoes"><a class="btn pri" href="painel.html">Abrir o meu painel</a></div></div>';
-    if (estado.eu.papel !== 'gestor') return '<div class="cartao"><h3>Meu painel</h3><p>O seu painel do corretor vai abrir aqui, com o mesmo login.</p><span class="pill warn">Em construção</span></div>';
-    return '<div class="cartao"><h3>Meu painel</h3><p>O seu painel e, pelo Ver como, o de cada corretor.</p><div class="linha-acoes">' +
-      '<a class="btn pri" href="painel.html">Abrir o painel</a></div></div>';
+    if (estado.eu.papel === 'gestor') return '<div class="cartao"><h3>Painel do gestor</h3><p>A visão geral de todos os painéis e o seu painel.</p><div class="linha-acoes"><button class="btn pri" id="irGestor">Abrir o painel do gestor</button></div></div>';
+    if (abrePainel()) return '<div class="cartao"><h3>Meu painel</h3><p>' + (souDiretoria() ? 'O seu painel e a aba Gestor, com a visão de todos.' : 'Seus leads, imóveis, ofertas e tarefas.') + '</p><div class="linha-acoes"><button class="btn pri" id="irPainel">Abrir o meu painel</button></div></div>';
+    return '<div class="cartao"><h3>Meu painel</h3><p>O seu painel do corretor vai abrir aqui, com o mesmo login.</p><span class="pill warn">Em construção</span></div>';
+  }
+  function cartaoPaineis() {
+    if (!souDiretoria() || !abrePainel()) return '';
+    return '<div class="cartao cartao-largo"><h3>Painéis dos corretores</h3><p id="pnResumo">Carregando a lista…</p><div class="linha-acoes lista-paineis" id="pnLista"></div></div>';
+  }
+  function cartaoHub() {
+    if (!(estado.eu.papel === 'gestor' || estado.eu.hub)) return '';
+    return '<div class="cartao"><h3>HUB VIVERE</h3><p>Imóveis, locações, leads, metas e pendências da Vivere.</p><div class="linha-acoes"><a class="btn pri" href="hub/">Abrir o HUB</a></div></div>';
+  }
+  function cartaoSite() {
+    if (!souDiretoria()) return '';
+    return '<div class="cartao"><h3>Site</h3><p>Atualizações e construções do site próprio' + (window.DESTAQUES && window.DESTAQUES.pode(estado.eu) ? ', com os destaques da home' : '') + '.</p><div class="linha-acoes"><button class="btn pri" id="irSite">Abrir o site</button></div></div>';
+  }
+  function cartaoConta() {
+    return '<div class="cartao"><h3>Minha conta</h3><p data-sens>' + esc(estado.eu.email) + '</p><div class="linha-acoes"><button class="btn" id="irSenha">Trocar senha</button><button class="btn" id="sair">Sair</button></div></div>';
+  }
+
+  /* Grade sem espaço vazio (padrão de 08/11/2026): os cartões curtos ocupam uma linha só no computador (colunas = quantidade,
+     até 4) e, no celular (2 por linha), o último curto de uma quantidade ímpar estica até a borda. O cartão largo vem depois. */
+  function grade(curtos, largo) {
+    var L = curtos.filter(Boolean), n = Math.min(Math.max(L.length, 1), 4);
+    if (L.length % 2) L[L.length - 1] = L[L.length - 1].replace('<div class="cartao"', '<div class="cartao estica-cel"');
+    return '<div class="grade grade-central" style="--n:' + n + '">' + L.join('') + (largo || '') + '</div>';
   }
 
   function telaInicio(main) {
     titulo('Olá, ' + (estado.eu.nome || '').split(' ')[0]);
-    main.innerHTML = '<div class="grade">' +
-      cartaoPainel() +
-      '<div class="cartao"><h3>A CAPTAR</h3><p id="acResumo">Imóveis a captar: os livres e os seus.</p><button class="btn pri" id="irAcaptar">Abrir o A CAPTAR</button></div>' +
-      (window.ACM ? '<div class="cartao"><h3>Estudo de Mercado</h3><p id="acmResumo">Comparativo de preço do imóvel com 3 faixas, para vendedor ou comprador.</p><button class="btn pri" id="irAcm">Abrir os estudos</button></div>' : '') +
-      (window.DESTAQUES && window.DESTAQUES.pode(estado.eu) ? '<div class="cartao"><h3>Destaques do site</h3><p>Escolha até 8 anúncios para a vitrine da home do site.</p><button class="btn pri" id="irDestaques">Abrir os destaques</button></div>' : '') +
-      '<div class="cartao"><h3>Minha conta</h3><p data-sens>' + esc(estado.eu.email) + '</p><div class="linha-acoes"><button class="btn" id="irSenha">Trocar senha</button><button class="btn" id="sair">Sair</button></div></div>' +
-      '</div><p class="s" style="margin-top:24px">' + VERSAO + '</p>';
+    main.innerHTML = grade([cartaoPainel(), cartaoHub(), cartaoSite(), cartaoConta()], cartaoPaineis()) + '<p class="s" style="margin-top:24px">' + VERSAO + '</p>';
     $('#sair').onclick = sair;
     $('#irSenha').onclick = function () { estado.aba = 'senha'; desenhar(); };
-    $('#irAcaptar').onclick = function () { estado.aba = 'acaptar'; desenhar(); };
+    if ($('#irGestor')) $('#irGestor').onclick = function () { irPainel('gestor'); };
+    if ($('#irPainel')) $('#irPainel').onclick = function () { irPainel(''); };
+    if ($('#irSite')) $('#irSite').onclick = function () { estado.aba = 'site'; desenhar(); };
+    if ($('#pnLista')) listarPaineis();
+  }
+
+  /* Lista dos painéis: o mesmo registro controle/info que a aba Gestor usa. O banco só entrega à diretoria. */
+  async function listarPaineis() {
+    var r = await sb.from('painel_docs').select('painel,dados').eq('colecao', 'controle').eq('doc_id', 'info').neq('painel', '_comum').not('painel', 'like', 'u:%').not('painel', 'like', 'g:%').neq('painel', 'mestre')
+      .then(function (x) { return x; }, function () { return { error: true }; });
+    var p = $('#pnResumo'), box = $('#pnLista'); if (!p || !box) return;
+    if (!r || r.error) { p.textContent = 'Não deu para carregar a lista agora. Recarregue a página.'; return; }
+    var L = (r.data || []).filter(function (x) { return x.painel && x.painel !== estado.eu.painel; }).map(function (x) {
+      var d = x.dados || {}; return { slug: x.painel, nome: String(d.corretor || d.saudacao || x.painel).trim(), ordem: typeof d.ordem === 'number' ? d.ordem : 999 };
+    });
+    L.sort(function (a, b) { return a.ordem - b.ordem || a.nome.localeCompare(b.nome, 'pt-BR'); });
+    if (!L.length) { p.textContent = 'Nenhum painel de corretor ainda.'; return; }
+    p.textContent = L.length + ' painéis. Abra o de cada corretor (só leitura nos leads).';
+    box.innerHTML = L.map(function (x) { return '<a class="btn" href="painel.html?ver=' + encodeURIComponent(x.slug) + '">' + esc(x.nome) + '</a>'; }).join('');
+    box.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { try { sessionStorage.removeItem('painel.volta'); sessionStorage.removeItem('painel.aba'); } catch (e) { } }); });
+  }
+
+  /* Tela Site (22/11/2026): o site no ar, a prévia do site próprio, os destaques da home (gestor, Nícollas e William) e o
+     repositório das construções (só quem tem acesso no GitHub consegue abrir). */
+  function telaSite(main) {
+    titulo('Site');
+    var dst = window.DESTAQUES && window.DESTAQUES.pode(estado.eu);
+    main.innerHTML = grade([
+      '<div class="cartao"><h3>Site próprio (novo)</h3><p>A versão nova, em construção, com o que já foi publicado.</p><div class="linha-acoes"><a class="btn pri" href="' + SITE_NOVO + '" target="_blank" rel="noopener">Abrir o site novo</a></div></div>',
+      '<div class="cartao"><h3>Site atual</h3><p>O site no ar hoje, pelo Imobibrasil, até a virada do domínio.</p><div class="linha-acoes"><a class="btn" href="' + SITE_ATUAL + '" target="_blank" rel="noopener">Abrir o site atual</a></div></div>',
+      (dst ? '<div class="cartao"><h3>Destaques do site</h3><p>Escolha até 8 anúncios para a vitrine da home.</p><div class="linha-acoes"><button class="btn pri" id="irDestaques">Abrir os destaques</button></div></div>' : ''),
+      '<div class="cartao"><h3>Construções e melhorias</h3><p>O código e as mudanças do site, no GitHub. Abre só para quem tem acesso ao repositório.</p><div class="linha-acoes"><a class="btn" href="' + SITE_GITHUB + '" target="_blank" rel="noopener">Abrir no GitHub</a></div></div>']);
     if ($('#irDestaques')) $('#irDestaques').onclick = function () { estado.aba = 'destaques'; desenhar(); };
-    if ($('#irAcm')) $('#irAcm').onclick = function () { estado.aba = 'acm'; desenhar(); };
-    if (window.ACM) window.ACM.resumo(contexto()).then(function (r) { var p = $('#acmResumo'); if (p && r.total) p.textContent = r.total + ' estudo' + (r.total === 1 ? '' : 's') + (r.analise ? ' · ' + r.analise + ' em análise' : '') + '.'; }).catch(function () { });
-    if (window.ACAPTAR) window.ACAPTAR.resumo(contexto()).then(function (r) { var p = $('#acResumo'); if (p) p.textContent = r.livres + ' livres para captar · ' + r.minhas + ' em captação por você.'; }).catch(function () { });
   }
 
   function contexto() { return { sb: sb, eu: estado.eu, sessaoUid: estado.sessao.user.id, esc: esc, toast: toast, titulo: titulo }; }
