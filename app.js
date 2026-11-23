@@ -243,6 +243,23 @@
     if ($('#irPainel')) $('#irPainel').onclick = function () { irPainel(''); };
     if ($('#irSite')) $('#irSite').onclick = function () { estado.aba = 'site'; desenhar(); };
     if ($('#pnLista')) listarPaineis();
+    convite2fa(main);
+  }
+
+  /* 23/11/2026 (pedido do Cleiton: "oportunizar a todos fazerem o seu 2FA"): quem ainda não tem 2FA vê, no topo da
+     Central, o convite para ativar; "Depois" esconde por 7 dias neste aparelho */
+  async function convite2fa(main) {
+    try {
+      var adiado = +(localStorage.getItem('vivere-2fa-adiar') || 0); if (adiado > Date.now()) return;
+      var r = await sb.auth.mfa.listFactors(); if (r.error || ((r.data && r.data.totp) || []).length) return;
+      if (estado.aba !== 'inicio' || main.querySelector('.convite-2fa')) return;
+      var d = document.createElement('div'); d.className = 'cartao convite-2fa'; d.setAttribute('role', 'note');
+      d.innerHTML = '<h3>Proteja sua conta com a verificação em duas etapas</h3><p>Leva um minuto: você lê um QR Code com o Google ou o Microsoft Authenticator no celular, e o app passa a pedir também o código de 6 dígitos ao entrar. Marque "Lembrar este aparelho" para não precisar digitar toda hora.</p>' +
+        '<div class="linha-acoes"><button class="btn pri" type="button" data-2fa-ir>Ativar agora</button><button class="btn" type="button" data-2fa-depois>Depois</button></div>';
+      main.insertBefore(d, main.firstChild);
+      d.querySelector('[data-2fa-ir]').onclick = function () { estado.aba = 'seguranca'; desenhar(); };
+      d.querySelector('[data-2fa-depois]').onclick = function () { try { localStorage.setItem('vivere-2fa-adiar', String(Date.now() + 7 * 864e5)); } catch (e) { } d.remove(); };
+    } catch (e) { }
   }
 
   /* Lista dos painéis: o mesmo registro controle/info que a aba Gestor usa. O banco só entrega à diretoria. */

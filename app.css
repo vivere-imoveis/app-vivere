@@ -256,3 +256,8 @@ html.embed main#conteudo{padding-top:14px}
 .lembrar{display:flex!important;align-items:center;gap:8px;font-weight:500;margin-top:6px;cursor:pointer}
 .lembrar input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 18px}
 .lembrar-dica{margin:2px 0 8px}
+
+/* 23/11/2026 — convite para ativar o 2FA na Central */
+.convite-2fa{margin-bottom:14px;border-left:4px solid var(--ok,#2e7d5b)}
+.convite-2fa h3{margin:0 0 6px}
+.convite-2fa p{margin:0 0 10px}
