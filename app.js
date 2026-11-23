@@ -63,13 +63,19 @@
     if (mudou) setTimeout(iniciar, 0);
   });
 
+  /* aba deixada aberta: ao voltar a ela, confere de novo os 15 dias / o navegador aberto (revisor, 23/11/2026) */
+  document.addEventListener('visibilitychange', function () {
+    var AP = window.SEGURANCA && window.SEGURANCA.aparelho;
+    if (document.visibilityState === 'visible' && AP && estado.sessao && !modoSenha && !AP.valido()) iniciar();
+  });
+
   async function iniciar() {
     var r = await sb.auth.getSession();
     estado.sessao = r.data.session;
     /* 23/11/2026: aparelho de confiança (15 dias) ou só enquanto o navegador estiver aberto (seguranca.js › aparelho) */
     var AP = window.SEGURANCA && window.SEGURANCA.aparelho;
     if (AP && estado.sessao) {
-      if (modoSenha) AP.abrirSessao();   /* chegou pelo link do e-mail (convite ou nova senha) */
+      if (modoSenha) { AP.abrirSessao(); AP.semMigracao(); }   /* chegou pelo link do e-mail (convite ou nova senha) */
       else if (!AP.valido()) {
         var venceu = AP.expirou();   /* o app pode rodar o início duas vezes seguidas: o aviso dos 15 dias não é trocado pelo genérico */
         if (venceu || !estado.avisoEntrar) estado.avisoEntrar = venceu ? 'Passaram ' + AP.DIAS + ' dias neste aparelho: entre de novo com a senha (e o código, se tiver 2FA).' : 'Por segurança, entre de novo.';

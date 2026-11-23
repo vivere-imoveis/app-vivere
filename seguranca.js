@@ -57,6 +57,8 @@
       else { gravarLembrar({ ate: 0 }); try { localStorage.removeItem(CHAVE_EMAIL); } catch (e) { } }
     },
     pendente: function () { return !!aparelho.escolha(); },
+    /* chegou pelo link do e-mail num aparelho sem a chave: não é quem já estava conectado, então não ganha os 15 dias */
+    semMigracao: function () { if (lerLembrar() === null) gravarLembrar({ ate: 0 }); },
     esquecer: function () { gravarLembrar({ ate: 0 }); cookieSessao(false); try { sessionStorage.removeItem(ESCOLHA); } catch (e) { } },
     email: function () { try { return localStorage.getItem(CHAVE_EMAIL) || ''; } catch (e) { return ''; } },
     lembrado: function () { var l = lerLembrar(); return !!(l && l.ate && l.ate > Date.now() && !l.migrado); },
