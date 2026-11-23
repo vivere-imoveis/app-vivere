@@ -43,9 +43,14 @@
       D.capas = m;
     } catch (e) { /* sem capa, a lista segue */ }
   }
+  /* 23/11/2026: foto que não carrega vira o 🏠, sem atributo onerror (a política de segurança do app bloqueia código dentro do HTML) */
+  document.addEventListener('error', function (e) {
+    var t = e.target; if (!t || t.tagName !== 'IMG' || !t.dataset || !t.dataset.dstFalha) return;
+    var s = document.createElement('span'); s.className = t.dataset.dstFalha + ' sem'; s.setAttribute('aria-hidden', 'true'); s.textContent = '🏠'; t.replaceWith(s);
+  }, true);
   function capa(x, cls) {
     var u = D.capas[String(x.ref || '').toLowerCase()];
-    return u ? '<img class="' + cls + '" src="' + esc(u) + '" alt="" loading="lazy" onerror="this.outerHTML=\'<span class=&quot;' + cls + ' sem&quot; aria-hidden=&quot;true&quot;>🏠</span>\'">'
+    return u ? '<img class="' + cls + '" src="' + esc(u) + '" alt="" loading="lazy" data-dst-falha="' + cls + '">'
       : '<span class="' + cls + ' sem" title="Anúncio sem foto no site" aria-hidden="true">🏠</span>';
   }
   function estilo() {

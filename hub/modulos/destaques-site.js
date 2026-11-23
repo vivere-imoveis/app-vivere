@@ -83,6 +83,8 @@
  .ds-add input{flex:1 1 160px}}`;
     document.head.appendChild(s); }
 
+  /* 23/11/2026: foto que não carrega some, sem atributo onerror (a política de segurança da página bloqueia código dentro do HTML) */
+  if (!window.__dsFalha) { window.__dsFalha = true; document.addEventListener('error', (e) => { const t = e.target; if (t && t.tagName === 'IMG' && t.dataset && t.dataset.dsFalha) t.remove(); }, true); }
   function item(ref, i, n) {
     const x = anuncioDe(ref); const ok = noSite(x);
     const fin = x && x.finalidade && !/venda/i.test(x.finalidade) ? x.finalidade : '';
@@ -91,7 +93,7 @@
     const dis = st.salvando ? ' disabled' : '';
     return `<li class="ds-it${ok ? '' : ' fora'}" draggable="true" data-ds-pos="${i}">
       <div class="ds-ft"><span class="ds-n" title="Posição na vitrine">${i + 1}</span>${i >= 8 ? '<span class="ds-larga" title="O 9º e o 10º só aparecem nas telas largas">telas largas</span>' : ''}
-        <img src="${FOTO + esc(String(ref).toLowerCase())}/01.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <img src="${FOTO + esc(String(ref).toLowerCase())}/01.jpg" alt="" loading="lazy" data-ds-falha="1"></div>
       <div class="ds-tx"><div class="t"><b>${x && x._id ? `<button class="ci-lk" data-ds-abre="${esc(x._id)}" title="Abrir o anúncio no HUB">${esc(ref)}</button>` : esc(ref)}</b>${x ? `<span class="p">${esc(preco(x.valor))}</span>` : ''}</div>
         <div class="s" title="${esc(sub)}">${esc(sub)}</div>${aviso}</div>
       <div class="ds-ac">
