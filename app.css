@@ -261,3 +261,7 @@ html.embed main#conteudo{padding-top:14px}
 .convite-2fa{margin-bottom:14px;border-left:4px solid var(--ok,#2e7d5b)}
 .convite-2fa h3{margin:0 0 6px}
 .convite-2fa p{margin:0 0 10px}
+
+/* 23/11/2026 — captcha da Cloudflare no login (captcha.js) */
+.captcha:empty{display:none}
+.captcha{margin:2px 0;max-width:100%;overflow:hidden}
