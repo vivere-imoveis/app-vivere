@@ -6,7 +6,7 @@
 (function () {
   'use strict';
   var BARRA = [['inicio', 'Início'], ['leads', 'Leads'], ['tarefas', 'Tarefas'], ['oportunidades', 'Imóveis']]; /* trocas-redesenho-f1 */
-  var ATALHOS = ['btnAcapApp', 'btnAcmApp', 'btnVistApp', 'btnSenhaApp', 'btnAcessosApp', 'btnHubApp', 'btnPrivado', 'btnTema', 'btnInicio'];
+  var ATALHOS = ['btnAcapApp', 'btnAcmApp', 'btnVistApp', 'btnSenhaApp', 'btnSegApp', 'btnAcessosApp', 'btnHubApp', 'btnPrivado', 'btnTema', 'btnInicio'];
   var SVG = {
     lupa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>',

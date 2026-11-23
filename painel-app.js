@@ -12,14 +12,14 @@
      painel, sem sair dele. Só no app: no PAINEL DO GESTOR do claude.ai (window.__artefatoLoja) seguem abrindo fora. */
   var DENTRO = !window.__artefatoLoja;
   function embutivel(href) { return DENTRO && /^(index\.html\?aba=|hub\/)/.test(href || ''); }
-  var NOMES = { acaptar: 'A CAPTAR', acm: 'Estudo de Mercado', senha: 'Minha senha', acessos: 'Acessos', semresp: 'Imóveis sem responsável', destaques: 'Destaques' };
+  var NOMES = { acaptar: 'A CAPTAR', acm: 'Estudo de Mercado', senha: 'Minha senha', seguranca: 'Segurança (2FA)', acessos: 'Acessos', semresp: 'Imóveis sem responsável', destaques: 'Destaques' };
   function fechaDentro() { var f = fechaAba(); var ov = document.getElementById('app-dentro'); if (!ov) return f; ov.remove(); document.documentElement.classList.remove('com-janela'); lerVivo(); return true; }
   /* 22/11/2026 (pedido do Cleiton: "tudo dentro de um único aplicativo"): Pendências, Prazos da Vivere, Vistorias, Estudo de
      Mercado, A CAPTAR, Sem responsável, Minha senha e Acessos abrem como ABA NORMAL na área de conteúdo — mesmo lugar das
      outras abas, item marcado no menu, sem janela por cima e sem "Fechar". Tocar em qualquer aba do painel volta a ele.
      Só o HUB VIVERE continua à parte (outro artefato). */
   var ABA = { id: '', fecha: null };
-  var BTN_ABA = { acaptar: 'btnAcapApp', acm: 'btnAcmApp', pendencias: 'btnPendApp', vistorias: 'btnVistApp', prazos: 'btnPrazosApp', senha: 'btnSenhaApp', acessos: 'btnAcessosApp' };
+  var BTN_ABA = { acaptar: 'btnAcapApp', acm: 'btnAcmApp', pendencias: 'btnPendApp', vistorias: 'btnVistApp', prazos: 'btnPrazosApp', senha: 'btnSenhaApp', seguranca: 'btnSegApp', acessos: 'btnAcessosApp' };
   function hostAba() {
     var h = document.getElementById('aba-app');
     if (!h) { var c = document.getElementById('conteudo'); if (!c || !c.parentNode) return null; h = document.createElement('section'); h.id = 'aba-app'; h.setAttribute('role', 'tabpanel'); h.hidden = true; c.parentNode.insertBefore(h, c.nextSibling); }
@@ -52,7 +52,7 @@
     return h.querySelector('.aba-app-corpo');
   }
   function abreAbaApp(id) {
-    if (NATIVO[id]) return abreNativo('index.html?aba=' + id);
+    if (NATIVO[id]) return ir('index.html?aba=' + id);   /* 23/11/2026: ir() decide entre nativo, janela e link de fora (Segurança no Gestor) */
     if (id === 'pendencias' && window.PAINEL_ABA && window.PAINEL_IR && PAINEL_ABA() !== 'tarefas') return PAINEL_IR('pendencias');   /* tarefas-prazos: abre como sub-aba de Tarefas */
     if (id === 'pendencias' && window.PENDENCIAS && PENDENCIAS.abrirEm) { var c1 = abreAba('pendencias', 'Pendências', function () { PENDENCIAS.sairDaAba(); }); if (c1) { PENDENCIAS.abrirEm(c1); subsNaAba(document.getElementById('aba-app'), 'pendencias'); } return; }
     if (id === 'vistorias' && window.VistoriaApp && VistoriaApp.abrirEm) { var c2 = abreAba('vistorias', 'Vistorias', function () { VistoriaApp.sairDaAba(); }); if (c2) VistoriaApp.abrirEm(c2); return; }
@@ -95,7 +95,7 @@
   /* 22/11/2026 (pedido do Cleiton: "tudo dentro de um único aplicativo"): A CAPTAR, Estudo de Mercado e Imóveis sem
      responsável rodam NATIVOS dentro do painel (mesmos módulos do app: acaptar.js, acm.js, semresp.js, carregados na hora,
      com o CSS do app restrito à janela em app-nativo.css). Vale no app e no PAINEL DO GESTOR do claude.ai. */
-  var NATIVO = { acaptar: ['ACAPTAR', 'acaptar.js'], acm: ['ACM', 'acm.js'], semresp: ['SEMRESP', 'semresp.js'], senha: ['SENHA', 'senha.js'], acessos: ['ACESSOS', 'acessos.js'] }; /* 22/11/2026: Minha senha e Acessos também nativos (no Gestor pela ponte do conector) */
+  var NATIVO = { acaptar: ['ACAPTAR', 'acaptar.js'], acm: ['ACM', 'acm.js'], semresp: ['SEMRESP', 'semresp.js'], senha: ['SENHA', 'senha.js'], seguranca: ['SEGURANCA', 'seguranca.js'], acessos: ['ACESSOS', 'acessos.js'] }; /* 22/11/2026: Minha senha e Acessos também nativos (no Gestor pela ponte do conector) */
   var carregados = {};
   /* 23/11/2026: as telas carregadas na hora (Acessos, Minha senha, A CAPTAR…) vinham sem ?v= e o navegador podia usar a
      cópia antiga depois de uma publicação; a versão de cada uma fica no <meta name="vivere-nativos"> do painel.html */
@@ -115,7 +115,8 @@
     return carregados[src];
   }
   function abaDe(href) { return (/aba=([a-z]+)/.exec(href || '') || [])[1] || ''; }
-  function nativo(href) { return !!NATIVO[abaDe(href)] && !!(window.VIVERE_PONTE && VIVERE_PONTE.contextoApp); }
+  /* 23/11/2026: Segurança (2FA) nativa só no app; no PAINEL DO GESTOR do claude.ai o 2FA não passa pela ponte do conector → abre no app */
+  function nativo(href) { var a = abaDe(href); return !!NATIVO[a] && !(a === 'seguranca' && window.__artefatoLoja) && !!(window.VIVERE_PONTE && VIVERE_PONTE.contextoApp); }
   function escH(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   async function abreNativo(href) {
     var aba = abaDe(href), cfg = NATIVO[aba], t = NOMES[aba] || 'App';
@@ -184,7 +185,7 @@
       tema.parentNode.insertBefore(m, tema);
     }
     /* 22/11/2026: Minha senha e Acessos também no Mais do celular (o nav-celular.js espelha estes botões, que ficam escondidos no topo) */
-    [['btnSenhaApp', 'senha', 'cadeado', 'Minha senha', true], ['btnAcessosApp', 'acessos', 'escudo', 'Acessos', (P0e().papel === 'gestor')]].forEach(function (x) {
+    [['btnSenhaApp', 'senha', 'cadeado', 'Minha senha', true], ['btnSegApp', 'seguranca', 'escudo', 'Segurança (2FA)', true], ['btnAcessosApp', 'acessos', 'escudo', 'Acessos', (P0e().papel === 'gestor')]].forEach(function (x) {
       if (!x[4] || document.getElementById(x[0])) return;
       var bt = document.createElement('button'); bt.type = 'button'; bt.id = x[0]; bt.className = 'btn-tema btn-so-mais'; bt.title = x[3]; bt.setAttribute('aria-label', x[3]);
       bt.innerHTML = (window.VIVERE_ICONES && VIVERE_ICONES.html ? '<span class="ba-ic" aria-hidden="true">' + VIVERE_ICONES.html(x[2]) + '</span>' : '') + '<span class="ba-t">' + x[3] + '</span>';
@@ -213,7 +214,7 @@
     itens: function () {
       var P = window.VIVERE_PONTE, est = P && P.estado ? P.estado() : {}, sel = document.querySelector('#abas button[data-aba="acaptar"] .n-acap');
       var n = vivo != null ? String(vivo) : sel ? String(sel.textContent || '').trim() : '';
-      var L = [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n, dentro: true }, { id: 'acm', t: 'Estudo de Mercado', ic: 'grafico', href: 'index.html?aba=acm', apos: 'oportunidades', dentro: true }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha', dentro: true },
+      var L = [{ id: 'acaptar', t: 'A CAPTAR', ic: 'alvo', href: URL_ACAP, n: n, dentro: true }, { id: 'acm', t: 'Estudo de Mercado', ic: 'grafico', href: 'index.html?aba=acm', apos: 'oportunidades', dentro: true }, { id: 'senha', t: 'Minha senha', ic: 'cadeado', href: 'index.html?aba=senha', dentro: true }, { id: 'seguranca', t: 'Segurança (2FA)', ic: 'escudo', href: 'index.html?aba=seguranca', dentro: true },
         est.hub ? { id: 'hub', t: 'HUB VIVERE', ic: 'casa', href: 'hub/', dentro: DENTRO, grupo: 'gestao' } : null,
         est.papel === 'gestor' ? { id: 'acessos', t: 'Acessos', ic: 'escudo', href: 'index.html?aba=acessos', dentro: true, grupo: 'gestao' } : null];
       /* 22/11/2026: no PAINEL DO GESTOR (claude.ai) cada atalho do app vira link de verdade (url), que abre fora */
@@ -277,7 +278,7 @@
    data-aba, para o menu lateral, a barra do celular e a troca de abas do painel não os contarem. */
 (function () {
   'use strict';
-  var ITENS = [['btnSenhaApp', 'senha', 'cadeado', 'Minha senha'], ['btnAcessosApp', 'acessos', 'escudo', 'Acessos']];
+  var ITENS = [['btnSenhaApp', 'senha', 'cadeado', 'Minha senha'], ['btnSegApp', 'seguranca', 'escudo', 'Segurança (2FA)'], ['btnAcessosApp', 'acessos', 'escudo', 'Acessos']];
   function topoPc() { var b = document.body; return innerWidth >= 1024 && b && !b.classList.contains('ml-on') && !b.classList.contains('nc-on'); }
   function atual() { return window.ABA_APP && ABA_APP.atual ? ABA_APP.atual() : ''; }
   var mexendo = false;

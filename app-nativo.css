@@ -167,3 +167,13 @@ html[data-privado="1"] #app-nativo [data-sens]{filter:blur(6px);user-select:none
 #app-nativo .resumo-ac>div:nth-child(n+4){grid-column:span 3!important}
 #app-nativo .resumo-ac b{font-size:19px!important}
 #app-nativo .resumo-ac span{display:block;font-size:11px;line-height:1.2}}
+
+/* 23/11/2026 — Segurança (2FA) dentro do painel (mesmas regras do app.css, restritas à janela) */
+#app-nativo .campo-codigo{font-size:22px!important;letter-spacing:.35em;text-align:center;font-variant-numeric:tabular-nums;max-width:220px}
+#app-nativo .seg2fa .qr-caixa{display:flex;justify-content:center;margin:12px 0}
+#app-nativo .seg2fa .qr-caixa img{width:200px;height:200px;background:#fff;padding:10px;border-radius:10px;border:1px solid var(--linha,#ddd)}
+#app-nativo .seg2fa .chave-2fa{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;word-break:break-all}
+#app-nativo .seg2fa .fatores{list-style:none;padding:0;margin:10px 0;display:grid;gap:8px}
+#app-nativo .seg2fa .fator{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--linha,#ddd);border-radius:8px}
+#app-nativo .seg2fa .fator .s{display:block}
+#app-nativo .seg2fa .passos{padding-left:20px;margin:8px 0 14px}
