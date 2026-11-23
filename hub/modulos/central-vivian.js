@@ -8,7 +8,7 @@
 (function () {
   'use strict';
   const H = window.HUB; if (!H) return;
-  const ID = 'central-vivian', SERV = 'Vivere Conversas', VERSAO = '2026-11-23.1';
+  const ID = 'central-vivian', SERV = 'Vivere Conversas', VERSAO = '2026-11-23.2';
   const HUB_CLAUDE = 'https://claude.ai/artifact/LR3j38He26qquNQHKunkMx';
   const WEB = () => !!window.__hubWebSb;
   const E = { quadro: null, altura: 0 };
@@ -16,7 +16,7 @@
   function render() {
     if (WEB()) return `<div class="nota" style="padding:16px;line-height:1.5"><b>Central da Vivian</b><br>
       Conversas, regras, cadernos e pedidos dos corretores passam pelo conector do Claude, que só existe no HUB do claude.ai.<br>
-      <a href="${HUB_CLAUDE}" target="_blank" rel="noopener">Abrir o HUB no claude.ai ↗</a> e ir em Leads › Central da Vivian.</div>`;
+      <a href="${HUB_CLAUDE}" target="_blank" rel="noopener">Abrir o HUB no claude.ai ↗</a> e ir em Equipe › Central da Vivian.</div>`;
     setTimeout(posiciona, 0);
     return '<div id="cv-ancora" style="min-height:70vh"></div>';
   }
@@ -66,6 +66,6 @@
   gestor().then((ok) => {
     if (!ok) return;
     if (!WEB()) { setInterval(posiciona, 250); addEventListener('resize', posiciona); addEventListener('scroll', posiciona, { passive: true }); }
-    H.registrar({ id: ID, aba: '💬 Central da Vivian', grupo: 'crm', depois: 'whatsapp-ia', colecoes: [], render, versao: VERSAO, busca() { return []; } });
+    H.registrar({ id: ID, aba: '💬 Central da Vivian', grupo: 'equipe', depois: 'whatsapp-ia', colecoes: [], render, versao: VERSAO, busca() { return []; } });
   }).catch(() => { /* sem acesso: a aba não nasce */ });
 })();
