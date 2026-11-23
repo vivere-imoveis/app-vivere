@@ -1,8 +1,8 @@
 {
- "hub_versao": "1795450621-08af",
+ "hub_versao": "1795451183-2ef7",
  "index_original_sha16": "8d9ba93a63edd033",
  "nucleos": 7,
- "montado_em": "2026-11-23T13:17-03:00",
+ "montado_em": "2026-11-23T13:26-03:00",
  "fora_por_serem_dados": [],
  "arquivos": {
   "hub-web.js": "1bbdb1558815e55b",
@@ -98,7 +98,7 @@
   "modulos/perto-imovel.js": "75404c05448b383c",
   "modulos/pessoas.js": "1ff7a791f2792038",
   "modulos/portais.js": "8783834b855f66cb",
-  "modulos/registros.js": "a153b2bcba34d6e1",
+  "modulos/registros.js": "5de5d20a9f7e37d2",
   "modulos/regua-cobranca.js": "67af75ea35730102",
   "modulos/relatorios-crm.js": "fd0e6fa803e47eb8",
   "modulos/relatorios.js": "069b529df11f4d15",
