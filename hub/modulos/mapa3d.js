@@ -8,11 +8,13 @@
      const m = await VivereMapa3D.montar(elemento, { aoClicar(id) { return html_do_cartao_ou_null; }, aoFalhar(msg) {} });
      m.pontos([{ id, lat, lng, cor, aprox, destaque, emp, titulo }]);   // cor aceita var(--x)
      m.focar(id); m.redimensionar(); m.destruir();
+     m.tour(id);   // Tour 3D: voa até o ponto e gira a câmera em volta (para ao tocar no mapa; sem giro com "reduzir movimento")
+     m.perto(id);  // O que há por perto: liga as camadas de praias, mercados, escolas… (OpenStreetMap, sem custo) com o ponto como referência
    A biblioteca (MapLibre 5.24.1, versão "csp", com o worker em arquivo próprio) fica hospedada só no app (GitHub Pages,
    pasta vendor/): o HUB e o painel a carregam pelo endereço VENDOR abaixo, inclusive no claude.ai. */
 (function () {
   if (window.VivereMapa3D) return;
-  const VERSAO = '2026-11-23.4';
+  const VERSAO = '2026-11-23.5';
   const VENDOR = 'https://vivere-imoveis.github.io/app-vivere/vendor/';
   const ESTILO = { claro: 'https://tiles.openfreemap.org/styles/positron', escuro: 'https://tiles.openfreemap.org/styles/dark' };
   const RELEVO = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png';
@@ -34,9 +36,38 @@
       + '.m3d-pop.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,.m3d-pop.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,.m3d-pop.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip{border-top-color:var(--panel,#fff)}'
       + '.m3d-pop.maplibregl-popup-anchor-top .maplibregl-popup-tip,.m3d-pop.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,.m3d-pop.maplibregl-popup-anchor-top-right .maplibregl-popup-tip{border-bottom-color:var(--panel,#fff)}'
       + '.m3d-pop.maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--panel,#fff)}.m3d-pop.maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:var(--panel,#fff)}'
+      + '.m3d-parar{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:3;border:1px solid var(--line,#d5d9e0);border-radius:999px;background:var(--panel,#fff);color:var(--ink,#1c2739);font:inherit;font-size:13px;font-weight:600;padding:7px 14px;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer}.m3d-parar[hidden]{display:none}'
+      + '.m3d-perto{position:absolute;top:10px;right:10px;z-index:3;max-width:calc(100% - 64px);display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:13px}'
+      + '.m3d-perto-b{border:1px solid var(--line,#d5d9e0);border-radius:999px;background:var(--panel,#fff);color:var(--ink,#1c2739);font:inherit;font-weight:600;padding:6px 12px;box-shadow:0 3px 10px rgba(0,0,0,.15);cursor:pointer}.m3d-perto-b[aria-expanded=true]{border-color:var(--brass,#b08d57)}'
+      + '.m3d-perto-p{width:290px;max-width:100%;max-height:calc(100% - 20px);overflow:auto;background:var(--panel,#fff);color:var(--ink,#1c2739);border:1px solid var(--line,#d5d9e0);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.18);padding:10px 12px}.m3d-perto-p[hidden]{display:none}'
+      + '.m3d-perto-t{font-weight:700;margin:0 0 6px}.m3d-perto-c{display:flex;flex-wrap:wrap;gap:5px}.m3d-perto-c button{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line,#d5d9e0);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:12px;padding:4px 9px;cursor:pointer;opacity:.62}'
+      + '.m3d-perto-c button[aria-pressed=true]{opacity:1;border-color:currentColor;font-weight:600}.m3d-perto-c i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}'
+      + '.m3d-perto-l{margin:8px 0 0;padding:0;list-style:none}.m3d-perto-l li{display:flex;gap:6px;align-items:baseline;padding:3px 0;border-top:1px solid var(--line,#e4e7ec);font-size:12px;line-height:1.35}.m3d-perto-l li:first-child{border-top:0}.m3d-perto-l b{white-space:nowrap}.m3d-perto-l span{flex:1;min-width:0;overflow-wrap:anywhere}.m3d-perto-l em{font-style:normal;white-space:nowrap;color:var(--muted,#6b7280)}'
+      + '.m3d-perto-r,.m3d-perto-n{margin:6px 0 0;font-size:11px;color:var(--muted,#6b7280)}@media (max-width:560px){.m3d-perto-p{width:250px}}'
       + '.m3d-caixa .maplibregl-ctrl-attrib{font-size:10px;background:color-mix(in srgb,var(--panel,#fff) 88%,transparent)!important;color:var(--muted,#667)}.m3d-caixa .maplibregl-ctrl-attrib a{color:inherit}';
     document.head.appendChild(st);
   })();
+
+  // O que há por perto (23/11/2026, fatia 3): pontos de interesse do próprio OpenFreeMap (OpenStreetMap), camada 'poi', e as
+  // faixas de areia (camada 'landcover', subclasse beach, sem nome). Sem chave nem custo. Escolha dos tipos guardada no aparelho.
+  const TIPOS = [
+    { id: 'praia', nome: 'Praias', cor: '#d9a520' },
+    { id: 'mercado', nome: 'Mercados', cor: '#2e8b57', cls: ['grocery'], sub: ['supermarket', 'convenience', 'greengrocer'] },
+    { id: 'escola', nome: 'Escolas', cor: '#3b6fd8', cls: ['school', 'college'] },
+    { id: 'farmacia', nome: 'Farmácias', cor: '#0f9b9b', cls: ['pharmacy'] },
+    { id: 'saude', nome: 'Saúde', cor: '#d23c3c', cls: ['hospital'] },
+    { id: 'restaurante', nome: 'Restaurantes', cor: '#8b5cf6', cls: ['restaurant', 'fast_food'] },
+  ];
+  const TIPOS_PADRAO = ['praia', 'mercado', 'escola', 'farmacia', 'saude'];
+  const CHAVE_PERTO = 'vivere.mapa.perto';
+  const condTipo = (t) => ['any', ['in', ['get', 'class'], ['literal', t.cls || []]], ['in', ['get', 'subclass'], ['literal', t.sub || []]]];
+  const tipoDoPoi = (p) => TIPOS.find((t) => t.id !== 'praia' && ((t.cls || []).includes(p.class) || (t.sub || []).includes(p.subclass)));
+  function distM(a, b) { const R = 6371000, r = Math.PI / 180, dLa = (b[1] - a[1]) * r, dLo = (b[0] - a[0]) * r;
+    const h = Math.sin(dLa / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
+  const distTxt = (m) => m < 1000 ? Math.max(10, Math.round(m / 10) * 10) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km';
+  function anel(c, raio) { const p = [], n = 64, la = c[1] * Math.PI / 180;
+    for (let i = 0; i <= n; i++) { const a = 2 * Math.PI * i / n; p.push([c[0] + (raio / (111320 * Math.cos(la))) * Math.cos(a), c[1] + (raio / 110540) * Math.sin(a)]); }
+    return { type: 'Feature', geometry: { type: 'LineString', coordinates: p }, properties: {} }; }
 
   let carga = null;
   function script(src) { return new Promise((ok, er) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => er(new Error('não carregou ' + src)); document.head.appendChild(s); }); }
@@ -78,6 +109,8 @@
     op = op || {}; el.classList.add('m3d-caixa');
     const ml = await carregar(op.vendor || VENDOR);
     let tema = temaEscuro() ? 'escuro' : 'claro', lista = [], rota = [], vivo = true, popup = null, falhou = false;
+    let girando = false, tourPend = null, pertoPend = false, ref = null, pertoAberto = false, pertoT = null;
+    let pertoOn = new Set(); try { const g = JSON.parse(localStorage.getItem(CHAVE_PERTO) || 'null'); if (Array.isArray(g)) g.forEach((t) => TIPOS.some((x) => x.id === t) && pertoOn.add(t)); } catch (e) {}
     const mapa = new ml.Map({ container: el, style: ESTILO[tema], bounds: ILHA, maxZoom: 18, minZoom: 8, maxPitch: 75,
       attributionControl: { compact: true, customAttribution: 'Relevo: Terrain Tiles (AWS)' } });
     mapa.addControl(new ml.NavigationControl({ showCompass: true, visualizePitch: true }), 'top-left');
@@ -130,6 +163,7 @@
       if (!mapa.getLayer('pontos-e')) mapa.addLayer({ id: 'pontos-e', type: 'symbol', source: 'pontos', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'emp'], 1]],
         layout: { 'icon-image': ['get', 'ic'], 'icon-allow-overlap': true, 'icon-ignore-placement': true }, paint: { 'icon-opacity': ['case', ['==', ['get', 'aprox'], 1], 0.55, 1] } });
       camadasRota();
+      camadasPerto(vet && vet[0]);
     }
     function camadasRota() {
       if (!mapa.getSource('rota')) mapa.addSource('rota', { type: 'geojson', data: dadosRota() });
@@ -141,9 +175,104 @@
         layout: { 'text-field': ['get', 'n'], 'text-size': 11, 'text-font': ['Noto Sans Bold'], 'text-allow-overlap': true, 'text-ignore-placement': true },
         paint: { 'text-color': tema === 'claro' ? '#ffffff' : '#1C2739' } });
     }
+    function camadasPerto(fonte) {
+      if (!fonte) return; const claro = tema === 'claro';
+      if (!mapa.getLayer('perto-praia')) mapa.addLayer({ id: 'perto-praia', type: 'fill', source: fonte, 'source-layer': 'landcover', filter: ['==', ['get', 'subclass'], 'beach'],
+        layout: { visibility: 'none' }, paint: { 'fill-color': '#f2cf6b', 'fill-opacity': claro ? 0.55 : 0.4, 'fill-outline-color': '#d9a520' } }, mapa.getLayer('predios-3d') ? 'predios-3d' : 'grupos');
+      if (!mapa.getLayer('perto-praia-t')) mapa.addLayer({ id: 'perto-praia-t', type: 'symbol', source: fonte, 'source-layer': 'landcover', filter: ['==', ['get', 'subclass'], 'beach'], minzoom: 13,
+        layout: { visibility: 'none', 'text-field': 'Praia', 'text-size': 11, 'text-font': ['Noto Sans Bold'] },
+        paint: { 'text-color': claro ? '#8a6510' : '#f2cf6b', 'text-halo-color': claro ? '#ffffff' : '#0f1620', 'text-halo-width': 1.4 } }, 'grupos');
+      if (!mapa.getSource('perto-anel')) mapa.addSource('perto-anel', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      if (!mapa.getLayer('perto-anel')) mapa.addLayer({ id: 'perto-anel', type: 'line', source: 'perto-anel', layout: { visibility: 'none' },
+        paint: { 'line-color': claro ? '#1C2739' : '#d8c3a5', 'line-width': 1.6, 'line-opacity': 0.55, 'line-dasharray': [3, 2] } }, 'grupos');
+      const cor = ['case']; TIPOS.forEach((t) => { if (t.id !== 'praia') cor.push(condTipo(t), t.cor); }); cor.push('#7a8699');
+      if (!mapa.getLayer('perto-poi')) mapa.addLayer({ id: 'perto-poi', type: 'circle', source: fonte, 'source-layer': 'poi', layout: { visibility: 'none' },
+        filter: ['==', 1, 0], paint: { 'circle-color': cor, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3.5, 16, 6.5], 'circle-stroke-color': claro ? '#ffffff' : '#0f1620', 'circle-stroke-width': 1.4, 'circle-pitch-alignment': 'viewport' } }, 'grupos');
+      if (!mapa.getLayer('perto-poi-t')) mapa.addLayer({ id: 'perto-poi-t', type: 'symbol', source: fonte, 'source-layer': 'poi', minzoom: 15, layout: { visibility: 'none',
+        'text-field': ['coalesce', ['get', 'name'], ''], 'text-size': 11, 'text-font': ['Noto Sans Regular'], 'text-offset': [0, 0.9], 'text-anchor': 'top', 'text-max-width': 9, 'text-optional': true },
+        filter: ['==', 1, 0], paint: { 'text-color': claro ? '#33404f' : '#dfe5ee', 'text-halo-color': claro ? '#ffffff' : '#0f1620', 'text-halo-width': 1.3 } }, 'grupos');
+      aplicaPerto();
+    }
+    // liga/desliga as camadas conforme os tipos marcados e redesenha o seletor
+    function aplicaPerto() {
+      if (!mapa.getLayer('perto-poi')) return;
+      const ts = TIPOS.filter((t) => t.id !== 'praia' && pertoOn.has(t.id)), vis = (b) => (b ? 'visible' : 'none');
+      const f = ts.length ? ['any'].concat(ts.map(condTipo)) : ['==', 1, 0];
+      mapa.setFilter('perto-poi', f); mapa.setFilter('perto-poi-t', f);
+      mapa.setLayoutProperty('perto-poi', 'visibility', vis(ts.length)); mapa.setLayoutProperty('perto-poi-t', 'visibility', vis(ts.length));
+      mapa.setLayoutProperty('perto-praia', 'visibility', vis(pertoOn.has('praia'))); mapa.setLayoutProperty('perto-praia-t', 'visibility', vis(pertoOn.has('praia')));
+      const an = mapa.getSource('perto-anel'); if (an) an.setData({ type: 'FeatureCollection', features: ref && pertoOn.size ? [anel([ref.lng, ref.lat], 1000)] : [] });
+      mapa.setLayoutProperty('perto-anel', 'visibility', vis(ref && pertoOn.size));
+      pintaPerto();
+    }
+    // seletor "Por perto" no canto do mapa: tipos e o mais perto de cada um (a partir do imóvel escolhido ou do centro do mapa)
+    const ui = document.createElement('div'); ui.className = 'm3d-perto';
+    ui.innerHTML = '<button type="button" class="m3d-perto-b" aria-expanded="false" title="Praias, mercados, escolas, farmácias e saúde por perto">📍 Por perto</button>'
+      + '<div class="m3d-perto-p" role="group" aria-label="O que há por perto" hidden><p class="m3d-perto-t">O que há por perto</p><div class="m3d-perto-c"></div><ul class="m3d-perto-l"></ul><p class="m3d-perto-r"></p><p class="m3d-perto-n">Lugares do OpenStreetMap: pode faltar algum.</p></div>';
+    const parar = document.createElement('button'); parar.type = 'button'; parar.className = 'm3d-parar'; parar.hidden = true; parar.textContent = '⏹ Parar o tour';
+    el.appendChild(ui); el.appendChild(parar);
+    function maisPerto() {
+      const c = ref ? [ref.lng, ref.lat] : mapa.getCenter().toArray(), melhor = {}; let fs = [];
+      try { fs = mapa.querySourceFeatures(mapa.getLayer('perto-poi').source, { sourceLayer: 'poi' }); } catch (e) {}
+      fs.forEach((f) => { const t = tipoDoPoi(f.properties || {}); if (!t || !pertoOn.has(t.id) || !f.geometry || f.geometry.type !== 'Point') return;
+        const d = distM(c, f.geometry.coordinates); if (d <= 3000 && (!melhor[t.id] || d < melhor[t.id].d)) melhor[t.id] = { d, n: f.properties.name || t.nome }; });
+      if (pertoOn.has('praia')) { let ps = []; try { ps = mapa.querySourceFeatures(mapa.getLayer('perto-praia').source, { sourceLayer: 'landcover', filter: ['==', ['get', 'subclass'], 'beach'] }); } catch (e) {}
+        ps.forEach((f) => { const g = f.geometry || {}, an = g.type === 'Polygon' ? g.coordinates : g.type === 'MultiPolygon' ? [].concat(...g.coordinates) : [];
+          an.forEach((r) => r.forEach((p) => { const d = distM(c, p); if (d <= 3000 && (!melhor.praia || d < melhor.praia.d)) melhor.praia = { d, n: 'faixa de areia' }; })); }); }
+      return melhor;
+    }
+    function pintaPerto() {
+      const p = ui.querySelector('.m3d-perto-p'), b = ui.querySelector('.m3d-perto-b'); p.hidden = !pertoAberto; b.setAttribute('aria-expanded', String(pertoAberto));
+      if (!pertoAberto) return;
+      ui.querySelector('.m3d-perto-c').innerHTML = TIPOS.map((t) => '<button type="button" data-perto="' + t.id + '" aria-pressed="' + pertoOn.has(t.id) + '"><i style="background:' + t.cor + '"></i>' + esc(t.nome) + '</button>').join('');
+      const m = maisPerto(), L = TIPOS.filter((t) => pertoOn.has(t.id));
+      ui.querySelector('.m3d-perto-l').innerHTML = L.map((t) => '<li><b>' + esc(t.nome) + '</b><span>' + (m[t.id] ? esc(m[t.id].n) : 'nada a até 3 km nesta área do mapa') + '</span>' + (m[t.id] ? '<em>' + distTxt(m[t.id].d) + '</em>' : '') + '</li>').join('');
+      ui.querySelector('.m3d-perto-r').textContent = !L.length ? 'Marque os tipos para ver no mapa.' : ref ? 'Distâncias em linha reta a partir de ' + (ref.titulo || 'o imóvel escolhido') + '; o círculo tracejado marca 1 km.' : 'Distâncias em linha reta a partir do centro do mapa.';
+    }
+    ui.addEventListener('click', (e) => {
+      const t = e.target.closest('button'); if (!t) return;
+      if (t.classList.contains('m3d-perto-b')) { pertoAberto = !pertoAberto; if (pertoAberto && !pertoOn.size) TIPOS_PADRAO.forEach((x) => pertoOn.add(x)); }
+      else if (t.dataset.perto) { const k = t.dataset.perto; if (pertoOn.has(k)) pertoOn.delete(k); else pertoOn.add(k); }
+      else return;
+      try { localStorage.setItem(CHAVE_PERTO, JSON.stringify([...pertoOn])); } catch (e2) {}
+      aplicaPerto(); if (!mapa.getLayer('perto-poi')) pintaPerto();
+    });
+    // a lista do mais perto acompanha o mapa (depois que os pedaços do mapa carregam)
+    mapa.on('idle', () => { if (!pertoAberto || !pertoOn.size) return; clearTimeout(pertoT); pertoT = setTimeout(() => vivo && pintaPerto(), 150); });
+
+    // Tour 3D (23/11/2026, fatia 2): voa até o ponto e dá uma volta inteira em 4 giros de 90°; qualquer toque no mapa para.
+    function pararTour() { tourPend = null; if (!girando) return; girando = false; parar.hidden = true; try { mapa.stop(); } catch (e) {} }
+    ['mousedown', 'touchstart', 'wheel', 'keydown'].forEach((ev) => el.addEventListener(ev, (e) => { if (girando && e.target !== parar) pararTour(); }, { passive: true }));
+    parar.addEventListener('click', pararTour);
+    const achar = (id) => lista.find((y) => y && String(y.id) === String(id) && y.lat != null);
+    const pronto = () => mapa.isStyleLoaded() && !!mapa.getSource('pontos');
+    function tour(id) {
+      const x = achar(id); if (!x) return false;
+      if (!pronto()) { tourPend = id; return true; }
+      pararTour(); if (popup) { popup.remove(); popup = null; }
+      ref = { lat: +x.lat, lng: +x.lng, titulo: x.titulo || '' }; aplicaPerto();
+      const alvo = { center: [+x.lng, +x.lat], zoom: 16.6, pitch: 62, padding: { top: 0, bottom: 0, left: 0, right: 0 } };
+      if (semAnimacao()) { mapa.jumpTo(alvo); return true; } // "reduzir movimento": só mostra o ponto inclinado, sem girar
+      mapa.stop(); girando = true; parar.hidden = false; let volta = 0;
+      const gira = () => { if (!girando || !vivo) return; if (volta++ >= 4) { girando = false; parar.hidden = true; return; }
+        mapa.once('moveend', gira); mapa.rotateTo(mapa.getBearing() + 90, { duration: 6500, easing: (t) => t }); };
+      mapa.once('moveend', gira); mapa.flyTo(Object.assign({ bearing: mapa.getBearing(), duration: 2200 }, alvo));
+      return true;
+    }
+    function perto(id) {
+      const x = achar(id); if (x) ref = { lat: +x.lat, lng: +x.lng, titulo: x.titulo || '' };
+      if (!pertoOn.size) TIPOS_PADRAO.forEach((t) => pertoOn.add(t)); try { localStorage.setItem(CHAVE_PERTO, JSON.stringify([...pertoOn])); } catch (e) {}
+      pertoAberto = true;
+      if (!pronto()) { pertoPend = x ? id : true; pintaPerto(); return !!x; }
+      pararTour(); if (popup) { popup.remove(); popup = null; } aplicaPerto();
+      if (x) mapa.easeTo({ center: [+x.lng, +x.lat], zoom: 15.3, pitch: 50, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: semAnimacao() ? 0 : 1000 });
+      return !!x;
+    }
     function inclinar(dur) { mapa.easeTo({ pitch: 60, bearing: -18, duration: dur }); }
 
-    mapa.on('load', () => { clearTimeout(tempo); if (!vivo) return; const at = el.querySelector('.maplibregl-ctrl-attrib'); if (at) at.classList.remove('maplibregl-compact-show'); camadas(); inclinar(semAnimacao() ? 0 : 1200); if (op.aoAbrir) op.aoAbrir(); });
+    mapa.on('load', () => { clearTimeout(tempo); if (!vivo) return; const at = el.querySelector('.maplibregl-ctrl-attrib'); if (at) at.classList.remove('maplibregl-compact-show'); camadas(); inclinar(semAnimacao() ? 0 : 1200); if (op.aoAbrir) op.aoAbrir();
+      if (pertoPend) { const p = pertoPend; pertoPend = false; perto(p === true ? null : p); }
+      if (tourPend) { const t = tourPend; tourPend = null; tour(t); } });
     mapa.on('click', 'grupos', async (e) => {
       const f = e.features && e.features[0]; if (!f) return;
       const z = await mapa.getSource('pontos').getClusterExpansionZoom(f.properties.cluster_id);
@@ -170,13 +299,15 @@
       versao: VERSAO, mapa,
       pontos(L) { lista = Array.isArray(L) ? L : []; if (!mapa.isStyleLoaded() || !mapa.getSource('pontos')) return; imagens(); mapa.getSource('pontos').setData(dados()); },
       focar(id) {
+        pararTour();
         const x = lista.find((y) => y && String(y.id) === String(id)); if (!x || x.lat == null) return;
         mapa.easeTo({ center: [+x.lng, +x.lat], zoom: 16.5, pitch: 60, padding: { top: Math.round(el.clientHeight * 0.45), bottom: 0, left: 0, right: 0 }, duration: semAnimacao() ? 0 : 900 });
         if (op.aoClicar) { const html = op.aoClicar(x.id); if (popup) popup.remove(); popup = html ? new ml.Popup({ maxWidth: '290px', offset: 12, className: 'm3d-pop' }).setLngLat([+x.lng, +x.lat]).setHTML(html).addTo(mapa) : null; }
       },
+      tour, perto, pararTour,
       roteiro(L) { rota = Array.isArray(L) ? L : []; const f = mapa.getSource('rota'); if (f) f.setData(dadosRota()); },
       redimensionar() { mapa.resize(); },
-      destruir() { if (window.VivereMapa3D.ultimo === inst) window.VivereMapa3D.ultimo = null; vivo = false; clearTimeout(tempo); obs.disconnect(); if (mq && mq.removeEventListener) mq.removeEventListener('change', trocaTema); if (popup) popup.remove(); mapa.remove(); },
+      destruir() { if (window.VivereMapa3D.ultimo === inst) window.VivereMapa3D.ultimo = null; girando = false; vivo = false; clearTimeout(tempo); clearTimeout(pertoT); ui.remove(); parar.remove(); obs.disconnect(); if (mq && mq.removeEventListener) mq.removeEventListener('change', trocaTema); if (popup) popup.remove(); mapa.remove(); },
     };
     window.VivereMapa3D.ultimo = inst; // para conferência pelo console
     return inst;

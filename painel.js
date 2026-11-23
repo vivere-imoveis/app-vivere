@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -4332,7 +4332,7 @@ function popupMapa(x) {
   const end = x._meu ? (x.end || [x.logradouro, x.numero, x.complemento].filter(Boolean).join(', ')) : (x.end || '');
   let emp = ''; try { const C = S.prontos.has('empDocs') ? empCtx() : null; const e = C ? (C.empDoAnuncio.get(x.id) || (x.emp ? C.porId.get(x.emp) : null)) : null; emp = (e && e.nome) || (x._meu && x.condominio_nome) || ''; } catch (e) { emp = ''; }
   return `<div class="pm-pop">${capaHtml(x.id, x, 'pop')}<b class="ref">${esc(x.ref)}</b> · ${esc(x.tipo || '')} · ${esc(x.fin || '')}<br><b>${brl(x.valor)}</b>${m2De(x) != null ? ' · ' + esc(m2Rot(x)) : ''}${fatos ? '<br>' + esc(fatos) : ''}${end ? '<br><span class="peq" data-sens>' + esc(end) + '</span>' : ''}${emp ? '<br><span class="peq">Empreendimento: <b>' + esc(emp) + '</b></span>' : ''}<br><span class="mut">${esc(x.bairro || '')}${x._meu ? ' · agenciado por você' : x.cor ? ' · ' + esc(x.cor) : ''}</span><br><span class="mut peq">Ponto ${esc(PREC[x.prec] || 'aproximado')}</span>
-    <div class="linha" style="margin-top:8px;gap:6px"><button class="b" type="button" data-pmver="${esc(x.id)}">Detalhes</button><button class="b" type="button" data-pmrot="${esc(x.id)}">${pmRot() && pmRot().tem(x.id) ? 'Tirar do roteiro' : '+ Roteiro'}</button>${gmapsDe(x) ? `<a class="b" href="${escUrl(gmapsDe(x))}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}</div></div>`;
+    <div class="linha" style="margin-top:8px;gap:6px"><button class="b" type="button" data-pmver="${esc(x.id)}">Detalhes</button><button class="b" type="button" data-pmrot="${esc(x.id)}">${pmRot() && pmRot().tem(x.id) ? 'Tirar do roteiro' : '+ Roteiro'}</button><button class="b" type="button" data-pmtour="${esc(x.id)}" title="Abre a vista 3D e gira em volta do imóvel">🎥 Tour 3D</button><button class="b" type="button" data-pmperto="${esc(x.id)}" title="Praias, mercados, escolas, farmácias e saúde perto do imóvel">📍 Por perto</button>${gmapsDe(x) ? `<a class="b" href="${escUrl(gmapsDe(x))}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}</div></div>`;
 }
 function pontosMapa() {
   if (!MP) return; const L = window.L, its = itensMapa();
@@ -4410,7 +4410,7 @@ function pmRotClique(t, d) {
 // ---------- Vista 3D ao lado do mapa 2D (23/11/2026, tarefa vis-mapa-3d-hub-painel) ----------
 // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026. Recebe os mesmos
 // pontos já filtrados do 2D; a escolha 2D/3D fica guardada no aparelho.
-const PM3D_V = '46e69271';
+const PM3D_V = '584c9f13';
 let PM3D = null, PM3D_EST = 'fechado', PM3D_FOCO = null, PM3D_L = [], PM3D_IX = new Map();
 const pm3dLigado = () => { try { return localStorage.getItem('painel.mapa.vista') === '3d'; } catch (e) { return false; } };
 function pm3dGuarda(its, ems) {
@@ -4430,17 +4430,22 @@ function pm3dFalhou(msg) {
   pm3dMostra(false); setTimeout(() => MP && MP.invalidateSize(), 30);
   pm3dAviso((msg || 'Não consegui abrir o mapa 3D agora.') + ' Voltei para a vista 2D; toque em 3D para tentar de novo.');
 }
+// Tour 3D e O que há por perto (23/11/2026, fatias 2 e 3): o cartão pede, o 3D abre se estiver no 2D e faz.
+let PM3D_ACAO = null;
+function pm3dRodaAcao() { if (!PM3D || !PM3D_ACAO) return; const [t, id] = PM3D_ACAO; PM3D_ACAO = null; PM3D[t](id); }
+function pm3dAcao(t, id) { PM3D_ACAO = [t, id]; try { if (MP) MP.closePopup(); } catch (e) {}
+  if (!pm3dLigado() || PM3D_EST !== 'aberto') return pm3dVista('3d'); pm3dRodaAcao(); }
 function pm3dVista(v) {
   if (v) { try { localStorage.setItem('painel.mapa.vista', v); } catch (e) {} if (v === '3d' && PM3D_EST === 'falhou') PM3D_EST = 'fechado'; }
   const tres = pm3dLigado() && PM3D_EST !== 'falhou', c3 = MP_ROOT.querySelector('#pm-mapa3d');
   if (!pm3dMostra(tres)) return;
   if (!tres) { if (PM3D_EST !== 'falhou' || v === '2d') pm3dAviso(''); setTimeout(() => MP && MP.invalidateSize(), 30); return; }
-  if (PM3D) { setTimeout(() => PM3D && PM3D.redimensionar(), 30); PM3D.pontos(PM3D_L); if (PM3D_FOCO) { const f = PM3D_FOCO; PM3D_FOCO = null; PM3D.focar(f); } return; }
+  if (PM3D) { setTimeout(() => { if (PM3D) { PM3D.redimensionar(); pm3dRodaAcao(); } }, 30); PM3D.pontos(PM3D_L); if (PM3D_FOCO) { const f = PM3D_FOCO; PM3D_FOCO = null; PM3D.focar(f); } return; }
   if (PM3D_EST === 'abrindo') return; PM3D_EST = 'abrindo'; pm3dAviso('Abrindo o mapa 3D…');
   (window.VivereMapa3D ? Promise.resolve() : scriptMapa('mapa3d.js?v=' + PM3D_V))
     .then(() => window.VivereMapa3D.montar(c3, { aoClicar: pm3dCartao, aoFalhar: pm3dFalhou,
       aoAbrir: () => { if (PM3D_EST === 'falhou') return; pm3dAviso(''); if (PM3D) PM3D.pontos(PM3D_L); if (PM3D_FOCO && PM3D) { const f = PM3D_FOCO; PM3D_FOCO = null; PM3D.focar(f); } } }))
-    .then((m) => { if (PM3D_EST === 'falhou') { m.destruir(); return; } PM3D = m; PM3D_EST = 'aberto'; m.pontos(PM3D_L); if (PMR) m.roteiro(PMR.lista()); })
+    .then((m) => { if (PM3D_EST === 'falhou') { m.destruir(); return; } PM3D = m; PM3D_EST = 'aberto'; m.pontos(PM3D_L); if (PMR) m.roteiro(PMR.lista()); pm3dRodaAcao(); })
     .catch(() => pm3dFalhou(''));
 }
 
@@ -4861,6 +4866,7 @@ document.addEventListener('click', async (ev) => {
   if (d.agenc) { abrir('meu', d.agenc, true); const t2 = document.getElementById('agTexto'); if (t2) { t2.scrollIntoView({ block: 'center' }); t2.focus({ preventScroll: true }); } return; }
   if (d.vermapa) { if (S.aberto) fechar(); S.pmFoco = d.vermapa; if (/^E:/.test(d.vermapa)) { S.pmEmp = true; MP_SIG = ''; } if (!S.meus[d.vermapa] && S.pmCam === 'meus') S.pmCam = 'todos'; S.aba = 'mapa'; try { sessionStorage.setItem('painel.aba', S.aba); } catch (e) {} render(); window.scrollTo(0, 0); return; }
   if (d.pmrot !== undefined || d.pmrotTira !== undefined || d.pmrotAcao !== undefined) return pmRotClique(t, d);
+  if (d.pmtour || d.pmperto) return pm3dAcao(d.pmtour ? 'tour' : 'perto', d.pmtour || d.pmperto);
   if (d.pmvista) return pm3dVista(d.pmvista);
   if (d.pmcam) { S.pmCam = d.pmcam; return pontosMapa(); }
   if (d.pmemp) { S.pmEmp = S.pmEmp === false; MP_SIG = ''; return pontosMapa(); }
