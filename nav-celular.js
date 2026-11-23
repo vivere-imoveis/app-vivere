@@ -25,7 +25,7 @@
     var c = el.cloneNode(true); c.querySelectorAll('svg, .n, .ic, .bp-ic, .ba-ic, .ba-n').forEach(function (x) { x.remove(); });
     return c.textContent.replace(/\s+/g, ' ').trim();
   }
-  function ativa() { var ap = document.documentElement.dataset.abaApp; if (ap) return 'app:' + ap; /* 22/11/2026: tela do app aberta como aba → "Mais" marcado */ var a = abas && abas.querySelector('[aria-selected="true"]'); return a ? a.getAttribute('data-aba') : ''; }
+  function ativa() { var ap = document.documentElement.dataset.abaApp; if (ap === 'semresp') return 'oportunidades'; /* imoveis-ofertas: Sem responsável é sub-aba de Imóveis */ if (ap) return 'app:' + ap; /* 22/11/2026: tela do app aberta como aba → "Mais" marcado */ var a = abas && abas.querySelector('[aria-selected="true"]'); return a ? a.getAttribute('data-aba') : ''; }
 
   function pintaBarra() {
     if (!barra) return;

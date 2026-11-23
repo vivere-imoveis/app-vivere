@@ -55,7 +55,10 @@
     const abaApp = document.documentElement.dataset.abaApp || '';   /* 22/11/2026: tela do app aberta como aba (painel-app.js › ABA_APP) */
     const novo = abaApp + '@' + ex.map((x) => x.id + (x.n || '')).join(',') + '§' + gs.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + '#' + ss.map((b) => b.dataset.aba + b.getAttribute('aria-selected') + b.textContent).join('|') + (min ? 'm' : '');
     if (novo === sig) return; sig = novo;
-    const subs = ss.slice(1);
+    const subs = ss.filter((b) => !b.closest('#aba-app'));   /* imoveis-ofertas: sem a aba-mãe na 1ª posição; a cópia da aba do app fica de fora */
+    const PAI_APP = { semresp: 'oportunidades' }, paiApp = PAI_APP[abaApp] || '';   /* imoveis-ofertas: tela do app que é sub-aba de Imóveis */
+    const selG = (b) => abaApp ? b.dataset.aba === paiApp : b.getAttribute('aria-selected') === 'true';
+    const selS = (s) => abaApp ? String(s.dataset.aba === abaApp) : s.getAttribute('aria-selected');
     /* 22/11/2026 (pedido do Cleiton): atalho que abre nesta mesma página e traz "apos" (ex.: Pendências → tarefas,
        Vistorias → oportunidades) fica logo abaixo daquela aba, e não na seção "No app". */
     const exIn = ex.filter((x) => x.apos && gs.some((b) => b.dataset.aba === x.apos)), exFora = ex.filter((x) => !exIn.includes(x) && x.grupo !== 'gestao');
@@ -65,16 +68,16 @@
       return `<button type="button" class="ml-g ml-app${dentro ? ' ml-dentro' : ''}" data-ml-href="${esc(x.href)}" aria-current="${abaApp && abaApp === x.id ? 'page' : 'false'}" title="${esc(x.t)}${dentro || x.dentro ? '' : ' · abre outra página do app'}">${miolo}</button>`; };
     const ehGest = (b) => b.dataset.aba === 'gestor', gGest = gs.filter(ehGest), gPain = gs.filter((b) => !ehGest(b));
     const exGest = ex.filter((x) => x.grupo === 'gestao'), temGest = gGest.length > 0 || exGest.length > 0;
-    const btnAba = (b) => { const sel = !abaApp && b.getAttribute('aria-selected') === 'true', t = txt(b);
+    const btnAba = (b) => { const sel = selG(b), t = txt(b);
       return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>`; };
     aside.innerHTML = `<div class="ml-topo"><span class="ml-tit">Menu</span><button type="button" class="ml-x" data-ml-min title="${min ? 'Abrir o menu' : 'Recolher o menu'}" aria-label="${min ? 'Abrir o menu' : 'Recolher o menu'}">${min ? '»' : '«'}</button></div>` +
       /* 22/11/2026 (pedido do Cleiton): no painel de quem é gestor, o menu abre com "Gestão" (Gestor, HUB VIVERE, Acessos) e
          depois "Painel" (Início e os demais; Minha senha e A CAPTAR por último). Títulos de seção não são clicáveis.
          O corretor não tem a seção Gestão e vê o menu sem títulos. */
       (temGest ? `<div class="ml-sep">Gestão</div>` + gGest.map(btnAba).join('') + exGest.map((x) => btnEx(x, false)).join('') + `<div class="ml-sep">Painel</div>` : '') +
-      gPain.map((b) => { const sel = !abaApp && b.getAttribute('aria-selected') === 'true', t = txt(b);
+      gPain.map((b) => { const sel = selG(b), t = txt(b);
         return `<button type="button" class="ml-g" data-aba="${esc(b.dataset.aba)}" aria-current="${sel ? 'page' : 'false'}" title="${esc(t)}"><span class="ml-ic">${icone(b.dataset.aba, t)}</span><span class="ml-tx">${esc(t)}</span>${selo(b)}</button>` +
-          (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${s.getAttribute('aria-selected')}">${icone(s.dataset.aba, txt(s)).replace(' fim', '')}<span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : '') + exIn.filter((x) => x.apos === b.dataset.aba).map((x) => btnEx(x, true)).join(''); }).join('') +
+          (sel && subs.length ? `<div class="ml-subs">${subs.map((s) => `<button type="button" class="ml-s" data-aba="${esc(s.dataset.aba)}" aria-selected="${selS(s)}">${icone(s.dataset.aba, txt(s)).replace(' fim', '')}<span class="ml-tx">${esc(txt(s))}</span>${selo(s)}</button>`).join('')}</div>` : '') + exIn.filter((x) => x.apos === b.dataset.aba).map((x) => btnEx(x, true)).join(''); }).join('') +
       exFora.slice().sort((a, b) => (a.id === 'acaptar') - (b.id === 'acaptar')).map((x) => btnEx(x, false)).join('');   // 22/11/2026 (pedido do Cleiton): sem o título "No app"; esses ficam por último
     mede();
   }
@@ -86,7 +89,7 @@
     const ap = e.target.closest && e.target.closest('#ml [data-ml-href]');
     if (ap) { const E = window.MENU_LATERAL_EXTRAS; if (E && E.abre) E.abre(ap.dataset.mlHref); else location.href = ap.dataset.mlHref; return; }
     if (ENCAMINHA) { const a = e.target.closest && e.target.closest('#ml [data-aba]');
-      if (a) { const o = [...document.querySelectorAll('#abas button[data-aba], .sub-op button[data-aba]')].find((x) => x.dataset.aba === a.dataset.aba); if (o) { o.click(); scrollTo({ top: 0 }); } return; } }
+      if (a) { const L = [...document.querySelectorAll('#abas button[data-aba]')], S2 = [...document.querySelectorAll('.sub-op button[data-aba]')].filter((x) => !x.closest('#aba-app')); const o = (a.classList.contains('ml-s') ? S2.concat(L) : L.concat(S2)).find((x) => x.dataset.aba === a.dataset.aba); if (o) { o.click(); scrollTo({ top: 0 }); } return; } }
     const t = e.target.closest && e.target.closest('#ml-troca,[data-ml-min]'); if (!t) return;
     if (t.id === 'ml-troca') { const novo = document.body.classList.contains('ml-on') ? 'topo' : 'lateral', auto = telaCheia() ? 'lateral' : 'topo'; grava(LS, novo === auto ? null : novo); }
     else grava(LSM, document.body.classList.contains('ml-min') ? null : '1');

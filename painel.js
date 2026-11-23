@@ -1079,9 +1079,12 @@ function ctxCapt() {
   if (CAPTC.ctx && CAPTC.d === S.capt) return CAPTC.ctx;
   const cw = S.capt && typeof S.capt === 'object' ? CAPTC_W.get(S.capt) : null;
   if (cw) { CAPTC = cw; return CAPTC.ctx; }
-  const L = Object.entries(S.capt || {}).filter(([, c]) => c && c.ativo !== false && c.bairro).map(([id, c]) => ({ id: 'C:' + (c.lead || id), lead: c.lead || id, ref: 'A captar', origem: 'captado',
+  const L0 = Object.entries(S.capt || {}).filter(([, c]) => c && c.ativo !== false && c.bairro).map(([id, c]) => ({ id: 'C:' + (c.lead || c._id || id), lead: c.lead || c._id || id, k: c._id || id, ref: 'A captar', origem: 'captado',
     fin: c.fin || '', tipo: c.tipo || '', bairro: c.bairro, valor: +c.valor || null, dorm: c.dorm != null && c.dorm !== '' ? +c.dorm : null, area: +c.area || null, papel: c.papel || '',
     lead_painel: c.lead_painel || '', estrelas: Math.max(0, Math.min(5, +c.estrelas || 0)), int_n: +c.interessados_n || 0, situacao: c.situacao || 'livre', coletado_em: c.coletado_em || '', end: endCapt(c), foto_id: /^[0-9a-f]{32}$/.test(String(c.foto_id || '')) ? String(c.foto_id) : '' }));
+  const PRS = { meu: 0, outro: 1, livre: 2 }, UM = new Map();   // imoveis-ofertas: um por imóvel; vale a cópia de quem o tem (distribuído)
+  L0.forEach((x) => { const a = UM.get(x.id); if (!a) { UM.set(x.id, x); return; } const n = Math.max(a.int_n, x.int_n); if ((PRS[x.situacao] ?? 3) < (PRS[a.situacao] ?? 3)) { x.int_n = n; UM.set(x.id, x); } else a.int_n = n; });
+  const L = [...UM.values()];
   CAPTC = { d: S.capt, ctx: { itens: L, porId: new Map(L.map((x) => [x.id, x])), empPorId: new Map(), empDaCampanha: () => null } };
   if (S.capt && typeof S.capt === 'object') CAPTC_W.set(S.capt, CAPTC);
   return CAPTC.ctx;
@@ -1175,15 +1178,24 @@ function fichaTem(id, l) {
     <div class="peq">Capte antes de ofertar: agenciado, o imóvel entra no site e nas Ofertas dos clientes.</div></div>
     ${n ? `<div class="op-int" style="margin-top:8px"><b>👥 ${n} cliente${n === 1 ? ' procura' : 's procuram'} um imóvel assim</b>${ints.map((y) => `<button class="copiar" type="button" data-lead="${esc(y.id)}">${esc(y.nome)}</button>`).join('')}${n > ints.length ? `<span class="mut peq">${ints.length ? 'e ' + (n - ints.length) + ' de outros corretores' : 'clientes de toda a Vivere'}: o roteiro da 1ª mensagem já cita.</span>` : ''}</div>` : '<p class="mut peq" style="margin:8px 0 0">Nenhum cliente com perfil parecido agora.</p>'}`;
 }
+// imoveis-ofertas (22/11/2026, Cleiton): Vendedores e locadores contam um por imóvel e só os que estão no A CAPTAR
+// (disponíveis, Captei ou em captação) ou distribuídos ao corretor. Sem a lista do A CAPTAR no painel, valem todos.
+function capTem() {
+  const L = ctxCapt().itens, A = S.acap;
+  if (!A || !A.base || !Object.keys(A.base).length) return L;
+  const no = (k) => acapNaBase(k) || acapNoCaptei(k) || !!acapTrava(k);
+  const F = L.filter((it) => it.situacao === 'meu' || no(it.k) || no(it.lead));
+  return F.length || !L.length ? F : L;   // nenhuma chave casou: lista do A CAPTAR de outro formato; não esconde tudo
+}
 const LEG_OP = '<div class="op-leg"><div><b>🔎 Compradores e locatários</b>: cada cliente com os imóveis que combinam com o que ele procura. <b>🏠 Vendedores e locadores</b>: cada imóvel não captado com os clientes que procuram um assim.</div><div><span class="selo-cap">🟢 PAUTA</span> imóvel nosso (site, lançamento ou agenciamento): pode ofertar. <span class="selo-nao">🟠 A CAPTAR</span> proprietário anuncia direto: capte antes de ofertar.</div></div>';
 function ladosOp() {
-  const nProc = Object.values(S.leads).filter((l) => ladoDe(l) !== 'tem' && abertaL(l)).length, nTem = ctxCapt().itens.length;
+  const nProc = Object.values(S.leads).filter((l) => ladoDe(l) !== 'tem' && abertaL(l)).length, nTem = capTem().length;
   return `<div class="chips op-lados" role="group" aria-label="Lado"><button type="button" data-oplado="procura" aria-pressed="${S.opLado !== 'tem'}">🔎 Compradores e locatários<span class="op-l2">&nbsp;→ imóveis para oferecer</span>&nbsp;(${nProc})</button><button type="button" data-oplado="tem" aria-pressed="${S.opLado === 'tem'}">🏠 Vendedores e locadores<span class="op-l2">&nbsp;→ clientes interessados</span>&nbsp;(${nTem})</button></div>`;
 }
 // subaba "Para quem tem": imóveis captados com os clientes deste corretor que procuram um imóvel assim (a ★ sobe)
 function vOportTem() {
   const I = interessadosCapt(), est = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
-  const L0 = ctxCapt().itens.map((it) => { const ints = I.get(it.id) || [], n = Math.max(ints.length, it.situacao === 'meu' ? it.int_n : 0); return { id: it.id, it, ints, n, ef: Math.min(5, it.estrelas + (n >= 3 ? 2 : n ? 1 : 0)) }; });
+  const L0 = capTem().map((it) => { const ints = I.get(it.id) || [], n = Math.max(ints.length, it.situacao === 'meu' ? it.int_n : 0); return { id: it.id, it, ints, n, ef: Math.min(5, it.estrelas + (n >= 3 ? 2 : n ? 1 : 0)) }; });
   const busca = !!qDe(), nCom = L0.filter((x) => x.n).length;
   const fO = BA.filtra(L0, qDe(), (x) => ({ txt: [x.it.fin, x.it.tipo, x.it.bairro, x.it.end, PAPEL_CAPT[x.it.papel], ...x.ints.map((y) => y.nome)].filter(Boolean).join(' · '), docs: [], valores: [x.it.valor], nums: { dorm: x.it.dorm } }));
   qInfo(fO, 'imóveis não captados');
@@ -1635,7 +1647,7 @@ function desenharAbas() {
   const pend = S.ehDono ? sts.filter((x) => x === 'pendente').length : sts.filter((x) => x === 'complemento').length;
   // 03/11/2026 (pedido do Cleiton): Demandas virou a sub-aba "Demandas extras" dentro de Oportunidades — sai do menu e soma o selo em Oportunidades
   // 03/11/2026: Pesquisar imóveis também ganhou sub-abas (Meus imóveis · Empreendimentos · Mapa) — tabela SUBS_P
-  const dentro = Object.values(SUBS_P).flatMap((s) => s[1].map((x) => x[0]));
+  const dentro = Object.values(SUBS_P).flatMap((s) => s[1].map((x) => x[0])).filter((k) => !SUBS_P[k]); // imoveis-ofertas: Ofertas é filha de Imóveis, mas Imóveis segue no menu
   document.getElementById('abas').innerHTML = abasOrdenadas().filter(([k]) => !dentro.includes(k)).map(([k, l]) => {
     const nop = k === 'oportunidades' ? DEM.novas() + DEM.pedAbertos() : 0; /* trocas-redesenho-f1 */   // demandas: novas não vistas + pedidos de alteração em aberto
     const n = k === 'acaptar' ? '' : k === 'tarefas' && TF.selo() ? `<span class="n">${TF.selo()}</span>` : k === 'leads' && alt ? `<span class="n">${alt}</span>` : k === 'solicitacoes' && pend ? `<span class="n">${pend}</span>` : nop ? `<span class="n" style="background:var(--warn-bg);color:var(--warn)">${nop}</span>` : '';
@@ -1664,12 +1676,12 @@ const baImv = (m) => { const pr = m.proprietario || {}; return { txt: [m.ref, m.
   docs: [pr.celular, pr.cpf, m.cep], valores: [m.valor], nums: { dorm: m.dorm, suites: m.suites, banh: m.banh, vagas: m.vagas } }; };
 
 // sub-abas (03/11/2026): aba-mãe → [rótulo, filhas]; cada filha continua com a aba própria por baixo
-const SUBS_P = { oportunidades: ['Ofertas', [['pesquisa', 'Pesquisar'], ['imoveis', 'Meus imóveis'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['semresp', 'Sem responsável'], ['demandas', 'Demandas extras'], ['demandas_auto', 'Demandas automáticas']]] }; /* trocas-redesenho-f1 */
+const SUBS_P = { oportunidades: ['Imóveis', [['pesquisa', 'Pesquisar'], ['imoveis', 'Meus imóveis'], ['empreendimentos', 'Empreendimentos'], ['mapa', 'Mapa'], ['oportunidades', 'Ofertas'], ['semresp', 'Sem responsável'], ['demandas', 'Demandas extras'], ['demandas_auto', 'Demandas automáticas']]] }; /* trocas-redesenho-f1 */
 const paiP = (k) => Object.keys(SUBS_P).find((m) => SUBS_P[m][1].some((x) => x[0] === k)) || '';
 function subOp() { const pai = SUBS_P[S.aba] ? S.aba : paiP(S.aba); if (!pai) return '';
   const n = (k) => k === 'demandas' ? DEM.novas() + DEM.pedAbertos() : 0;
   const bt = (k, t) => `<button type="button" role="tab" data-aba="${k}" aria-pressed="${S.aba === k}" aria-selected="${S.aba === k}">${t}${n(k) ? ` (${n(k)})` : ''}</button>`;
-  return `<div class="chips sub-op" role="tablist" aria-label="${esc(SUBS_P[pai][0])}" style="margin:0 0 12px">${bt(pai, SUBS_P[pai][0])}${SUBS_P[pai][1].map((x) => bt(x[0], x[1])).join('')}</div>`; }
+  return `<div class="chips sub-op" role="tablist" aria-label="${esc(SUBS_P[pai][0])}" style="margin:0 0 12px">${SUBS_P[pai][1].some((x) => x[0] === pai) ? '' : bt(pai, SUBS_P[pai][0])}${SUBS_P[pai][1].map((x) => bt(x[0], x[1])).join('')}</div>`; }
 // ---------- Tarefas e lembretes (08/11/2026, pedido do Cleiton) ----------
 // Tarefas gerais e lembretes do corretor, fora dos leads e das demandas extras. Coleção `tarefas` no banco do painel.
 // Origem: corretor (aqui), vivian (pedido no WhatsApp) ou diretoria (atribuída no Gestor ou pela Vivian). As da Vivian e da
@@ -4706,7 +4718,7 @@ document.addEventListener('click', async (ev) => {
   const t = ev.target.closest('button,a,[data-abre],[data-fundo]'); if (!t) return;
   if (t.matches('[data-fundo]') && ev.target === t) return fecharPedindo();   // trocas-usabilidade-f1 (Lucas #7)
   const d = t.dataset;
-  if (d.aba) { S.aba = d.aba; try { sessionStorage.setItem('painel.aba', S.aba); } catch (e) {} render(); window.scrollTo(0, 0); return; }
+  if (d.aba) { S.aba = d.aba === 'oportunidades' && t.matches('#abas button, #ml .ml-g') ? 'pesquisa' : d.aba; try { sessionStorage.setItem('painel.aba', S.aba); } catch (e) {} render(); window.scrollTo(0, 0); return; } // imoveis-ofertas: Imóveis (menu) abre em Pesquisar; Ofertas só pelo submenu
   if (d.fechar !== undefined) return fechar();
   if (d.ord) { const [k, c] = d.ord.split('|'); const st = S.sort[k]; S.sort[k] = { c, d: st && st.c === c ? -st.d : (['valor', 'atu', 'cad', 'entrada', '_ult', 'criado_em', 'area', 'dorm', 'vagas', 'data_prox', '_n', '_mat', '_vmin', '_m2', 'n', 'media', 'min'].includes(c) ? -1 : 1) }; if (k === 'vit') S.pagVit = 0; return render(); }
   if (d.ordm) { const st = S.sort.meus; S.sort.meus = { c: d.ordm, d: st.c === d.ordm ? -st.d : (['_end', 'bairro', 'ref'].includes(d.ordm) ? 1 : -1) }; return render(); }

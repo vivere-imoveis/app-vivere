@@ -109,12 +109,13 @@
   function escH(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   async function abreNativo(href) {
     var aba = abaDe(href), cfg = NATIVO[aba], t = NOMES[aba] || 'App';
-    var corpo = abreAba(aba, t, function () { if (aba === 'acessos' && window.ACESSOS) ACESSOS.sair(); }, true); if (!corpo) return;
+    var corpo = abreAba(aba, t, function () { if (aba === 'acessos' && window.ACESSOS) ACESSOS.sair(); }, aba !== 'semresp'); if (!corpo) return;   /* imoveis-ofertas: Sem responsável já traz o próprio título */
     corpo.innerHTML = '<div id="app-nativo"><div class="vazio">Carregando ' + escH(t) + '…</div></div>';
     var ov = document.getElementById('aba-app');
     var raiz = ov.querySelector('#app-nativo');
     try {
       await carrega('app-nativo.css', true);
+      if (aba === 'semresp' && ABA.id === 'semresp') subsNaAba(ov);   /* imoveis-ofertas: o submenu de Imóveis continua à vista */
       if (!window[cfg[0]]) await carrega(cfg[1]);
       var P = VIVERE_PONTE.contextoApp();
       var ctx = { sb: P.sb, eu: P.eu, sessaoUid: P.sessaoUid, esc: escH,
@@ -128,6 +129,14 @@
     } catch (e) {
       raiz.innerHTML = '<div class="vazio">Não deu para abrir ' + escH(t) + ' aqui: ' + escH(e && e.message || e) + '</div>';
     }
+  }
+  /* imoveis-ofertas (22/11/2026): Sem responsável é sub-aba de Imóveis — a tela do app mostra a mesma fila de sub-abas,
+     com Sem responsável marcada (no menu lateral a fila fica escondida, como as outras) */
+  function subsNaAba(h) {
+    var s = document.querySelector('#conteudo .sub-op'); if (!s || !h || h.querySelector('.sub-op')) return;
+    var c = s.cloneNode(true);
+    c.querySelectorAll('button[data-aba]').forEach(function (b) { var on = b.getAttribute('data-aba') === 'semresp'; b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-selected', String(on)); });
+    h.insertBefore(c, h.firstChild);
   }
   function ir(href) { if (nativo(href)) return abreNativo(href); if (embutivel(href)) return abreDentro(href); if (!DENTRO) return avisoFora(href); volta(); location.href = href; }
   /* links para essas telas (botões do topo, barra mini, cartões do Início): no Gestor do claude.ai o artefato.js abriria fora;
