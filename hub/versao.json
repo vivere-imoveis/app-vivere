@@ -1,8 +1,8 @@
 {
- "hub_versao": "1795448577-f45f",
+ "hub_versao": "1795449925-a6c5",
  "index_original_sha16": "8d9ba93a63edd033",
  "nucleos": 7,
- "montado_em": "2026-11-23T12:10-03:00",
+ "montado_em": "2026-11-23T13:06-03:00",
  "fora_por_serem_dados": [],
  "arquivos": {
   "hub-web.js": "1bbdb1558815e55b",
@@ -20,6 +20,8 @@
   "modulos/cadastro-imoveis.js": "9020d3a512d5f225",
   "modulos/captacao-leads.js": "3283406ce0b544f0",
   "modulos/captei.js": "a7b27561e30989f8",
+  "modulos/central-vivian.html": "d2577aec3360ead1",
+  "modulos/central-vivian.js": "1c80b4dd99b945c8",
   "modulos/chamados.js": "27c2fdac5d562b45",
   "modulos/concorrentes.js": "353efba082d93dc2",
   "modulos/demandas-auto.js": "93679e0965e09075",
