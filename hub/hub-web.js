@@ -50,6 +50,8 @@
     var s = await sb.auth.getSession();
     var sessao = s && s.data && s.data.session;
     if (!sessao) { location.replace('../index.html'); return nunca(); }
+    /* 23/11/2026 (2FA): conta com autenticador e sessão sem o código → volta ao início do app, que pede o código */
+    try { var aal = await sb.auth.mfa.getAuthenticatorAssuranceLevel(); if (aal && aal.data && aal.data.nextLevel === 'aal2' && aal.data.currentLevel !== 'aal2') { location.replace('../index.html'); return nunca(); } } catch (e) { }
     ctx.uid = sessao.user.id;
     var r = await sb.rpc('hub_web_colecoes');
     if (r.error) {

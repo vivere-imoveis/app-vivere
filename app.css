@@ -241,3 +241,13 @@ html.embed main#conteudo{padding-top:14px}
 .lista-paineis .btn{font-size:13px;padding:6px 10px}
 @media (min-width:601px){.grade-central{grid-template-columns:repeat(var(--n,3),minmax(0,1fr))}}
 @media (max-width:600px){.grade-central>.estica-cel{grid-column:1/-1}}
+
+/* 23/11/2026 — 2FA (seguranca.js): código no login e Segurança da conta */
+.campo-codigo{font-size:22px!important;letter-spacing:.35em;text-align:center;font-variant-numeric:tabular-nums;max-width:220px}
+.seg2fa .qr-caixa{display:flex;justify-content:center;margin:12px 0}
+.seg2fa .qr-caixa img{width:200px;height:200px;background:#fff;padding:10px;border-radius:10px;border:1px solid var(--linha,#ddd)}
+.seg2fa .chave-2fa{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;word-break:break-all;letter-spacing:.05em}
+.seg2fa .fatores{list-style:none;padding:0;margin:10px 0;display:grid;gap:8px}
+.seg2fa .fator{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--linha,#ddd);border-radius:8px}
+.seg2fa .fator .s{display:block}
+.seg2fa .passos{padding-left:20px;margin:8px 0 14px}

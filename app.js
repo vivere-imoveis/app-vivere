@@ -17,7 +17,7 @@
       if (/^painel\.html/.test(h) && !a.target) { ev.preventDefault(); try { window.parent.postMessage({ vivere: 'fechar-janela' }, location.origin); } catch (e) { } }
     }, true);
   }
-  var VERSAO = 'app-vivere 2026-11-22.2'; // Site sem os Destaques (ficam só no HUB) · 2026-11-22.1: central de login: só a escolha de painel, HUB e site (tarefa vis-app-inicio-central-login) · antes: 'app-vivere 2026-11-19.1'; // melhorias 122 (só o V no cabeçalho) e 123 (menu lateral com animação leve) · antes: // aba Estudo de Mercado (ACM, tarefa vivere-parecer-preco-comparaveis)
+  var VERSAO = 'app-vivere 2026-11-23.1'; // 2FA: código do autenticador no login e Segurança da conta (seguranca.js) · antes: 'app-vivere 2026-11-22.2'; // Site sem os Destaques (ficam só no HUB) · 2026-11-22.1: central de login: só a escolha de painel, HUB e site (tarefa vis-app-inicio-central-login) · antes: 'app-vivere 2026-11-19.1'; // melhorias 122 (só o V no cabeçalho) e 123 (menu lateral com animação leve) · antes: // aba Estudo de Mercado (ACM, tarefa vivere-parecer-preco-comparaveis)
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -53,7 +53,7 @@
   var acmParams = abaParam === 'acm' ? { ref: (new URLSearchParams(location.search).get('ref') || '').trim().slice(0, 30), estudo: (new URLSearchParams(location.search).get('estudo') || '').trim().slice(0, 40) } : null;
   if (abaParam) history.replaceState(null, '', APP_URL + location.hash);
 
-  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'acessos' || abaParam === 'destaques' || abaParam === 'acm' || abaParam === 'semresp' || abaParam === 'site') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
+  var estado = { sessao: null, eu: null, aba: (codParam || abaParam === 'acaptar') ? 'acaptar' : (abaParam === 'senha' || abaParam === 'seguranca' || abaParam === 'acessos' || abaParam === 'destaques' || abaParam === 'acm' || abaParam === 'semresp' || abaParam === 'site') ? abaParam : 'inicio', acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
 
   sb.auth.onAuthStateChange(function (evento, sessao) {
     if (evento === 'PASSWORD_RECOVERY') modoSenha = true;
@@ -66,6 +66,9 @@
   async function iniciar() {
     var r = await sb.auth.getSession();
     estado.sessao = r.data.session;
+    /* 23/11/2026 (2FA, fatia 1): conta com autenticador e sessão ainda sem o código → nada é lido antes do código */
+    estado.precisaCodigo = !!estado.sessao && !!window.SEGURANCA && await window.SEGURANCA.precisaCodigo(sb);
+    if (estado.precisaCodigo) { estado.eu = null; return desenhar(); }
     if (estado.sessao && !estado.eu) {
       var q = await sb.from('acessos').select('email,nome,papel,painel,ativo,hub').eq('user_id', estado.sessao.user.id).maybeSingle();
       estado.eu = q.data || null;
@@ -92,6 +95,7 @@
       return;
     }
     if (!estado.sessao) { abas.hidden = true; return telaEntrar(main); }
+    if (estado.precisaCodigo) { abas.hidden = true; return window.SEGURANCA.telaCodigo(main, { sb: sb, esc: esc, titulo: titulo, sair: sair }, function () { estado.precisaCodigo = false; iniciar(); }); }
     if (modoSenha) { abas.hidden = true; return telaSenha(main, true); }
     if (!estado.eu || !estado.eu.ativo) {
       abas.hidden = true; titulo('Acesso não liberado');
@@ -104,7 +108,7 @@
     var volta = ''; try { volta = sessionStorage.getItem('painel.volta') || ''; } catch (e) { }
     if (!/^painel\.html(\?ver=[a-z0-9_-]{1,40})?$/.test(volta)) volta = '';
     var dst = window.DESTAQUES && window.DESTAQUES.pode(estado.eu);
-    var NOMES = { acaptar: 'A CAPTAR', semresp: 'Imóveis sem responsável', acm: 'Estudo de Mercado', senha: 'Minha senha', acessos: 'Acessos', destaques: 'Destaques do site', site: 'Site' };
+    var NOMES = { acaptar: 'A CAPTAR', semresp: 'Imóveis sem responsável', acm: 'Estudo de Mercado', senha: 'Minha senha', seguranca: 'Segurança da conta', acessos: 'Acessos', destaques: 'Destaques do site', site: 'Site' };
     if (estado.aba === 'site' && !souDiretoria()) estado.aba = 'inicio';
     if ((estado.aba === 'destaques' && !dst) || (estado.aba === 'acessos' && estado.eu.papel !== 'gestor')) estado.aba = 'inicio';
     if (estado.aba === 'inicio' || !NOMES[estado.aba]) { estado.aba = 'inicio'; abas.hidden = true; abas.innerHTML = ''; }
@@ -119,6 +123,7 @@
     }
     if (estado.aba === 'site') return telaSite(main);
     if (estado.aba === 'senha') return telaSenha(main, false);
+    if (estado.aba === 'seguranca' && window.SEGURANCA) return window.SEGURANCA.tela(main, contexto());
     if (estado.aba === 'acessos' && estado.eu.papel === 'gestor' && window.ACESSOS) return window.ACESSOS.tela(main, contexto()); /* 22/11/2026: acessos.js */
     if (estado.aba === 'destaques' && dst) return window.DESTAQUES.tela(main, contexto());
     if (estado.aba === 'acm' && window.ACM) { var ap = acmParams; acmParams = null; return window.ACM.tela(main, contexto(), ap); }
@@ -196,7 +201,7 @@
     return '<div class="cartao"><h3>Site</h3><p>Atualizações e construções do site próprio.</p><div class="linha-acoes"><button class="btn pri" id="irSite">Abrir o site</button></div></div>';
   }
   function cartaoConta() {
-    return '<div class="cartao"><h3>Minha conta</h3><p data-sens>' + esc(estado.eu.email) + '</p><div class="linha-acoes"><button class="btn" id="irSenha">Trocar senha</button><button class="btn" id="sair">Sair</button></div></div>';
+    return '<div class="cartao"><h3>Minha conta</h3><p data-sens>' + esc(estado.eu.email) + '</p><div class="linha-acoes"><button class="btn" id="irSenha">Trocar senha</button><button class="btn" id="irSeg">Segurança (2FA)</button><button class="btn" id="sair">Sair</button></div></div>';
   }
 
   /* Grade sem espaço vazio (padrão de 08/11/2026): os cartões curtos ocupam uma linha só no computador (colunas = quantidade,
@@ -212,6 +217,7 @@
     main.innerHTML = grade([cartaoPainel(), cartaoHub(), cartaoSite(), cartaoConta()], cartaoPaineis()) + '<p class="s" style="margin-top:24px">' + VERSAO + '</p>';
     $('#sair').onclick = sair;
     $('#irSenha').onclick = function () { estado.aba = 'senha'; desenhar(); };
+    $('#irSeg').onclick = function () { estado.aba = 'seguranca'; desenhar(); };
     if ($('#irGestor')) $('#irGestor').onclick = function () { irPainel('gestor'); };
     if ($('#irPainel')) $('#irPainel').onclick = function () { irPainel(''); };
     if ($('#irSite')) $('#irSite').onclick = function () { estado.aba = 'site'; desenhar(); };
@@ -246,7 +252,7 @@
 
   function contexto() { return { sb: sb, eu: estado.eu, sessaoUid: estado.sessao.user.id, esc: esc, toast: toast, titulo: titulo }; }
 
-  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.SEMRESP) window.SEMRESP.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); if (window.ACM) window.ACM.sair(); if (window.ACESSOS) window.ACESSOS.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
+  async function sair() { if (window.ACAPTAR) window.ACAPTAR.sair(); if (window.SEMRESP) window.SEMRESP.sair(); if (window.DESTAQUES) window.DESTAQUES.sair(); if (window.ACM) window.ACM.sair(); if (window.ACESSOS) window.ACESSOS.sair(); if (window.SEGURANCA) window.SEGURANCA.sair(); try { indexedDB.deleteDatabase('vivere-painel'); } catch (e) { } await sb.auth.signOut(); estado.eu = null; estado.sessao = null; desenhar(); }
 
   iniciar();
 })();

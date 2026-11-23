@@ -1,13 +1,16 @@
 /* acessos.js — tela "Acessos" do gestor como módulo (22/11/2026), para abrir igual no app (index.html) e dentro do painel
    (painel-app.js › abreNativo, também no PAINEL DO GESTOR do claude.ai, onde a função acessos-admin passa pela ponte do
    conector — liberada pelo Cleiton em 22/11, 19h12). Código movido do app.js sem mudar o comportamento.
-   window.ACESSOS.tela(raiz, ctx): ctx = { sb, eu, esc, toast, titulo }. O banco e a função conferem que é o gestor. */
+   window.ACESSOS.tela(raiz, ctx): ctx = { sb, eu, esc, toast, titulo }. O banco e a função conferem que é o gestor.
+   23/11/2026 (2FA, fatia 2): selo "2FA" na situação e botão "Zerar 2FA" (perdeu o celular) — só no app; no PAINEL DO
+   GESTOR do claude.ai a ponte do conector não leva essa ação, então ali aparece só o selo. */
 (function () {
   'use strict';
   var C = { sb: null, eu: null, toast: function () { }, titulo: null };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var dataHora = function (iso) { if (!iso) return '—'; var d = new Date(iso); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
-  var estado = { acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, carregando: false };
+  var estado = { acessos: [], registro: [], ordem: { campo: 'nome', dir: 1 }, link: null, confirmar: null, zerar: null, carregando: false };
+  var NO_GESTOR = !!window.__artefatoLoja;   /* PAINEL DO GESTOR (claude.ai): sem Zerar 2FA */
   async function chamar(corpo) {
     var r = await C.sb.functions.invoke('acessos-admin', { body: corpo });
     if (r.error) {
@@ -80,13 +83,15 @@
         if (a.senha_criada) ac.push('<button class="btn" data-a="redefinir" data-e="' + esc(a.email) + '">Enviar link de nova senha</button>');
         else ac.push('<button class="btn pri" data-a="convidar" data-e="' + esc(a.email) + '">' + (a.convidado_em ? 'Reenviar convite' : 'Enviar convite') + '</button>');
         ac.push('<button class="btn" data-a="gerar_link" data-e="' + esc(a.email) + '">Gerar link</button>');
+        if (a.dois_fatores > 0 && !NO_GESTOR) ac.push('<button class="btn" data-a="zerar" data-e="' + esc(a.email) + '">Zerar 2FA</button>');
         if (!eu) ac.push('<button class="btn perigo" data-a="tirar" data-e="' + esc(a.email) + '">Tirar acesso</button>');
       }
       var extra = '';
       if (estado.confirmar === a.email) extra = '<div class="confirmar">Tirar o acesso de ' + esc(a.nome) + '? Ele sai do app na hora e não entra mais até você reativar.<div class="linha-acoes"><button class="btn perigo" data-a="tirar_ok" data-e="' + esc(a.email) + '">Sim, tirar acesso</button><button class="btn" data-a="cancelar">Cancelar</button></div></div>';
+      if (estado.zerar === a.email) extra = '<div class="confirmar">Zerar o 2FA de ' + esc(a.nome) + '? Os autenticadores dele são apagados; no próximo login ele entra só com a senha e cadastra o celular de novo em Minha conta.<div class="linha-acoes"><button class="btn perigo" data-a="zerar_ok" data-e="' + esc(a.email) + '">Sim, zerar</button><button class="btn" data-a="cancelar">Cancelar</button></div></div>';
       if (estado.link && estado.link.email === a.email) extra = '<div class="msg aviso" style="margin-top:8px">Link de uso único para ' + esc(a.nome) + ' (vale por tempo limitado; mande só para ele):<input readonly value="' + esc(estado.link.link) + '" data-sens style="margin-top:6px"><div class="linha-acoes" style="margin-top:6px"><button class="btn" data-a="copiar">Copiar o link</button></div></div>';
       return '<tr class="' + (a.ativo ? '' : 'desligado') + '"><td class="c-nome"><b>' + esc(a.nome) + '</b><span class="s" data-sens>' + esc(a.email) + '</span>' + (a.painel ? '<span class="s">painel: ' + esc(a.painel) + '</span>' : '') + '</td>' +
-        '<td data-r="Papel">' + esc(a.papel) + '</td><td data-r="Situação"><span class="pill ' + st[1] + '">' + st[0] + '</span>' + (a.convidado_em && !a.senha_criada ? '<span class="s">convite ' + dataHora(a.convidado_em) + '</span>' : '') + '</td>' +
+        '<td data-r="Papel">' + esc(a.papel) + '</td><td data-r="Situação"><span class="pill ' + st[1] + '">' + st[0] + '</span>' + (a.dois_fatores > 0 ? ' <span class="pill ok" title="Verificação em duas etapas ligada">2FA</span>' : '') + (a.convidado_em && !a.senha_criada ? '<span class="s">convite ' + dataHora(a.convidado_em) + '</span>' : '') + '</td>' +
         '<td data-r="Último acesso">' + dataHora(a.ultimo_acesso) + '</td><td class="c-acoes"><div class="linha-acoes">' + ac.join('') + '</div>' + extra + '</td></tr>';
     }).join('');
     var reg = estado.registro.slice(0, 20).map(function (r) { return '<li>' + dataHora(r.quando) + ' · ' + esc(r.acao) + (r.email ? ' · <span data-sens>' + esc(r.email) + '</span>' : '') + (r.detalhe ? ' · ' + esc(r.detalhe) : '') + '</li>'; }).join('');
@@ -113,12 +118,14 @@
     main.querySelectorAll('[data-a]').forEach(function (b) {
       b.onclick = async function () {
         var a = b.dataset.a, email = b.dataset.e;
-        if (a === 'cancelar') { estado.confirmar = null; return telaAcessos(main); }
-        if (a === 'tirar') { estado.confirmar = email; estado.link = null; return telaAcessos(main); }
+        if (a === 'cancelar') { estado.confirmar = null; estado.zerar = null; return telaAcessos(main); }
+        if (a === 'zerar') { estado.zerar = email; estado.confirmar = null; estado.link = null; return telaAcessos(main); }
+        if (a === 'tirar') { estado.confirmar = email; estado.zerar = null; estado.link = null; return telaAcessos(main); }
         if (a === 'copiar') { try { await navigator.clipboard.writeText(estado.link.link); C.toast('Link copiado.'); } catch (e) { C.toast('Copie o link manualmente.'); } return; }
         b.disabled = true;
         try {
           if (a === 'tirar_ok') { await chamar({ acao: 'tirar_acesso', email: email }); estado.confirmar = null; C.toast('Acesso tirado.'); }
+          else if (a === 'zerar_ok') { var z = await chamar({ acao: 'zerar_2fa', email: email }); estado.zerar = null; C.toast('2FA zerado (' + ((z && z.apagados) || 0) + ' autenticador).'); }
           else if (a === 'gerar_link') { var d = await chamar({ acao: 'gerar_link', email: email }); estado.link = { email: email, link: d.link }; }
           else { await chamar({ acao: a, email: email }); C.toast(a === 'reativar' ? 'Acesso reativado.' : 'E-mail enviado para ' + email + '.'); }
           await carregarAcessos();
@@ -132,9 +139,9 @@
     tela: function (raiz, ctx) {
       C = { sb: ctx.sb, eu: ctx.eu, toast: ctx.toast || function () { }, titulo: ctx.titulo || null };
       if (!C.eu || C.eu.papel !== 'gestor') { raiz.innerHTML = '<div class="vazio">Acessos é só do gestor.</div>'; return; }
-      estado.link = null; estado.confirmar = null;
+      estado.link = null; estado.confirmar = null; estado.zerar = null;
       return telaAcessos(raiz);
     },
-    sair: function () { estado.acessos = []; estado.registro = []; estado.link = null; estado.confirmar = null; }
+    sair: function () { estado.acessos = []; estado.registro = []; estado.link = null; estado.confirmar = null; estado.zerar = null; }
   };
 })();

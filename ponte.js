@@ -52,6 +52,8 @@
     var s = await sb.auth.getSession();
     var sessao = s && s.data && s.data.session;
     if (!sessao) return paraOInicio();
+    /* 23/11/2026 (2FA): conta com autenticador e sessão sem o código → volta ao início, que pede o código */
+    try { var aal = await sb.auth.mfa.getAuthenticatorAssuranceLevel(); if (aal && aal.data && aal.data.nextLevel === 'aal2' && aal.data.currentLevel !== 'aal2') return paraOInicio(); } catch (e) { }
     ctx.uid = sessao.user.id;
     var q = await sb.from('acessos').select('email,nome,papel,painel,ativo,corretor_id,hub').eq('user_id', ctx.uid).maybeSingle();
     if (q.error) return fatal('Não deu para conferir o seu acesso agora. Recarregue a página.');
