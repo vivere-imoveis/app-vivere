@@ -14,7 +14,7 @@
    pasta vendor/): o HUB e o painel a carregam pelo endereço VENDOR abaixo, inclusive no claude.ai. */
 (function () {
   if (window.VivereMapa3D) return;
-  const VERSAO = '2026-11-23.6'; // .6: por perto com 13 tipos em 4 grupos de um toque (vis-mapa-proximidades-imovel, fatia C)
+  const VERSAO = '2026-11-23.7'; // .7: pontos no mesmo lugar abrem em espiral · .6: por perto com 13 tipos em 4 grupos de um toque (vis-mapa-proximidades-imovel, fatia C)
   const VENDOR = 'https://vivere-imoveis.github.io/app-vivere/vendor/';
   const ESTILO = { claro: 'https://tiles.openfreemap.org/styles/positron', escuro: 'https://tiles.openfreemap.org/styles/dark' };
   const RELEVO = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png';
@@ -142,7 +142,13 @@
     mapa.on('error', (e) => { const msg0 = String((e && e.error && e.error.message) || ''); if (/worker/i.test(msg0) || (!mapa.isStyleLoaded() && /fetch|Failed|NetworkError|style|CSP|Refused/i.test(msg0))) falha('Não consegui abrir o mapa 3D aqui: ' + msg0 + '.'); });
 
     function dados() {
-      const fs = lista.filter((x) => x && x.lat != null && x.lng != null).map((x) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [+x.lng, +x.lat] },
+      // pontos no mesmo lugar (ex.: vários imóveis só com o bairro, no centro do bairro) se abrem em espiral de poucos metros,
+      // para o grupo "5" não virar 1 ponto só ao aproximar (pedido do Cleiton, 23/11/2026 13h05)
+      const L = lista.filter((x) => x && x.lat != null && x.lng != null), juntos = new Map(), pos = new Map();
+      L.forEach((x) => { const k = (+x.lat).toFixed(5) + ',' + (+x.lng).toFixed(5); (juntos.get(k) || juntos.set(k, []).get(k)).push(x); });
+      juntos.forEach((g) => { if (g.length < 2) return; const la = +g[0].lat * Math.PI / 180;
+        g.forEach((x, i) => { const r = 14 * Math.sqrt(i + 1), a = i * 2.39996; pos.set(x, [+x.lng + r * Math.cos(a) / (111320 * Math.cos(la)), +x.lat + r * Math.sin(a) / 110540]); }); });
+      const fs = L.map((x) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: pos.get(x) || [+x.lng, +x.lat] },
         properties: { id: String(x.id), cor: corReal(el, x.cor), aprox: x.aprox ? 1 : 0, destaque: x.destaque ? 1 : 0, emp: x.emp ? 1 : 0, ic: x.emp ? 'los-' + corReal(el, x.cor) : '', titulo: x.titulo || '' } }));
       return { type: 'FeatureCollection', features: fs };
     }

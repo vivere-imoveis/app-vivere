@@ -4327,7 +4327,7 @@ function itensMapa() {
   const fP = BA.filtra(its, qDe('mapa'), baImv); if (S.aba === 'mapa') qInfo(fP, 'pontos'); return fP.lista;
 }
 // Perto daqui (23/11/2026, vis-mapa-proximidades-imovel fatia B): proximidades prontas do HUB (mapa_proximidades) no cartão.
-const PX_V = '7f0e611c';
+const PX_V = '75404c05';
 let PX_CARGA = null;
 function pmPertoLeitor(ref) { const P = window.VIVERE_PONTE, sb = P && P.contextoApp && P.contextoApp().sb; if (!sb) return Promise.reject(new Error('sem conexão'));
   return sb.rpc('hub_consultar', { p_colecao: 'mapa_proximidades', p_doc: ref, p_limite: 1 }).then((r) => { if (r.error) throw r.error; const it = ((r.data || {}).itens || [])[0]; return it ? it.dados : null; }); }
@@ -4337,7 +4337,7 @@ function pmPerto(x) {
   if (!x || !x.ref || !(window.VIVERE_PONTE && VIVERE_PONTE.contextoApp)) return '';
   const vai = () => window.VivereProx.encherDepois(pmPertoLeitor, pmPertoDepois);
   if (window.VivereProx) vai(); else (PX_CARGA || (PX_CARGA = scriptMapa('perto-imovel.js?v=' + PX_V).catch((e) => { PX_CARGA = null; throw e; }))).then(vai, () => {});
-  return `<div class="vp-perto" data-vpref="${esc(String(x.ref).toUpperCase())}"></div>`;
+  return `<div class="pxp-caixa" data-pxpref="${esc(String(x.ref).toUpperCase())}"></div>`;
 }
 function popupMapa(x) {
   const fatos = [x.dorm ? `${x.dorm} dorm.` : '', x.suites ? `${x.suites} suíte${x.suites > 1 ? 's' : ''}` : '', x.vagas ? `${x.vagas} vaga${x.vagas > 1 ? 's' : ''}` : '', x.area ? num(x.area, 1) + ' m²' : ''].filter(Boolean).join(' · ');
@@ -4423,7 +4423,7 @@ function pmRotClique(t, d) {
 // ---------- Vista 3D ao lado do mapa 2D (23/11/2026, tarefa vis-mapa-3d-hub-painel) ----------
 // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026. Recebe os mesmos
 // pontos já filtrados do 2D; a escolha 2D/3D fica guardada no aparelho.
-const PM3D_V = '49845bc6';
+const PM3D_V = '97ccd7d6';
 let PM3D = null, PM3D_EST = 'fechado', PM3D_FOCO = null, PM3D_L = [], PM3D_IX = new Map();
 const pm3dLigado = () => { try { return localStorage.getItem('painel.mapa.vista') === '3d'; } catch (e) { return false; } };
 function pm3dGuarda(its, ems) {

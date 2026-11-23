@@ -723,7 +723,7 @@ window.MultiSel = window.MultiSel || (function () {
 
   // ------------------------------------------------------------ vista 3D (23/11/2026, tarefa vis-mapa-3d-hub-painel)
   // Maquete grátis (MapLibre + relevo da AWS + prédios do OpenFreeMap), escolhida pelo Cleiton em 22/11/2026, ao lado do 2D.
-  const MP3D_V = '49845bc6';
+  const MP3D_V = '97ccd7d6';
   let MP3D = null, MP3D_EST = 'fechado', MP3D_FOCO = null, MP3D_L = [];
   const mp3dLigado = () => { try { return localStorage.getItem('hubv.mapa.vista') === '3d'; } catch (_) { return false; } };
   function mp3dGuarda(V, v) {
@@ -768,7 +768,7 @@ window.MultiSel = window.MultiSel || (function () {
     if (window.innerWidth < 900) { const c = $('mp-mapa3d'); if (c && !c.hidden) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }
 
   // ------------------------------------------------------------ perto daqui (23/11/2026, vis-mapa-proximidades-imovel fatia B)
-  const PX_V = '7f0e611c'; let PX_CARGA = null;
+  const PX_V = '75404c05'; let PX_CARGA = null;
   function mpPertoLeitor(ref) {
     return window.claude.use('mcp').then((m) => { if (!m) throw new Error('sem conector'); return m.callTool('Vivere Conversas', 'hub_ler', { colecao: 'mapa_proximidades', doc_id: ref, limite: 1 }, { cache: false }); })
       .then((r) => { let p = r && r.payload; if (typeof p === 'string') { try { p = JSON.parse(p); } catch (e) { p = null; } } const x = ((p || {}).itens || [])[0]; return x ? x.dados : null; }); }
@@ -776,7 +776,7 @@ window.MultiSel = window.MultiSel || (function () {
     if (!it || it.camada !== 'anuncio' || !it.ref || !ok('endereco') || !window.claude || !window.claude.use) return '';
     const vai = () => window.VivereProx.encherDepois(mpPertoLeitor);
     if (window.VivereProx) vai(); else (PX_CARGA || (PX_CARGA = script('modulos/perto-imovel.js?v=' + PX_V).catch((e) => { PX_CARGA = null; throw e; }))).then(vai, () => {});
-    return `<div class="vp-perto" data-vpref="${esc(String(it.ref).toUpperCase())}"></div>`; }
+    return `<div class="pxp-caixa" data-pxpref="${esc(String(it.ref).toUpperCase())}"></div>`; }
 
   // ------------------------------------------------------------ roteiro de visitas (23/11/2026, vis-mapa-crm-video-otimizacao, fatia 1)
   let MPR = null, MPR_L = null;
