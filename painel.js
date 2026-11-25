@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -5572,6 +5572,28 @@ function rdAgendaSemana() {
 }
 document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-fx]'); if (!t) return; ev.preventDefault();
   S.fm = S.fm || { fin: '', sit: '' }; S.fm.fx = t.dataset.rdFx; window.PAINEL_IR('imoveis'); });
+// trocas-inicio-pendencias (25/11/2026, pedido do Cleiton): imóveis com dados pendentes em destaque no topo do Início
+const RD_PEND_G = { endereco: 'endereço', caracteristicas: 'características', valores: 'valores', proprietario: 'proprietário', divulgacao: 'placa e lazer', anuncio: 'anúncio' };
+function rdPendencias() {
+  const P = window.PENDENCIAS && PENDENCIAS.dados ? PENDENCIAS.dados() : null;
+  const im = ((P && P.imoveis) || []).slice(); if (!im.length) return '';
+  const temEnd = (x) => ((x.faltam || []).some((f) => f.grupo === 'endereco') ? 1 : 0);
+  im.sort((a, b) => temEnd(b) - temEnd(a) || (b.n || 0) - (a.n || 0) || String(a.ref || '').localeCompare(String(b.ref || '')));
+  const nEnd = im.filter(temEnd).length, lim = 5, nLd = ((P && P.leads) || []).length;
+  const its = im.slice(0, lim).map((x) => {
+    const gs = [...new Set((x.faltam || []).map((f) => f.grupo))].map((g) => RD_PEND_G[g] || g);
+    const ident = [x.tipo, x.bairro, x.edificio].filter(Boolean).join(' · ');
+    return `<div class="rd-pend-it"><div class="rd-it-t"><b>${esc(x.ref || x.id)}</b><span>${ident ? esc(ident) + ' · ' : ''}falta ${esc(gs.join(', '))}</span></div><button class="b" type="button" data-rd-pend="${esc(x.id)}">Informar</button></div>`;
+  }).join('');
+  const resto = im.length - Math.min(im.length, lim);
+  return `<section class="rd-pend" aria-labelledby="rdPendT"><h2 id="rdPendT"><span aria-hidden="true">⚠</span> Dados pendentes dos seus imóveis <small>${im.length} ${im.length === 1 ? 'imóvel' : 'imóveis'} com informação faltando${nEnd ? ` · ${nEnd} sem endereço completo` : ''}</small></h2>
+    <p class="rd-pend-sub">Sem esses dados a Vivere não consegue anunciar, levar cliente nem fechar contrato. Informe aqui ou mande para a Vivian: vale na hora no CRM, no HUB e no site.</p>
+    <div class="rd-pend-lista">${its}</div>
+    <p class="rd-nota">${resto > 0 ? `E mais ${resto}. ` : ''}<button class="copiar" type="button" data-rd-pend="">Ver todas as pendências</button>${nLd ? ` · ${nLd} ${nLd === 1 ? 'lead' : 'leads'} sem atualização` : ''}</p></section>`;
+}
+document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-pend]'); if (!t || !window.PENDENCIAS) return; ev.preventDefault();
+  const id = t.dataset.rdPend; if (id && PENDENCIAS.abrirImovel) PENDENCIAS.abrirImovel(id); else PENDENCIAS.abrir(); });
+document.addEventListener('pendencias:carregadas', () => { if (S.aba === 'inicio') render(); });
 function vInicioRD() {
   const L = Object.values(S.leads), av0 = todosAvisos();
   const fAv = BA.filtra(av0, qDe(), (a) => { const l = S.leads[a.id] || {}, m = a.imv ? S.meus[a.imv] || {} : null; if (m) { const x = baImv({ ...m, descricao: '' }); return { ...x, txt: [a.t, a.o, x.txt].join(' · ') }; } return { ...baLead(l), txt: [a.t, a.o, baLead(l).txt].join(' · ') }; });
@@ -5624,7 +5646,7 @@ function vInicioRD() {
     <div class="rd-ola"><div><h1>Olá${prim ? ', ' + esc(prim) : ''}.</h1><p>${esc(data.charAt(0).toUpperCase() + data.slice(1))}</p></div>
       <div class="rd-acoes"><button class="b p" type="button" data-conversa="">${rdIc('balao')}Registrar conversa</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">${rdIc('microfone')}Por voz</button><button class="b rd-ico" type="button" data-tela="inicio" aria-label="Personalizar o Início" title="Personalizar o Início">${rdIc('blocos')}</button></div></div>
     <div class="rd-grade">
-      <div class="rd-col1">${fila}${metas ? `<section class="rd-metas rd-metas2">${metas}</section>` : ''}</div>
+      <div class="rd-col1">${rdPendencias()}${fila}${metas ? `<section class="rd-metas rd-metas2">${metas}</section>` : ''}</div>
       <div class="rd-col2">${numeros}${rdPizzaAgenc()}${rdAgendaSemana()}</div>
     </div>
     <section class="rd-prazos" style="margin-top:16px">${painelPrazos()}</section>

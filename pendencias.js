@@ -34,6 +34,7 @@
   var FORA = { descricao: 'A descrição passa pela aprovação da diretoria: peça pela aba Solicitações.',
     proprietario: 'O proprietário é vinculado no Imobibrasil: avise o William ou o Nicollas.' };
 
+  var assinatura = '';   /* trocas-inicio-pendencias */ // o Início do painel redesenha quando a lista muda
   var dados = null, carregando = false, erroCarga = '', aba = 'imoveis', filtro = '', aberto = null, porPag = lePorPag(), pag = 0;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -46,7 +47,9 @@
   function carrega() {
     var P = ponte(); if (!P || !P.pendencias || carregando) return Promise.resolve();
     carregando = true;
-    return P.pendencias().then(function (d) { dados = d || { imoveis: [], leads: [] }; erroCarga = ''; },
+    return P.pendencias().then(function (d) { dados = d || { imoveis: [], leads: [] }; erroCarga = '';
+      var sig = ''; try { sig = JSON.stringify(dados); } catch (e) { sig = String(Date.now()); }
+      if (sig !== assinatura) { assinatura = sig; setTimeout(function () { try { document.dispatchEvent(new CustomEvent('pendencias:carregadas')); } catch (e) {} }, 0); } },
       function (e) { erroCarga = (e && e.message) || 'erro'; })
       .then(function () { carregando = false; pintaBotao(); if (tela() && !tela().hidden && !aberto) desenha(); });
   }
@@ -304,7 +307,19 @@
     carrega(); setInterval(function () { if (!document.hidden) carrega(); }, 240000);
     if (/[?&]pendencias=1\b/.test(location.search)) entrar();
   }
-  window.PENDENCIAS = { abrir: entrar, fechar: fechar, reler: carrega, abrirEm: abrirEm, sairDaAba: sairDaAba };
+  /* trocas-inicio-pendencias (25/11/2026): o Início lê a mesma lista e abre um imóvel direto no formulário */
+  function abrirImovel(id) {
+    aba = 'imoveis'; filtro = ''; aberto = String(id || '') || null;
+    var im = (dados && dados.imoveis) || [], i = -1; for (var k = 0; k < im.length; k++) if (String(im[k].id) === aberto) { i = k; break; }
+    pag = i >= 0 ? Math.floor(i / porPag) : 0; if (i < 0) aberto = null;
+    entrar();
+    var vezes = 0, alvo = aberto, vai = function () {
+      var t = tela(), card = t && alvo ? t.querySelector('.pend-im[data-id="' + (window.CSS && CSS.escape ? CSS.escape(alvo) : alvo) + '"]') : null;
+      if (card) { card.scrollIntoView({ block: 'start', behavior: 'smooth' }); var f = card.querySelector('.pend-form input'); if (f) setTimeout(function () { try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }, 350); return; }
+      if (++vezes < 12) setTimeout(vai, 150);
+    }; if (alvo) setTimeout(vai, 120);
+  }
+  window.PENDENCIAS = { abrir: entrar, fechar: fechar, reler: carrega, abrirEm: abrirEm, sairDaAba: sairDaAba, abrirImovel: abrirImovel, dados: function () { return dados; } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
   document.addEventListener('error', function (ev) { var t = ev.target; if (t && t.tagName === 'IMG' && t.classList.contains('pend-foto')) { var sp = document.createElement('span'); sp.className = 'pend-foto sem'; sp.setAttribute('aria-hidden', 'true'); sp.textContent = '⌂'; t.replaceWith(sp); } }, true);
 })();

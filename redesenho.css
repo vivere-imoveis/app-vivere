@@ -158,3 +158,15 @@ body.ml-on #ml{min-width:208px;max-width:240px;padding:16px 12px 24px;gap:2px}
 .rd-ag-it .rd-it-t{flex:1 1 auto;min-width:0}
 .rd-ag-ic{flex:0 0 18px;text-align:center;opacity:.7}
 @media (max-width:600px){.rd-inicio .rd-metas2 .mt-duplo-cab small{display:block;margin:2px 0 0;white-space:normal}.rd-inicio .rd-metas2 .mt-duplo-cab{white-space:normal}}
+
+/* trocas-inicio-pendencias */ (25/11/2026): imóveis com dados pendentes em destaque no topo do Início */
+.rd-pend{border:1px solid color-mix(in srgb,var(--warn) 55%,var(--line));border-left:4px solid var(--warn);background:var(--warn-bg);border-radius:var(--rd-r2);padding:14px 16px;display:grid;gap:6px;margin-bottom:4px}
+.rd-pend h2{margin:0;font:500 21px/1.2 var(--display)}
+.rd-inicio .rd-pend h2 small{display:block;font:500 14px var(--body);color:var(--warn);margin-top:3px}
+.rd-pend-sub{margin:0 0 2px;font-size:13.5px;color:var(--muted);text-align:left}
+.rd-pend-lista{display:grid}
+.rd-pend-it{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid color-mix(in srgb,var(--warn) 25%,transparent)}
+.rd-pend-it .rd-it-t{flex:1 1 auto;min-width:0}
+.rd-pend-it .rd-it-t span{display:block;font-size:13px;color:var(--muted)}
+.rd-pend-it .b{padding:4px 12px;min-height:0;font-size:13px;flex:0 0 auto}
+.rd-pend .rd-nota{margin:2px 0 0}
