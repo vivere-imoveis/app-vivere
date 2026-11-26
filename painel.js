@@ -2291,14 +2291,14 @@ function vArquivados() {
   L = BA.filtra(L, qDe(), baLead).lista;
   const cols = [
     { k: 'nome', l: 'Nome', h: (r) => `<b>${esc(r.nome || '—')}</b>` },
-    ...(S.gestor ? [{ k: '_dono', l: 'Corretor', v: (r) => gNome(r._dono), h: (r) => esc(gCurto(r._dono)) }] : []),
+    ...(S.gestor ? [{ k: '_dono', l: 'Corretor', v: (r) => gNome(r._dono), h: (r) => esc(gExib(r._dono)) }] : []),
     { k: 'interesse', l: 'Interesse', v: (r) => (INT_POR[r._int] || {}).i, h: (r) => pillInt(r) },
     { k: 'etapa', l: 'Etapa', h: (r) => pillEtapa(r) },
     { k: 'arquivado_motivo', l: 'Motivo', h: (r) => esc(r.arquivado_motivo || 'Sem motivo informado') },
     { k: 'arquivado_em', l: 'Arquivado em', h: (r) => dt(r.arquivado_em) },
     { k: 'redistribuido_para', l: 'Redistribuído', v: (r) => r.redistribuido_para || '', h: (r) => r.redistribuido_para ? esc(arqNomePainel(r.redistribuido_para)) : '<span class="mut">—</span>' },
   ];
-  const cartao = (r) => `<div><b>${esc(r.nome || '—')}</b> ${pillInt(r)}${pillEtapa(r)}${S.gestor ? ` <span class="mut peq">${esc(gCurto(r._dono))}</span>` : ''}</div><div class="mut peq" style="margin-top:4px">${arqLinha(r)}</div>`;
+  const cartao = (r) => `<div><b>${esc(r.nome || '—')}</b> ${pillInt(r)}${pillEtapa(r)}${S.gestor ? ` <span class="mut peq">${esc(gExib(r._dono))}</span>` : ''}</div><div class="mut peq" style="margin-top:4px">${arqLinha(r)}</div>`;
   const hub = S.gestor ? '<button class="b" type="button" data-bl="abrir">📇 Base de leads</button>' : '';   // trocas-base-app
   return `<section class="sec">
     <div class="linha" style="justify-content:space-between"><h2>🗄 Leads arquivados</h2><div class="linha">${hub}<button class="b p" type="button" data-arqver="0">← Voltar a Meus leads</button></div></div>
@@ -2311,7 +2311,7 @@ function gavetaArq(id) {
   const p = l.perfil || {};
   const perfil = [p.finalidade, p.tipo, p.bairros, (p.vmin || p.vmax) ? 'R$ ' + [p.vmin, p.vmax].filter(Boolean).map(fmtVlr).join(' a ') : '', p.dorm ? p.dorm + ' dorm.' : '', p.vagas ? p.vagas + ' vaga(s)' : '', p.obs].filter(Boolean).map((x) => esc(x)).join(' · ');
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead arquivado">
-    <div class="cab"><div><p class="mut peq" style="margin:0">Lead arquivado · ${esc(l.campanha || 'sem origem')}${S.gestor && l._dono ? ' · ' + esc(gCurto(l._dono)) : ''}</p><h3>${esc(l.nome || '—')}</h3>${pillFunil(l) + pillInt(l) + pillEtapa(l)}<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p></div><button class="b" type="button" data-fechar>Fechar</button></div>
+    <div class="cab"><div><p class="mut peq" style="margin:0">Lead arquivado · ${esc(l.campanha || 'sem origem')}${S.gestor && l._dono ? ' · ' + esc(gExib(l._dono)) : ''}</p><h3>${esc(l.nome || '—')}</h3>${pillFunil(l) + pillInt(l) + pillEtapa(l)}<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p></div><button class="b" type="button" data-fechar>Fechar</button></div>
     <div class="prop" style="border-left:3px solid var(--brass,#8c7550)"><div class="t">🗄 Arquivado</div><div>${arqLinha(l)}</div>${l.arquivado_obs ? `<div class="mut peq" style="margin-top:4px">${esc(l.arquivado_obs)}</div>` : ''}<div class="mut peq" style="margin-top:6px">${S.gestor ? `Só leitura aqui. <button class="b p" type="button" data-bl-lead="${esc((l._dono || '') + '|' + id)}">Reativar ou redistribuir</button>` : 'Só leitura. Para reativar ou passar a outro corretor, fale com a diretoria.'}</div></div>
     <div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b></div></div>
     ${perfil ? `<div class="prop"><div class="t">Perfil do cliente</div><div>${perfil}</div></div>` : ''}
@@ -3363,13 +3363,13 @@ function vSolic() {
     { k: 'resumo', l: 'Conteúdo', ord: false, h: (r) => `<span class="peq">${esc(resumo(r))}</span>${autorLin(r)}` },
     { k: '_st', l: 'Situação', h: (r) => pillSit(r._st) },
   ];
-  if (S.gestor && S.verComo === 'todos') cols.splice(1, 0, { k: '_dono', l: 'Corretor', v: (r) => gCurto(r._dono || ''), h: (r) => `<span class="peq">${esc(gCurto(r._dono || '') || '—')}</span>` });
+  if (S.gestor && S.verComo === 'todos') cols.splice(1, 0, { k: '_dono', l: 'Corretor', v: (r) => gExib(r._dono || ''), h: (r) => `<span class="peq" style="white-space:normal">${esc(gExib(r._dono || '') || '—')}</span>` });
   const pend = L.filter((r) => r._st === 'pendente').length;
   return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>Solicitações</h2>${S.ehDono ? '' : '<button class="b p" type="button" id="novoImovel">+ Cadastrar imóvel</button>'}</div>
     ${S.ehDono ? `<div class="faixa-dono">Você está como diretoria: ${pend} pedido${pend === 1 ? '' : 's'} aguardando. Toque num pedido para aprovar ou recusar.</div>` : ''}
     ${tabela('sol', cols, L, { padrao: { c: '_em', d: -1 }, abre: (r) => 'sol:' + r.id, vazio: 'Nenhuma solicitação. Use "Cadastrar imóvel", "Solicitar alteração" ou "Adicionar fotos" em Meus imóveis.', cartao: (r) => `
       <div class="cm-l1"><span class="cm-nome">${esc(TIPO[r.tipo || 'alteracao'])} · <span class="ref">${esc(r.ref || '—')}</span></span><span class="cm-v">${pillSit(r._st)}</span></div>
-      <div class="cm-lin">${S.gestor && S.verComo === 'todos' && r._dono ? `<b>${esc(gCurto(r._dono))}</b> · ` : ''}${esc(resumo(r))} · ${dt(r._em)}</div>${autorLin(r, 'cm-lin mut peq')}` })}
+      <div class="cm-lin">${S.gestor && S.verComo === 'todos' && r._dono ? `<b>${esc(gExib(r._dono))}</b> · ` : ''}${esc(resumo(r))} · ${dt(r._em)}</div>${autorLin(r, 'cm-lin mut peq')}` })}
     <p class="status">Nada vai ao site sem a aprovação da diretoria.</p></section>`;
 }
 
