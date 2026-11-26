@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco5-textos */ /* trocas-bloco4-crm */ /* trocas-bloco3-fatiaB */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco5b-restaurar */ /* trocas-bloco5-textos */ /* trocas-bloco4-crm */ /* trocas-bloco3-fatiaB */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -1760,7 +1760,7 @@ const TF = (() => {
   async function gravarTfG(id, patch, acao, okMsg) {
     const t = (S.tarefas || {})[id];
     if (!gestorTf() || !t || !t._dono) { toast(!gestorTf() ? SO_LEITURA : 'Não deu para achar o painel desta tarefa. Recarregue a página.'); return false; }
-    if (t.excluida) { toast('Esta tarefa está no Arquivo: fica como foi excluída.'); return false; }
+    if (t.excluida && acao !== 'restaurou') { toast('Esta tarefa está no Arquivo: fica como foi excluída.'); return false; }
     let rot = acao, antes = null;
     if (acao === 'editou') {
       const m = Object.keys(CAMPOS_TF).filter((k) => String(patch[k] ?? '') !== String(t[k] ?? ''));
@@ -1831,7 +1831,7 @@ const TF = (() => {
     const info = novo ? '' : `<p class="mut peq" style="margin:4px 0 0">${S.gestor && t._dono ? `Painel de <b>${esc(gNome(t._dono))}</b> · ` : ''}${rotOrig(t)} · criada em ${dt(t.criado_em)}${feita(t) && t.feita_em ? ' · feita em ' + dt(t.feita_em) : ''}</p>${autorLin(t, 'mut peq', 1)}`;
     return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Tarefa">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Anotar' : t.tipo === 'lembrete' ? 'Lembrete' : t.tipo === 'recado' ? 'Recado' : 'Tarefa'}</p><h3>${novo ? 'Nova tarefa' : esc(t.titulo)}</h3>${novo ? '' : pillSit(t)}${info}</div><button class="b" type="button" data-fechar>Fechar</button></div>
-    ${soLer() || t.excluida ? `<div class="painel">${t.excluida ? `<p class="peq" style="margin:0 0 6px"><b>Excluída</b>${t.excluida_em ? ' em ' + dt(t.excluida_em) : ''}${t.excluida_por ? ' por ' + esc(t.excluida_por) : ''}: está no Arquivo, com o registro guardado.</p>` : ''}<p style="margin:0">${esc(t.obs || 'Sem observação.')}</p><p class="mut peq" style="margin:8px 0 0">${esc(rotQuando(t))} · prioridade ${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}. ${t.excluida ? '' : ' Só leitura no painel do gestor.'}</p></div>` : `
+    ${soLer() || t.excluida ? `<div class="painel">${t.excluida ? `<p class="peq" style="margin:0 0 6px"><b>Excluída</b>${t.excluida_em ? ' em ' + dt(t.excluida_em) : ''}${t.excluida_por ? ' por ' + esc(t.excluida_por) : ''}: está no Arquivo, com o registro guardado.</p>${gestorTf() ? `<button class="b" type="button" data-tf-rest="${esc(id)}" style="margin:0 0 8px">Restaurar tarefa</button>` : ''}` : ''}<p style="margin:0">${esc(t.obs || 'Sem observação.')}</p><p class="mut peq" style="margin:8px 0 0">${esc(rotQuando(t))} · prioridade ${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}. ${t.excluida ? '' : ' Só leitura no painel do gestor.'}</p></div>` : `
     <form id="fTarefa" class="form" data-id="${esc(id || '')}">${campos(t)}
       <div class="inteiro linha"><button class="b p" type="submit">${novo ? 'Anotar' : 'Salvar'}</button>${novo ? '' : `<button class="b" type="button" data-tf-ok="${esc(id)}">${feita(t) ? 'Reabrir' : t.tipo === 'recado' ? '✓ Marcar como lido' : '✓ Marcar como feita'}</button><button class="b" type="button" data-tf-exc="${esc(id)}">Excluir</button>`}<span class="erro" id="eTarefa"></span></div>
     </form>`}${novo ? '' : logHTML(t)}
@@ -1898,13 +1898,14 @@ const TF = (() => {
   }
 
   document.addEventListener('click', (ev) => {
-    const b = ev.target.closest && ev.target.closest('[data-tf-ok],[data-tf-nova],[data-tf-atrib],[data-tf-filtro],[data-tf-exc],[data-tf-cancatrib]'); if (!b) return;
+    const b = ev.target.closest && ev.target.closest('[data-tf-ok],[data-tf-nova],[data-tf-atrib],[data-tf-filtro],[data-tf-exc],[data-tf-cancatrib],[data-tf-rest]'); if (!b) return;
     const d = b.dataset;
     if (d.tfOk) { ev.stopPropagation(); return alternar(d.tfOk); }
     if (d.tfNova !== undefined) { if (S.gestor) return toast(SO_LEITURA); return abrir('tarefa', null); }
     if (d.tfAtrib !== undefined) return abrir('atrib', null);
     if (d.tfFiltro) { S.tfFiltro = d.tfFiltro; return render(); }
     if (d.tfExc) return excluir(d.tfExc, b);
+    if (d.tfRest) { if (!tocarDeNovo(b, 'Toque de novo para restaurar')) return; return gravarTfG(d.tfRest, { excluida: false, excluida_em: '', excluida_por: '' }, 'restaurou', 'Tarefa restaurada.').then((ok) => { if (ok) fechar(); }); }   // trocas-bloco5b
     if (d.tfCancatrib) { if (!tocarDeNovo(b, 'Toque de novo para cancelar')) return; return cancelarAtrib(d.tfCancatrib); }   // trocas-usabilidade-f2 (Lucas #14)
   }, true);
   document.addEventListener('submit', (ev) => {
