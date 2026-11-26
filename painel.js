@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco3-fatiaB */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -806,7 +806,22 @@ let db = null;
 // Só vale com config/painel {papel:"gestor"} no banco do próprio artefato; nos painéis dos corretores nada muda.
 S.gestor = false; S.G = {}; S.verComo = (() => { try { return sessionStorage.getItem('painel.ver') || 'todos'; } catch (e) { return 'todos'; } })();
 const SO_LEITURA = 'Painel do gestor: só leitura. As mudanças se fazem no painel do corretor.';
-const AVISO_GESTOR_FORM = '<div class="faixa-dono"><b>Painel do gestor: só leitura.</b> Daqui o cadastro não é salvo nem enviado. Para cadastrar em nome de um corretor, mande os dados à Vivian ou peça ao corretor.</div>';   // trocas-bloco3-form (188, provisório)
+const AVISO_GESTOR_FORM = '<div class="faixa-dono"><b>Painel do gestor: só leitura.</b> Daqui as fotos de um imóvel já cadastrado não são enviadas. Peça ao corretor ou mande à Vivian.</div>';   // trocas-bloco3-fatiaB: só na gaveta de fotos
+// trocas-bloco3-fatiaB (188/189): a diretoria cadastra em nome do agenciador escolhido; quem fez e quando ficam no documento
+function gestorPodeEditar(n) { return !!(n && n.feito_por && n.feito_por.uid && n.feito_por.uid === S.uid); }
+function gestorPodeGravar(n, silencioso) {
+  const msg = !n || n.tipo !== 'novo_imovel' ? SO_LEITURA : !n.agenciador ? 'Escolha o agenciador no alto do formulário antes de salvar ou anexar.' : n.criado_em && !gestorPodeEditar(n) ? 'Este cadastro é do corretor: só ele altera.' : !S.uid ? 'Não deu para identificar o seu acesso. Recarregue a página.' : '';
+  if (msg && !silencioso) toast(msg);
+  return !msg;
+}
+function gestorFormHTML(n) {
+  if (n.criado_em && !gestorPodeEditar(n)) return '<div class="faixa-dono"><b>Cadastro feito pelo corretor:</b> só ele altera. Para pedir mudança, fale com ele ou peça o complemento na decisão.</div>';
+  const ps = Object.keys(S.G.paineis || {}).sort((a, b) => gExib(a).localeCompare(gExib(b), 'pt-BR'));
+  const fixo = !!(n.agFixo || n.criado_em || ['fotos', 'docs', 'fotos_lazer', 'foto_placa'].some((k) => (n[k] || []).length));
+  const sel = `<select id="nvAgenciador" aria-label="Agenciador"${fixo ? ' disabled' : ''}><option value="">Escolha o corretor</option>${ps.map((p) => `<option value="${esc(p)}" ${p === n.agenciador ? 'selected' : ''}>${esc(gExib(p))}</option>`).join('')}</select>`;
+  return `<div class="faixa-dono"><label class="c" style="margin:0"><span><b>Agenciador *</b> · o cadastro vai para o painel dele, como se ele tivesse enviado</span>${sel}</label><p class="peq" style="margin:6px 0 0">Feito pela diretoria: fica registrado quem fez e quando.${fixo ? ' O agenciador não muda depois do 1º salvamento ou da 1ª foto.' : ''}</p></div>`;
+}
+document.addEventListener('change', (ev) => { if (ev.target && ev.target.id === 'nvAgenciador' && S.novo) { S.novo.agenciador = ev.target.value; S.novo.sujo = true; pintaRasc(S.novo); } });
 // ---------- Ordem das abas de cada pessoa (26/10/2026) ----------
 // Guardada no banco em data/users/<id>/preferencias (vale no celular e no computador da mesma pessoa);
 // a cópia no aparelho só serve para o painel já abrir na ordem dela. Nunca mexer no objeto lido do banco (vem congelado).
@@ -3554,7 +3569,7 @@ function gavetaNovoImovel() {
   return `<div class="gaveta larga" role="dialog" aria-modal="true" aria-label="Cadastrar imóvel">
     <div class="cab"><div><p class="mut peq" style="margin:0">Cadastro de imóvel · vai para aprovação antes de ir ao site</p><h3>${esc(d.tipo || 'Imóvel novo')}${d.bairro ? ' · ' + esc(d.bairro) : ''}</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${n.status_atual === 'complemento' && (S.decisoes[n.id] || {}).resposta ? `<div class="faixa-dono"><b>A diretoria pediu:</b> ${esc(S.decisoes[n.id].resposta)}</div>` : ''}
-    ${S.gestor ? AVISO_GESTOR_FORM : ''}
+    ${S.gestor ? gestorFormHTML(n) : ''}
     <div class="painel" id="progNovo">${progressoHTML(n)}</div>
     <p class="peq mut" style="margin:0">🎤 Dica: toque no microfone do teclado para ditar os campos. <button class="copiar" type="button" data-voz="">Como funciona e o que vem por aí</button></p>
     <form id="fNovo" class="sec" novalidate>
@@ -3598,28 +3613,34 @@ function novoRegistro(tipo, extra = {}) {
   return { id: (tipo === 'fotos' ? 'f-' : 'c-') + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), tipo, dados: {}, fotos: [], docs: [], descricao: '', pede_descricao: false, ...extra };
 }
 async function gravarNovo(status, silencioso) {
-  if (S.gestor) { if (!silencioso) toast(SO_LEITURA); return false; }
+  if (S.gestor && !gestorPodeGravar(S.novo, silencioso)) return false;
   const n = S.novo; if (!n) return false;
   // Pedido devolvido para complemento: os salvamentos intermediários mantêm a situação de complemento (o corretor reenvia no botão).
   if ((status === 'rascunho' || status === 'complemento_rascunho') && n.status_atual === 'complemento') status = 'pendente_rasc';
   const d = n.dados || {};
   const doc = {
     tipo: n.tipo, status: status === 'pendente_rasc' ? (n.status_orig || 'pendente') : status === 'complemento_rascunho' ? 'rascunho' : status, dados: d, fotos: n.fotos || [], docs: n.docs || [], fotos_lazer: n.fotos_lazer || [], foto_placa: n.foto_placa || [], descricao: n.descricao || '', pede_descricao: !!n.pede_descricao,
-    descricao_origem: n.descricao_origem || '', obs: n.obs || '', corretor: S.info.slug || '', atualizado_em: agora(),
+    descricao_origem: n.descricao_origem || '', obs: n.obs || '', corretor: S.gestor ? n.agenciador : S.info.slug || '', atualizado_em: agora(),
     ref: n.tipo === 'fotos' ? (S.meus[n.imovel_id] || {}).ref || '' : [d.tipo, d.bairro].filter(Boolean).join(' · ') || 'Imóvel novo',
     imovel_id: n.imovel_id || '', criado_em: n.criado_em || agora(), faltantes: n.tipo === 'novo_imovel' ? faltantes(n) : [],
   };
+  if (S.gestor) { n.feito_por = n.feito_por || { uid: S.uid, nome: S.info.nome || S.info.curto || 'Diretoria', painel: S.info.slug || '', em: agora() }; n.agFixo = true; const sa = document.getElementById('nvAgenciador'); if (sa) sa.disabled = true; }
+  if (n.feito_por) {   // trocas-bloco3-fatiaB: o registro acompanha o documento, também quando o corretor continua
+    const novoLog = status === 'pendente' || !silencioso || !(n.log || []).length;
+    doc.feito_por = n.feito_por; doc.log = (n.log || []).concat(novoLog ? [{ quem: S.info.nome || S.info.slug || '', em: agora(), acao: status === 'pendente' ? 'enviou para aprovação' : 'salvou o rascunho' }] : []); n.log = doc.log;
+  }
   if (status === 'pendente') doc.enviado_em = agora(); else if (n.enviado_em) doc.enviado_em = n.enviado_em;
   n.criado_em = doc.criado_em;
-  const fn = () => db.collection('solicitacoes').doc(n.id).set(doc);
+  const fn = () => S.gestor ? window.VIVERE_PONTE.gravarSolEm(n.agenciador, n.id, doc) : db.collection('solicitacoes').doc(n.id).set(doc);
   if (silencioso) { try { await fn(); n.salvoEm = Date.now(); n.erroSalvar = false; pintaRasc(n); return true; } catch (e) { n.erroSalvar = true; pintaRasc(n); toast('Não foi possível salvar o rascunho.'); return false; } }
-  const ok = await gravar(fn, status === 'pendente' ? 'Enviado para aprovação.' : 'Rascunho salvo.');
+  const okMsg = status === 'pendente' ? (S.gestor ? `Enviado para aprovação em nome de ${gExib(n.agenciador)}.` : 'Enviado para aprovação.') : 'Rascunho salvo.';
+  const ok = S.gestor ? await (async () => { try { await fn(); toast(okMsg); return true; } catch (e) { toast('Não foi possível gravar: ' + ((e && e.message) || 'erro')); return false; } })() : await gravar(fn, okMsg);
   if (ok) { n.salvoEm = Date.now(); n.erroSalvar = false; pintaRasc(n); }
   return ok;
 }
 // trocas-bloco3-form (184): onde a pessoa vê que o rascunho está guardado
 function rascTexto(n) {
-  if (S.gestor) return 'Não fica salvo no painel do gestor';
+  if (S.gestor && !(n.tipo === 'novo_imovel' && n.agenciador && (!n.criado_em || gestorPodeEditar(n)))) return n.tipo === 'novo_imovel' && !n.agenciador ? 'Escolha o agenciador para salvar' : 'Não fica salvo no painel do gestor';
   if (n.erroSalvar) return 'Rascunho não salvo: confira a internet';
   const t = n.salvoEm || (n.atualizado_em ? Date.parse(n.atualizado_em) : 0);
   return t ? 'Rascunho salvo às ' + new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'O rascunho se salva sozinho enquanto você digita';
@@ -3638,7 +3659,7 @@ async function comprimir(file) {
   } catch (e) { return file; }
 }
 async function enviarArquivos(files, destino, tipoDoc) {
-  if (S.gestor) { toast(SO_LEITURA); return; }
+  if (S.gestor && !gestorPodeGravar(S.novo)) return;
   if (!S.assets) { toast('Envio de arquivos indisponível neste acesso. Fale com a diretoria.'); return; }
   const err = document.getElementById('eNovo'); if (err) err.textContent = '';
   let n = 0;
@@ -3646,7 +3667,7 @@ async function enviarArquivos(files, destino, tipoDoc) {
     toast(`Enviando ${++n} de ${files.length}…`);
     try {
       const b = await comprimir(f);
-      const r = await S.assets.upload(b, { type: b.type || f.type });
+      const r = await S.assets.upload(b, { type: b.type || f.type, painel: S.gestor ? S.novo.agenciador : undefined });
       const item = { id: r.id, nome: f.name, tam: r.sizeBytes };
       if (destino === 'fotos') S.novo.fotos.push(item); else if (destino === 'lazer') (S.novo.fotos_lazer || (S.novo.fotos_lazer = [])).push(item); else if (destino === 'placa') (S.novo.foto_placa || (S.novo.foto_placa = [])).push(item); else S.novo.docs.push({ ...item, tipo: tipoDoc });
     } catch (e) { if (err) err.textContent = `Não foi possível enviar ${f.name}: ${e && (e.code || e.message) || 'erro'}.`; }
@@ -4751,7 +4772,7 @@ function fecharPedindo() {
     if (S.aberto.tipo === 'fotosimv') { const o = document.getElementById('fotosObs'); if (o && o.value.trim() !== String(S.novo.obs || '').trim()) { S.novo.obs = o.value; S.novo.sujo = true; } }
     if (novoTemConteudo(S.novo)) {
       S.descartarAte = Date.now() + 5000;
-      if (S.gestor) { toast('Painel do gestor: este cadastro não fica salvo. Toque fora (ou Esc) de novo para fechar e descartar.'); return; }
+      if (S.gestor && !gestorPodeGravar(S.novo, true)) { toast('Painel do gestor: sem o agenciador, este cadastro não fica salvo. Toque fora (ou Esc) de novo para fechar e descartar.'); return; }
       if (S.novo.sujo) gravarNovo('rascunho', true).then((ok) => { if (ok && S.novo) S.novo.sujo = false; });
       toast('O rascunho fica salvo em Solicitações. Toque fora (ou Esc) de novo para fechar.'); return;
     }
@@ -4959,7 +4980,7 @@ document.addEventListener('click', async (ev) => {
   if (t.id === 'ppSalvar') return salvarProposta();
   if (t.id === 'salvarPrazos') return salvarPrazos();
   if (d.inserirfalta) { const ta = document.getElementById('respDec'); const f = faltantes(S.sol[d.inserirfalta]); ta.value = (ta.value ? ta.value.trim() + '\n' : '') + 'Complete, por favor: ' + f.join('; ') + '.'; ta.focus(); return; }
-  if (t.id === 'novoImovel') { S.novo = novoRegistro('novo_imovel', { dados: { cidade: 'Florianópolis' } }); return abrir('novoimv'); }
+  if (t.id === 'novoImovel') { S.novo = novoRegistro('novo_imovel', { dados: { cidade: 'Florianópolis' }, ...(S.gestor && S.verComo && S.verComo !== 'todos' ? { agenciador: S.verComo } : {}) }); return abrir('novoimv'); }
   if (t.id === 'salvarRasc') { const ok = await gravarNovo('rascunho'); if (ok) S.novo.sujo = false; return; }
   if (t.id === 'enviarNovo' || t.id === 'enviarFotos') {
     const e = document.getElementById('eNovo'); e.textContent = '';
@@ -5046,7 +5067,7 @@ document.addEventListener('input', (ev) => {   // trocas-bloco3-form (184): o ra
 document.addEventListener('toggle', (ev) => { const el = ev.target; if (S.novo && el && el.classList && el.classList.contains('rec-campos')) S.novo.recAberto = el.open; }, true);   // trocas-bloco3-form (187): o grupo aberto continua aberto quando a gaveta se redesenha
 let tRasc;
 function agendarRascunho() { clearTimeout(tRasc); tRasc = setTimeout(() => { if (S.novo && S.novo.sujo && S.novo.tipo === 'novo_imovel' && S.novo.status_atual !== 'complemento') gravarNovo('rascunho', true).then((ok) => { if (ok && S.novo) S.novo.sujo = false; }); }, 4000); }
-function continuar(id) { const so = S.sol[id]; if (!so) return; S.novo = { ...JSON.parse(JSON.stringify(so)), id, status_atual: statusDe(id, so) }; return abrir(so.tipo === 'fotos' ? 'fotosimv' : 'novoimv'); }
+function continuar(id) { const so = S.sol[id]; if (!so) return; S.novo = { ...JSON.parse(JSON.stringify(so)), id, status_atual: statusDe(id, so) }; if (S.gestor) { S.novo.id = so._id || id; S.novo.agenciador = so._dono || so.corretor || ''; S.novo.agFixo = true; delete S.novo._dono; delete S.novo._id; } return abrir(so.tipo === 'fotos' ? 'fotosimv' : 'novoimv'); }
 document.addEventListener('input', (ev) => { if (S.novo && ev.target.id === 'c_descricao') { S.novo.descricao = ev.target.value; S.novo.descricao_origem = S.novo.descricao_origem === 'ia' ? 'ia_editada' : S.novo.descricao_origem || 'corretor'; S.novo.sujo = true; agendarRascunho(); } });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && S.aberto) fecharPedindo(); });   // trocas-usabilidade-f1 (Lucas #7)
 

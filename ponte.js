@@ -6,7 +6,7 @@
   'use strict';
   var SB_URL = 'https://jucnlzznbwjthlqqgdlz.supabase.co';
   var SB_CHAVE = 'sb_publishable_N26mrhHO44DyqfD6L28HEQ__uei3fNj'; // chave publicável (feita para o navegador)
-  var VERSAO = 'ponte 2026-11-22.2'; // carregamento F2 do Gestor: índice e coleções grandes numa rodada só (faixas em paralelo pelo total do índice; nº de páginas do índice lembrado no aparelho — só a contagem, nenhum dado) · antes: 'ponte 2026-11-22.1'; // ia.texto: descrição do anúncio pela painel-ia (tipo descricao, F3 do agenciamento pelo celular) · antes: 'ponte 2026-11-21.4'; // páginas de leitura 4 de cada vez (carregamento F1e) · antes: 'ponte 2026-11-21.3'; // marca acessos.hub no estado, para o botão HUB do painel (hub-web-diretoria F3) · antes: 'ponte 2026-11-21.2'; // _chegada_em dos leads pela coluna criado_em (trocas-usabilidade-f3, Lucas #4) · antes: 'ponte 2026-11-21.1'; // segmentos e remarketing da base de leads (trocas-followup-app) · antes: 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
+  var VERSAO = 'ponte 2026-11-26.1'; // carregamento F2 do Gestor: índice e coleções grandes numa rodada só (faixas em paralelo pelo total do índice; nº de páginas do índice lembrado no aparelho — só a contagem, nenhum dado) · antes: 'ponte 2026-11-22.1'; // ia.texto: descrição do anúncio pela painel-ia (tipo descricao, F3 do agenciamento pelo celular) · antes: 'ponte 2026-11-21.4'; // páginas de leitura 4 de cada vez (carregamento F1e) · antes: 'ponte 2026-11-21.3'; // marca acessos.hub no estado, para o botão HUB do painel (hub-web-diretoria F3) · antes: 'ponte 2026-11-21.2'; // _chegada_em dos leads pela coluna criado_em (trocas-usabilidade-f3, Lucas #4) · antes: 'ponte 2026-11-21.1'; // segmentos e remarketing da base de leads (trocas-followup-app) · antes: 'ponte 2026-11-18.1'; // material recebido pela Vivian: versões ativas na aba Empreendimentos (RPC material_versoes_app) · antes: // F1b: carteiraVistoria (RPC vist_carteira, locações administradas sem dado de inquilino) · antes: // F1a: fotos e documentos pelo app (bucket pedidos-anexos, pasta painel/<painel>; vistoria-celular-corretor) · antes: // perfil do lead (função lead-perfil, vivere-ia-perfil-amplo-leads F2) · antes: // CRM F7: metas_equipes no _comum · antes: // CRM F5: ia (função painel-ia: resumo da Vivian e Organizar com IA) · antes: // P2: divulgacao (placa e lazer dos imóveis já cadastrados) · antes: // F3b: eu_corretor e eu_nome no estado (decisão de cadastro novo só dos 3)
   var COMUM = '_comum';
   // Coleções iguais para todos os painéis (pauta, catálogo, fotos, equipe e demandas). O resto é de cada painel.
   var COMUNS = { vitrine: 1, catalogo: 1, galeria: 1, galeria_fotos: 1, fotos: 1, empreendimentos: 1, equipe_cartoes: 1, demandas: 1, demandas_pedidos: 1, metas_equipes: 1 };   // metas_equipes: fatia 7 do CRM (placar das equipes, sem nomes)
@@ -604,12 +604,14 @@
     if (tipo === 'image/jpg') tipo = 'image/jpeg';
     if (!ANX_TIPOS.test(tipo)) throw erro('Tipo de arquivo não aceito: envie foto (JPG, PNG, WEBP, HEIC) ou PDF.');
     if (blob.size > ANX_MAX) throw erro('Arquivo acima de 16 MB.');
-    var id = novoIdArquivo(), caminho = 'painel/' + ctx.painel + '/' + id, r;
+    var alvo = op && op.painel && op.painel !== ctx.painel ? String(op.painel) : null;   // bloco3-fatiaB (188/189): diretoria anexa no painel do agenciador
+    if (alvo && (!ctx.gestor || !painelReal(alvo))) throw erro('Você não tem permissão para enviar arquivos neste painel.');
+    var id = novoIdArquivo(), caminho = 'painel/' + (alvo || ctx.painel) + '/' + id, r;
     try { r = await sb.storage.from(ANX_BALDE).upload(caminho, blob, { contentType: tipo, upsert: false, cacheControl: '3600' }); }
     catch (e) { throw erroDoEnvio(e); }
     if (r.error) throw erroDoEnvio(r.error);
     var g;
-    try { g = await sb.rpc('painel_anexo_registrar', { p_id: id }); } catch (e) { g = { error: e }; }
+    try { g = await (alvo ? sb.rpc('painel_anexo_registrar_em', { p_id: id, p_painel: alvo }) : sb.rpc('painel_anexo_registrar', { p_id: id })); } catch (e) { g = { error: e }; }
     if (g.error) throw erro(erroDoBanco(g.error).message); // sem código: o painel mostra a mensagem
     return { id: id, sizeBytes: blob.size };
   }
@@ -852,5 +854,18 @@
   /* trocas-base-app */ function baseLeads(op, id, dados) { var q = op === 'lista' ? sb.rpc('base_leads_lista') : op === 'pessoa' ? sb.rpc('base_leads_pessoa', { p_id: String(id) }) : sb.rpc('base_leads_acao', { p_id: String(id), p_dados: dados || {} }); return q.then(function (r) { if (r.error) throw r.error; return r.data; }); }
   /* trocas-followup-app */ function baseLeadsSegmento(filtros) { return sb.rpc('base_leads_segmento', { p_filtros: filtros || {} }).then(function (r) { if (r.error) throw r.error; return r.data; }); }
   function baseLeadsRemarketing(ids, campanha) { return sb.rpc('base_leads_remarketing', { p_ids: ids || [], p_campanha: String(campanha || '') }).then(function (r) { if (r.error) throw r.error; return r.data; }); }
-  window.VIVERE_PONTE = { versao: VERSAO, ia: ia, perfil: perfil, acaptarLivres: acaptarLivres, demandasAuto: demandasAuto, baseLeads: baseLeads, baseLeadsSegmento: baseLeadsSegmento, baseLeadsRemarketing: baseLeadsRemarketing, pendencias: pendencias, corrigir: corrigir, divulgacao: divulgacao, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, enviarArquivo: enviarArquivo, carteiraVistoria: carteiraVistoria, sair: function () { return sb.auth.signOut(); }, contextoApp: function () { return { sb: sb, eu: ctx.eu, sessaoUid: ctx.uid }; }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, hub: !!(ctx.eu && (ctx.eu.hub || ctx.eu.papel === 'gestor')), painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
+  /* bloco3-fatiaB (188/189, 26/11/2026): a diretoria grava o cadastro de imóvel novo no painel do agenciador escolhido.
+     O banco só aceita com feito_por.uid = quem grava (privado.pd_pode, migração painel_diretoria_cadastro_imovel). */
+  async function gravarSolEm(painel, doc, dados) {
+    await entrou;
+    if (!ctx.gestor) throw erro('Só a diretoria, no próprio painel, cadastra em nome do corretor.');
+    if (!painelReal(painel)) throw erro('Escolha o agenciador.');
+    var limpo = JSON.parse(JSON.stringify(dados || {})), r;
+    try { r = await sb.rpc('painel_gravar', { p_painel: String(painel), p_colecao: 'solicitacoes', p_doc: String(doc), p_dados: limpo, p_mesclar: false }); } catch (e) { r = { error: e }; }
+    if (r.error) throw erroDoBanco(r.error);
+    var v = typeof r.data === 'number' ? r.data : 1;
+    espelharGestor(String(painel), 'solicitacoes', String(doc), v, limpo);
+    return v;
+  }
+  window.VIVERE_PONTE = { versao: VERSAO, gravarSolEm: gravarSolEm, ia: ia, perfil: perfil, acaptarLivres: acaptarLivres, demandasAuto: demandasAuto, baseLeads: baseLeads, baseLeadsSegmento: baseLeadsSegmento, baseLeadsRemarketing: baseLeadsRemarketing, pendencias: pendencias, corrigir: corrigir, divulgacao: divulgacao, arquivo: arquivoMaterial, miniatura: miniaturaMaterial, enviarArquivo: enviarArquivo, carteiraVistoria: carteiraVistoria, sair: function () { return sb.auth.signOut(); }, contextoApp: function () { return { sb: sb, eu: ctx.eu, sessaoUid: ctx.uid }; }, reler: ressincronizar, estado: function () { return { eu_corretor: ctx.eu ? ctx.eu.corretor_id || null : null, eu_nome: ctx.eu ? ctx.eu.nome || null : null, papel: ctx.eu ? ctx.eu.papel : null, hub: !!(ctx.eu && (ctx.eu.hub || ctx.eu.papel === 'gestor')), painel: ctx.painel, ver: ctx.ver, gestor: ctx.gestor, tempoReal: ctx.tempoReal, tempoRealGestor: ctx.tempoRealG, pronto: Object.keys(pronto) }; } };
 })();
