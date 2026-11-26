@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -806,6 +806,7 @@ let db = null;
 // Só vale com config/painel {papel:"gestor"} no banco do próprio artefato; nos painéis dos corretores nada muda.
 S.gestor = false; S.G = {}; S.verComo = (() => { try { return sessionStorage.getItem('painel.ver') || 'todos'; } catch (e) { return 'todos'; } })();
 const SO_LEITURA = 'Painel do gestor: só leitura. As mudanças se fazem no painel do corretor.';
+const AVISO_GESTOR_FORM = '<div class="faixa-dono"><b>Painel do gestor: só leitura.</b> Daqui o cadastro não é salvo nem enviado. Para cadastrar em nome de um corretor, mande os dados à Vivian ou peça ao corretor.</div>';   // trocas-bloco3-form (188, provisório)
 // ---------- Ordem das abas de cada pessoa (26/10/2026) ----------
 // Guardada no banco em data/users/<id>/preferencias (vale no celular e no computador da mesma pessoa);
 // a cópia no aparelho só serve para o painel já abrir na ordem dela. Nunca mexer no objeto lido do banco (vem congelado).
@@ -3386,18 +3387,18 @@ const pareceCond = (d) => /Apartamento|Cobertura|condomínio|Sala|Terreno/.test(
 const SECOES = [
   ['Proprietário', [
     { k: 'p_nome', l: 'Nome completo', obr: 1 },
-    { k: 'p_cpf', l: 'CPF (ou CNPJ)', inp: 'numeric' },
+    { k: 'p_cpf', l: 'CPF (ou CNPJ)', inp: 'numeric', doc: 'cpfcnpj' },
     { k: 'p_celular', l: 'Celular com DDD', obr: 1, t: 'tel' },
     { k: 'p_email', l: 'E-mail', t: 'email' },
     { k: 'p_estado_civil', l: 'Estado civil', t: 'sel', op: ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Separado(a)', 'Viúvo(a)', 'Pessoa jurídica'] },
     { k: 'p_conjuge_nome', l: 'Nome do cônjuge ou companheiro(a)', obr: temConjuge, se: temConjuge },
-    { k: 'p_conjuge_cpf', l: 'CPF do cônjuge ou companheiro(a)', obr: temConjuge, se: temConjuge, inp: 'numeric' },
+    { k: 'p_conjuge_cpf', l: 'CPF do cônjuge ou companheiro(a)', obr: temConjuge, se: temConjuge, inp: 'numeric', doc: 'cpf' },
     { k: 'p_endereco', l: 'Endereço residencial com CEP', obr: 1, w: 1 },
-    { k: 'p_rg', l: 'RG ou outro documento' },
+    { k: 'p_rg', l: 'RG ou outro documento', rec: 1 },
     { k: 'p_profissao', l: 'Profissão' },
     { k: 'p_nascimento', l: 'Data de nascimento', t: 'date' },
     { k: 'p_nacionalidade', l: 'Nacionalidade' },
-    { k: 'p_tel2', l: 'Outro telefone', t: 'tel' },
+    { k: 'p_tel2', l: 'Outro telefone', t: 'tel', rec: 1 },
   ]],
   ['Imóvel', [
     { k: 'finalidade', l: 'Finalidade', obr: 1, t: 'sel', op: ['Venda', 'Locação anual', 'Temporada'] },
@@ -3523,7 +3524,21 @@ function campoHTML(c, d) {
   if (c.t === 'multi') return `<div class="${cls}"><span>${l}${ob}</span><div class="opcoes">${c.op.map((o, i) => `<label><input type="checkbox" id="${id}_${i}" data-multi="${c.k}" value="${esc(o)}" ${(v || []).includes(o) ? 'checked' : ''}>${esc(o)}</label>`).join('')}</div></div>`;
   if (c.t === 'area') return `<label class="${cls}">${l}${ob}<textarea id="${id}" data-campo="${c.k}" rows="3">${esc(v || '')}</textarea></label>`;
   if (c.vlr) return `<label class="${cls}">${l}${ob}<input id="${id}" data-campo="${c.k}" ${VLR} value="${esc(fmtVlr(v))}" placeholder="${esc(c.ph || '')}"></label>`;
-  return `<label class="${cls}">${l}${ob}<input id="${id}" data-campo="${c.k}"${/^(logradouro|numero|complemento|comissao)$/.test(c.k) ? ' data-sens' : ''} type="${c.t === 'number' ? 'number' : c.t || 'text'}" ${c.t === 'number' ? 'step="any" inputmode="decimal"' : c.inp ? `inputmode="${c.inp}"` : ''} value="${esc(v ?? '')}" placeholder="${esc(c.ph || '')}"></label>`;
+  return `<label class="${cls}">${l}${ob}<input id="${id}" data-campo="${c.k}"${/^(logradouro|numero|complemento|comissao)$/.test(c.k) ? ' data-sens' : ''} type="${c.t === 'number' ? 'number' : c.t || 'text'}" ${c.t === 'number' ? 'step="any" inputmode="decimal"' : c.inp ? `inputmode="${c.inp}"` : ''}${c.doc ? ` data-doc="${c.doc}" maxlength="${c.doc === 'cpf' ? 14 : 18}" autocomplete="off"` : ''} value="${esc(c.doc ? fmtDoc(v, c.doc) : v ?? '')}" placeholder="${esc(c.ph || '')}"></label>`;
+}
+// trocas-bloco3-form (187): campos raros recolhidos, abrem num toque; abertos quando já têm valor
+function secCampos(campos, d) {
+  const vis = campos.filter((c) => !c.se || c.se(d)), rec = vis.filter((c) => c.rec);
+  let h = vis.filter((c) => !c.rec).map((c) => campoHTML(c, d)).join('');
+  if (rec.length) h += `<details class="rec-campos"${rec.some((c) => !vazio_(d[c.k])) ? ' open' : ''}><summary>${esc(rec.map((c) => rotulo(c, d)).join(' e '))} (opcional)</summary><div class="form">${rec.map((c) => campoHTML(c, d)).join('')}</div></details>`;
+  return h;
+}
+// trocas-bloco3-form (185): CPF 000.000.000-00 e CNPJ 00.000.000/0000-00; texto com letras fica como está
+function fmtDoc(v, modo) {
+  const s = String(v ?? ''); if (/[a-z]/i.test(s)) return s;
+  const d = s.replace(/\D/g, '').slice(0, modo === 'cpf' ? 11 : 14);
+  if (d.length <= 11) return d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
+  return d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3/$4').replace(/\/(\d{4})(\d)/, '/$1-$2');
 }
 const htmlFotos = (fotos, rem) => fotos.length ? `<div class="fotos">${fotos.map((f, i) => `<figure><img src="${esc('/_blob/' + f.id)}" alt="Foto ${i + 1}" loading="lazy">${i === 0 ? '<span class="pill ok capa">Capa</span>' : ''}${rem ? `<button type="button" data-remfoto="${i}" aria-label="Remover foto ${i + 1}">×</button>${i ? `<button type="button" class="fcapa" data-capa="${i}" aria-label="Usar como capa">★</button>` : ''}` : ''}</figure>`).join('')}</div>` : '<p class="mut peq">Nenhuma foto ainda.</p>';
 const htmlDocs = (docs, rem) => docs.length ? `<div class="hist">${docs.map((x, i) => `<div class="i"><div class="q">${esc(x.tipo)}</div><a href="${escUrl('/_blob/' + x.id)}" target="_blank" rel="noopener">${esc(x.nome || 'arquivo')}</a>${rem ? ` <button class="copiar" type="button" data-remdoc="${i}">Remover</button>` : ''}</div>`).join('')}</div>` : '<p class="mut peq">Nenhum documento ainda.</p>';
@@ -3539,10 +3554,11 @@ function gavetaNovoImovel() {
   return `<div class="gaveta larga" role="dialog" aria-modal="true" aria-label="Cadastrar imóvel">
     <div class="cab"><div><p class="mut peq" style="margin:0">Cadastro de imóvel · vai para aprovação antes de ir ao site</p><h3>${esc(d.tipo || 'Imóvel novo')}${d.bairro ? ' · ' + esc(d.bairro) : ''}</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
     ${n.status_atual === 'complemento' && (S.decisoes[n.id] || {}).resposta ? `<div class="faixa-dono"><b>A diretoria pediu:</b> ${esc(S.decisoes[n.id].resposta)}</div>` : ''}
+    ${S.gestor ? AVISO_GESTOR_FORM : ''}
     <div class="painel" id="progNovo">${progressoHTML(n)}</div>
     <p class="peq mut" style="margin:0">🎤 Dica: toque no microfone do teclado para ditar os campos. <button class="copiar" type="button" data-voz="">Como funciona e o que vem por aí</button></p>
     <form id="fNovo" class="sec" novalidate>
-      ${SECOES.map(([t, campos]) => `<fieldset class="sec-f"><legend>${t}</legend><div class="form">${campos.filter((c) => !c.se || c.se(d)).map((c) => campoHTML(c, d)).join('')}</div></fieldset>`).join('')}
+      ${SECOES.map(([t, campos]) => `<fieldset class="sec-f"><legend>${t}</legend><div class="form">${secCampos(campos, d)}</div></fieldset>`).join('')}
       <fieldset class="sec-f"><legend>Fotos do anúncio</legend>
         <p class="peq mut" style="margin:0">Mínimo de ${MIN_FOTOS} fotos, na horizontal e com boa luz. A primeira é a capa (★ troca a capa).</p>
         <div id="listaFotos">${htmlFotos(n.fotos || [], true)}</div>
@@ -3564,13 +3580,14 @@ function gavetaNovoImovel() {
         <textarea id="c_descricao" data-raiz="descricao" rows="10" placeholder="Escreva a descrição ou use o botão para gerar um rascunho">${esc(n.descricao || '')}</textarea>
         <div class="linha"><button class="b" type="button" data-ia="c_descricao">${iaDesc() ? '✦ Gerar descrição com IA' : 'Pedir a descrição à Vivere'}</button><span class="mut peq" id="iaStatus">${n.pede_descricao ? 'A Vivere vai escrever a descrição na aprovação.' : ''}</span></div>
       </fieldset>
-      <div class="linha"><button class="b" type="button" id="salvarRasc">Salvar rascunho</button><button class="b p" type="button" id="enviarNovo">${n.status_atual === 'complemento' ? 'Reenviar com o complemento' : 'Enviar para aprovação'}</button><span class="erro" id="eNovo"></span></div>
+      <div class="linha"><button class="b" type="button" id="salvarRasc">Salvar rascunho</button><button class="b p" type="button" id="enviarNovo">${n.status_atual === 'complemento' ? 'Reenviar com o complemento' : 'Enviar para aprovação'}</button><span class="mut peq" id="rascInfo">${rascTexto(n)}</span><span class="erro" id="eNovo"></span></div>
     </form></div>`;
 }
 function gavetaFotosImv() {
   const n = S.novo, m = S.meus[n.imovel_id] || {};
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Adicionar fotos">
     <div class="cab"><div><p class="mut peq" style="margin:0">Fotos novas · vão para aprovação</p><h3>${esc(m.ref || '')} · ${esc(m.bairro || '')}</h3></div><button class="b" type="button" data-fechar>Fechar</button></div>
+    ${S.gestor ? AVISO_GESTOR_FORM : ''}
     <div id="listaFotos">${htmlFotos(n.fotos || [], true)}</div>
     <div class="linha"><label class="b" for="upFotos">+ Escolher fotos</label><input id="upFotos" type="file" accept="image/*" multiple hidden><label class="b p" for="camFotos">📷 Tirar fotos</label><input id="camFotos" type="file" accept="image/*" capture="environment" hidden></div>
     <p class="peq mut" style="margin:0">Escolher fotos abre a galeria, os arquivos e o Google Drive do celular; no computador, as pastas do computador. Tirar fotos abre a câmera.</p>
@@ -3595,8 +3612,21 @@ async function gravarNovo(status, silencioso) {
   if (status === 'pendente') doc.enviado_em = agora(); else if (n.enviado_em) doc.enviado_em = n.enviado_em;
   n.criado_em = doc.criado_em;
   const fn = () => db.collection('solicitacoes').doc(n.id).set(doc);
-  if (silencioso) { try { await fn(); return true; } catch (e) { toast('Não foi possível salvar o rascunho.'); return false; } }
-  return gravar(fn, status === 'pendente' ? 'Enviado para aprovação.' : 'Rascunho salvo.');
+  if (silencioso) { try { await fn(); n.salvoEm = Date.now(); n.erroSalvar = false; pintaRasc(n); return true; } catch (e) { n.erroSalvar = true; pintaRasc(n); toast('Não foi possível salvar o rascunho.'); return false; } }
+  const ok = await gravar(fn, status === 'pendente' ? 'Enviado para aprovação.' : 'Rascunho salvo.');
+  if (ok) { n.salvoEm = Date.now(); n.erroSalvar = false; pintaRasc(n); }
+  return ok;
+}
+// trocas-bloco3-form (184): onde a pessoa vê que o rascunho está guardado
+function rascTexto(n) {
+  if (S.gestor) return 'Não fica salvo no painel do gestor';
+  if (n.erroSalvar) return 'Rascunho não salvo: confira a internet';
+  const t = n.salvoEm || (n.atualizado_em ? Date.parse(n.atualizado_em) : 0);
+  return t ? 'Rascunho salvo às ' + new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'O rascunho se salva sozinho enquanto você digita';
+}
+function pintaRasc(n) { const el = document.getElementById('rascInfo'); if (el && S.novo === n) el.textContent = rascTexto(n); }
+function novoTemConteudo(n) {
+  return Object.entries(n.dados || {}).some(([k, v]) => k !== 'cidade' && !vazio_(v)) || ['fotos', 'docs', 'fotos_lazer', 'foto_placa'].some((k) => (n[k] || []).length) || !!String(n.descricao || '').trim() || !!String(n.obs || '').trim();
 }
 async function comprimir(file) {
   if (!/^image\//.test(file.type) || file.size < 900000) return file;
@@ -4717,6 +4747,15 @@ function gavSnap(tipo, id) {
 }
 function fecharPedindo() {
   if (!S.aberto) return;
+  if (S.novo && /^(novoimv|fotosimv)$/.test(S.aberto.tipo) && !(S.descartarAte > Date.now())) {   // trocas-bloco3-form (184)
+    if (S.aberto.tipo === 'fotosimv') { const o = document.getElementById('fotosObs'); if (o && o.value.trim() !== String(S.novo.obs || '').trim()) { S.novo.obs = o.value; S.novo.sujo = true; } }
+    if (novoTemConteudo(S.novo)) {
+      S.descartarAte = Date.now() + 5000;
+      if (S.gestor) { toast('Painel do gestor: este cadastro não fica salvo. Toque fora (ou Esc) de novo para fechar e descartar.'); return; }
+      if (S.novo.sujo) gravarNovo('rascunho', true).then((ok) => { if (ok && S.novo) S.novo.sujo = false; });
+      toast('O rascunho fica salvo em Solicitações. Toque fora (ou Esc) de novo para fechar.'); return;
+    }
+  }
   const sujo = !S.novo && S.gavIni != null && gavValores() !== S.gavIni;
   if (sujo && !(S.descartarAte > Date.now())) { S.descartarAte = Date.now() + 5000; toast('Você tem algo digitado e não salvo. Toque fora (ou Esc) de novo para descartar.'); return; }
   fechar();
@@ -4992,6 +5031,18 @@ document.addEventListener('input', (ev) => {
   tBusca = setTimeout(() => { S.q[S.aba] = ev.target.value; if (S.aba === 'pesquisa') S.pagVit = 0; if (S.aba === 'mapa') { MP_SIG = ''; pontosMapa(); pintaBarra(); return; } render(); }, 220);
 });
 document.addEventListener('keydown', (ev) => { if (ev.target.id === 'qAba' && ev.key === 'Escape') { ev.target.value = ''; S.q[S.aba] = ''; render(); if (S.aba === 'mapa') { MP_SIG = ''; pontosMapa(); } } });
+document.addEventListener('input', (ev) => {   // trocas-bloco3-form (185): máscara de CPF e CNPJ, cursor no lugar
+  const el = ev.target; if (!el || !el.dataset || !el.dataset.doc || /[a-z]/i.test(el.value)) return;
+  const v = el.value, pos = el.selectionStart ?? v.length, antes = v.slice(0, pos).replace(/\D/g, '').length, novo = fmtDoc(v, el.dataset.doc);
+  if (novo === v) return; el.value = novo;
+  let n = 0, k = 0; while (k < novo.length && n < antes) { if (/\d/.test(novo[k])) n++; k++; }
+  try { el.setSelectionRange(k, k); } catch (e) {}
+});
+document.addEventListener('input', (ev) => {   // trocas-bloco3-form (184): o rascunho acompanha a digitação, sem esperar sair do campo
+  const el = ev.target; if (!S.novo || !el || !el.dataset || !el.dataset.campo || el.tagName === 'SELECT' || !el.closest || !el.closest('#fNovo')) return;
+  S.novo.dados[el.dataset.campo] = el.dataset.vlr != null ? (numVlr(el.value) ?? '') : el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value.trim();
+  S.novo.sujo = true; agendarRascunho();
+});
 let tRasc;
 function agendarRascunho() { clearTimeout(tRasc); tRasc = setTimeout(() => { if (S.novo && S.novo.sujo && S.novo.tipo === 'novo_imovel' && S.novo.status_atual !== 'complemento') gravarNovo('rascunho', true).then((ok) => { if (ok && S.novo) S.novo.sujo = false; }); }, 4000); }
 function continuar(id) { const so = S.sol[id]; if (!so) return; S.novo = { ...JSON.parse(JSON.stringify(so)), id, status_atual: statusDe(id, so) }; return abrir(so.tipo === 'fotos' ? 'fotosimv' : 'novoimv'); }
