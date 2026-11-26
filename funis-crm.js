@@ -151,9 +151,9 @@
   }
   // ---------- fatia 6 (17/11/2026, decisões do Cleiton): automação por etapa ----------
   // Ao entrar na etapa, o BANCO (gatilho no Supabase) preenche a próxima ação e a data (se o corretor não pôs outra na mesma mudança),
-  // cria a tarefa na aba Tarefas, avisa a diretoria no ganho e agenda a reativação do perdido em 90 dias. Esta tabela é só o padrão
+  // cria a tarefa na aba Tarefas, avisa a diretoria no ganho e agenda a reativação do perdido em 30 dias (191, 26/11/2026; antes 90). Esta tabela é só o padrão
   // mostrado no app; o banco tem a mesma (privado.auto_etapa_padrao) e lê a sobreposição de controle/prazos.auto_etapa.
-  const REATIVAR = { dias: 90, exceto: ['Corretor anunciante', 'Pediu para não ser contatado', 'Contato inválido', 'Duplicado'] };
+  const REATIVAR = { dias: 30, exceto: ['Corretor anunciante', 'Pediu para não ser contatado', 'Contato inválido', 'Duplicado'] };
   function autoEtapa(etapa, f, tabela) {
     const e = etapaNoFunil(etapa, f), T = tabela && tabela[f];
     if (T && Object.prototype.hasOwnProperty.call(T, e)) { const x = T[e]; return x && x.acao ? { acao: String(x.acao), dias: Number(x.dias) >= 0 ? Number(x.dias) : 1 } : null; }
@@ -161,5 +161,5 @@
   }
   const todasEtapas = () => { const s = []; ORDEM.forEach((f) => FUNIS[f].etapas.forEach((e) => { if (!s.includes(e)) s.push(e); })); return s; };
   const todosMotivos = () => { const s = []; ORDEM.forEach((f) => FUNIS[f].motivos.forEach((m) => { if (!s.includes(m)) s.push(m); })); return s; };
-  window.FunisCRM = { FUNIS, ORDEM, DO_INTERESSE, LEGADO, NIVEL, funilDoInteresse, def, etapaNoFunil, ordem, aberta, ganho, paradoDias, todasEtapas, todosMotivos, probEtapa, probDe, ajustada, valorDe, receitaPct, receitaDe, previsao, autoEtapa, REATIVAR, versao: '2026-11-17.1' };
+  window.FunisCRM = { FUNIS, ORDEM, DO_INTERESSE, LEGADO, NIVEL, funilDoInteresse, def, etapaNoFunil, ordem, aberta, ganho, paradoDias, todasEtapas, todosMotivos, probEtapa, probDe, ajustada, valorDe, receitaPct, receitaDe, previsao, autoEtapa, REATIVAR, versao: '2026-11-26.1' };
 })();

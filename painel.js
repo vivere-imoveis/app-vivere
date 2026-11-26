@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco3-fatiaB */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco4-crm */ /* trocas-bloco3-fatiaB */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -3856,8 +3856,23 @@ function painelPrazos() {
   const p = PZ();
   return `<div class="painel"><h2>Prazos da Vivere</h2>
     <div class="fatos" style="margin-top:10px">${PRAZOS_ROT.map(([k, l, u]) => `<div><span>${esc(l)}</span>${S.ehDono ? `<input id="pz_${k}" type="number" min="0" inputmode="numeric" value="${esc(p[k])}" style="max-width:110px" aria-label="${esc(l)} (${u})"> <span class="mut peq">${u}</span>` : `<b>${esc(p[k])} ${u}</b>`}</div>`).join('')}</div>
+    ${blocoAutoTarefas()}
     ${blocoParadoEtapas(p)}
     ${S.ehDono ? '<div class="linha" style="margin-top:10px"><button class="b p" type="button" id="salvarPrazos">Salvar prazos</button><span class="mut peq">Valem para os avisos de todos os corretores deste painel.</span></div>' : '<p class="status" style="margin:8px 0 0">Os avisos do painel seguem estes prazos. A contagem dos agenciamentos começa em ' + dt(p.agenc_inicio) + '.</p>'}</div>`;
+}
+// trocas-bloco4-crm (166, 26/11/2026): cada painel liga ou desliga as tarefas automáticas ao mudar a etapa (padrão: ligadas)
+const autoTarefasLigadas = () => !(S.ajCrm && S.ajCrm.auto_tarefas === false);
+function blocoAutoTarefas() {
+  if (S.gestor) return '';
+  const lig = autoTarefasLigadas();
+  return `<div class="linha" style="margin-top:12px;gap:8px;flex-wrap:wrap;align-items:center"><span><b>Tarefas automáticas do CRM:</b> ${lig ? 'ligadas' : 'desligadas'}</span><button class="b" type="button" id="autoTarefasTg" aria-pressed="${lig}">${lig ? 'Desligar' : 'Ligar'}</button></div>
+    <p class="mut peq" style="margin:4px 0 0">${lig ? `Ao mudar a etapa de um lead, o CRM cria sozinho a próxima ação e a tarefa; no Perdido, agenda Reativar contato em ${FC.REATIVAR.dias} dias.` : 'Ao mudar a etapa, nenhuma tarefa é criada sozinha. As tarefas que você pedir continuam sendo criadas.'}</p>`;
+}
+async function alternarAutoTarefas() {
+  const lig = autoTarefasLigadas();
+  const novo = { ...(S.ajCrm || {}), auto_tarefas: !lig, por: S.info.nome || S.info.slug || '', atualizado_em: agora() };
+  const ok = await gravar(() => db.doc('ajustes/crm').set(novo), lig ? 'Tarefas automáticas desligadas: o CRM não cria mais tarefas sozinho.' : 'Tarefas automáticas ligadas.');
+  if (ok) { S.ajCrm = novo; renderLogo(); if (window.ABA_APP && ABA_APP.atual && ABA_APP.atual() === 'prazos') window.VIVERE_RD.prazos(); }   // a aba Prazos aberta é desenhada uma vez: redesenha
 }
 // 16/11/2026 (ampliação do CRM, fatia 1): alerta de parado etapa a etapa, por funil (padrão em funis-crm.js; o dono ajusta aqui)
 function blocoParadoEtapas(p) {
@@ -3869,7 +3884,7 @@ function blocoParadoEtapas(p) {
       return `<tr><td>${esc(e)}</td><td class="n">${S.ehDono ? `<input id="pze_${f}_${i}" data-pze="${f}|${esc(e)}" type="number" min="0" inputmode="numeric" value="${v == null ? '' : esc(v)}" placeholder="sem alerta" style="max-width:110px" aria-label="${esc(F.rot + ' · ' + e)} (dias)">` : v == null ? '<span class="mut">sem alerta</span>' : `<b>${esc(v)} dia${v === 1 ? '' : 's'}</b>`}</td><td class="n">${S.ehDono && !fixa ? `<input id="pbe_${f}_${i}" data-pbe="${f}|${esc(e)}" type="number" min="0" max="100" inputmode="numeric" value="${esc(pr)}" style="max-width:80px" aria-label="${esc(F.rot + ' · ' + e)} (probabilidade em %)"> %` : `<b>${esc(pr)}%</b>${FC.ganho(e, f) ? ' <span class="mut peq">ganho</span>' : ''}`}</td><td class="pz-auto">${(() => { const a = FC.autoEtapa(e, f, pa);
         return S.ehDono ? `<input id="pae_${f}_${i}" data-pae="${f}|${esc(e)}" maxlength="120" value="${esc(a ? a.acao : '')}" placeholder="sem ação" aria-label="${esc(F.rot + ' · ' + e)} (ação automática)"> <input id="pad_${f}_${i}" data-pad="${f}|${esc(e)}" type="number" min="0" max="60" inputmode="numeric" value="${esc(a ? a.dias : '')}" style="max-width:64px" aria-label="${esc(F.rot + ' · ' + e)} (dias para a ação)"> <span class="mut peq">d</span>`
           : a ? `${esc(a.acao)} <span class="mut peq">(+${esc(a.dias)}d)</span>` : '<span class="mut">—</span>'; })()}</td></tr>`; }).join('');
-    return `<div><b>${esc(F.rot)}</b><table><tr><th></th><th class="n peq mut">Parado</th><th class="n peq mut">Chance</th><th class="peq mut">Ação automática</th></tr>${linhas}</table></div>`; }).join('')}<p class="peq mut" style="margin:8px 0 0">No ganho, a diretoria recebe a pendência no HUB; no Perdido, o lead volta como tarefa de reativação em ${FC.REATIVAR.dias} dias (menos ${esc(FC.REATIVAR.exceto.join(' e '))}).</p></details>`;
+    return `<div><b>${esc(F.rot)}</b><table><tr><th></th><th class="n peq mut">Parado</th><th class="n peq mut">Chance</th><th class="peq mut">Ação automática</th></tr>${linhas}</table></div>`; }).join('')}<p class="peq mut" style="margin:8px 0 0">No ganho, a diretoria recebe a pendência no HUB; no Perdido, o lead volta como tarefa de reativação em ${FC.REATIVAR.dias} dias (menos ${esc(FC.REATIVAR.exceto.join(' e '))}).${autoTarefasLigadas() ? '' : ' <b>Neste painel as tarefas automáticas estão desligadas:</b> nada disso é criado sozinho.'}</p></details>`;
 }
 async function salvarPrazos() {
   const novo = { ...PZ() };
@@ -4980,6 +4995,7 @@ document.addEventListener('click', async (ev) => {
   if (d.rvprox) return aplicarRV(d.rvprox, 'prox');
   if (t.id === 'ppSalvar') return salvarProposta();
   if (t.id === 'salvarPrazos') return salvarPrazos();
+  if (t.id === 'autoTarefasTg') return alternarAutoTarefas();   // trocas-bloco4-crm
   if (d.inserirfalta) { const ta = document.getElementById('respDec'); const f = faltantes(S.sol[d.inserirfalta]); ta.value = (ta.value ? ta.value.trim() + '\n' : '') + 'Complete, por favor: ' + f.join('; ') + '.'; ta.focus(); return; }
   if (t.id === 'novoImovel') { S.novo = novoRegistro('novo_imovel', { dados: { cidade: 'Florianópolis' }, ...(S.gestor && S.verComo && S.verComo !== 'todos' ? { agenciador: S.verComo } : {}) }); return abrir('novoimv'); }
   if (t.id === 'salvarRasc') { const ok = await gravarNovo('rascunho'); if (ok) S.novo.sujo = false; return; }
@@ -5344,6 +5360,7 @@ render();
   col('lead_resposta', 'leadResp');   // 1ª resposta pronta (lead-resposta, F2 18/11/2026): só o servidor grava   // perfil do lead pela IA (lead-perfil, F2 17/11/2026): só o servidor grava
   col('leads', 'leads'); col('meus_imoveis', 'meus'); col('catalogo', 'catalogo'); col('solicitacoes', 'sol'); col('decisoes', 'decisoes'); col('cadastro_drive', 'cadDrive'); col('eventos_agenciamento', 'eventos'); col('empreendimentos', 'empDocs'); col('fotos', 'fotosDocs'); col('demandas', 'dem'); col('demandas_pedidos', 'demPed'); col('equipe_cartoes', 'eqc'); col('captados', 'capt'); col('tarefas', 'tarefas'); col('atribuicoes', 'atrib');
   db.doc('controle/prazos').onSnapshot((d) => { S.prazos = d.exists ? d.data() : {}; renderLogo(); }, erro);
+  db.doc('ajustes/crm').onSnapshot((d) => { S.ajCrm = d.exists ? d.data() : {}; renderLogo(); }, () => {});   // trocas-bloco4-crm (166)
   db.doc('acaptar/estado').onSnapshot((d) => { S.acapProprio = d.exists ? d.data() : null; S.acap = S.acapProprio || acapDaFoto(); renderLogo(); }, () => {});
   (async () => { let u = null; try { u = await window.claude.use('user'); S.ehDono = u ? await u.isOwner() : false; S.uid = u ? await u.id() : null; } catch (e) { S.ehDono = !!S.ehDono; } render();
     if (!S.uid) return;
