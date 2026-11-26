@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco5b-restaurar */ /* trocas-bloco5-textos */ /* trocas-bloco4-crm */ /* trocas-bloco3-fatiaB */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco6-regioes */ /* trocas-bloco5b-restaurar */ /* trocas-bloco5-textos */ /* trocas-bloco4-crm */ /* trocas-bloco3-fatiaB */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -644,7 +644,7 @@ const OP = (() => {
   const tipoDeRef = (ref) => TIPO_REF[String(ref || '').slice(0, 2).toUpperCase()] || '';
   const finN = (f) => { const s = sem(f); return /temp/.test(s) ? 'Temporada' : /loc|alug/.test(s) ? 'Locação' : /vend|compr/.test(s) || s === 'v' ? 'Venda' : ''; };
   const bairros = (b) => (Array.isArray(b) ? b : String(b || '').split(/[,;/]| e (?=[A-Z])/)).map((x) => String(x).trim()).filter(Boolean);
-  const mesmoBairro = (a, b) => { const x = limpa(a), y = limpa(b); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); };
+  const mesmoBairro = (a, b) => { const x = limpa(a), y = limpa(b); if (!x || !y) return false; if (x === y || x.includes(y) || y.includes(x)) return true; const R = window.VIVERE_REGIOES; return !!(R && R.pronto && R.bate([a], b)); };   // 171: o bairro pedido abrange as sub-regiões
   const dormDe = (txt) => { const ns = []; sem(txt).replace(/(\d)(?:\s*(?:e|a|,)\s*\d)*\s*(?:dorm|quarto|suite|qto)/g, (m, a) => { ns.push(+a); return m; }); return ns.length ? Math.min(...ns) : null; };
   const areaDe = (txt) => { const m = sem(txt).match(/(\d{2,4})\s*(?:a|–|-|até)\s*(\d{2,4})\s*m/); return m ? [+m[1], +m[2]] : null; };
   const vagasDe = (txt) => { const m = sem(txt).match(/(\d)\s*vaga/); return m ? +m[1] : null; };
@@ -1420,7 +1420,7 @@ const DEM_NUCLEO = (cfg) => {
     const corpo = f.modo === 'pedir'
       ? `<p class="dm-mut" style="margin:0">${esc(resumo(f.d))} · de ${esc(f.d.autor || '—')}</p><label class="dm-c">O que precisa mudar<textarea id="dm-f-texto" rows="4" placeholder="Ex.: o cliente agora aceita também o Rio Tavares">${esc(f.texto || '')}</textarea></label>`
       : `<div class="dm-form"><label class="dm-c">Finalidade<select id="dm-f-fin">${opt(FINS, f.finalidade)}</select></label><label class="dm-c">Tipo<select id="dm-f-tipo">${opt(TIPOS, f.tipo)}</select></label>
-        <div class="dm-c dm-int">Bairros${ms ? ms.html('dm-f-bai', bs.map((b) => [b, b]), f.bairros || [], 'Qualquer bairro', 'bairros') : `<input id="dm-f-baitxt" value="${esc((f.bairros || []).join(', '))}" placeholder="Separe por vírgula">`}</div>
+        <div class="dm-c dm-int">Bairros${ms ? ms.html('dm-f-bai', (window.VIVERE_REGIOES ? window.VIVERE_REGIOES.opcoes(bs) : (bs).map((b) => [b, b])), f.bairros || [], 'Qualquer bairro', 'bairros') : `<input id="dm-f-baitxt" value="${esc((f.bairros || []).join(', '))}" placeholder="Separe por vírgula">`}</div>
         <div class="dm-int dm-tri"><label class="dm-c">Dormitórios (mín.)<input id="dm-f-dorm" type="number" min="0" max="9" inputmode="numeric" value="${esc(f.dorm_min || '')}"></label>
           <label class="dm-c">Suítes (mín.)<input id="dm-f-suites" type="number" min="0" max="9" inputmode="numeric" value="${esc(f.suites_min || '')}"></label>
           <label class="dm-c">Vagas (mín.)<input id="dm-f-vagas" type="number" min="0" max="9" inputmode="numeric" value="${esc(f.vagas_min || '')}"></label></div>
@@ -3221,12 +3221,13 @@ function gavetaAlterar(id) {
 
 // ---------- Pesquisar imóveis ----------
 const listaSel = (x) => (Array.isArray(x) ? x : (x ? [x] : []));   // filtro de vários valores (bairros)
+const bairroNoFiltro = (sel, b) => (window.VIVERE_REGIOES ? window.VIVERE_REGIOES.noFiltro(sel, b) : sel.includes(b));   // 171: região escolhida traz as sub-regiões
 function filtrarVitrine() {
   const f = S.fv;
   const L0 = S.vitrine.filter((v) => {
     if (f.fin && v.fin !== f.fin) return false;
     if (f.tipo && v.tipo !== f.tipo) return false;
-    if (listaSel(f.bairro).length && !listaSel(f.bairro).includes(v.bairro)) return false;   // vários bairros (26/10/2026)
+    if (listaSel(f.bairro).length && !bairroNoFiltro(listaSel(f.bairro), v.bairro)) return false;   // vários bairros (26/10/2026)
     if (f.dorm && !(v.dorm >= Number(f.dorm))) return false;
     if (f.vagas && !(v.vagas >= Number(f.vagas))) return false;
     if (f.vmin && !(v.valor >= Number(f.vmin))) return false;
@@ -3241,7 +3242,7 @@ function formFiltrosVit() {   // Pesquisar e Mapa usam os mesmos filtros (Nicola
   const f = S.fv, uniq = (k) => [...new Set(S.vitrine.map((v) => v[k]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   const sel = (id, k, rot) => `<label class="c">${rot}<select id="${id}"><option value="">Todos</option>${uniq(k).map((o) => `<option ${o === f[k === 'fin' ? 'fin' : k] ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
   return `<div class="painel form">
-      ${sel('fvFin', 'fin', 'Finalidade')}${sel('fvTipo', 'tipo', 'Tipo')}<div class="c">Bairros${MultiSel.html('fvBairro', uniq('bairro').map((b) => [b, b]), listaSel(f.bairro), 'Todos', 'bairros')}</div>
+      ${sel('fvFin', 'fin', 'Finalidade')}${sel('fvTipo', 'tipo', 'Tipo')}<div class="c">Bairros${MultiSel.html('fvBairro', (window.VIVERE_REGIOES ? window.VIVERE_REGIOES.opcoes(uniq('bairro')) : (uniq('bairro')).map((b) => [b, b])), listaSel(f.bairro), 'Todos', 'bairros')}</div>
       <label class="c">Dormitórios (mín.)<input id="fvDorm" type="number" min="0" inputmode="numeric" value="${esc(f.dorm)}"></label>
       <label class="c">Vagas (mín.)<input id="fvVagas" type="number" min="0" inputmode="numeric" value="${esc(f.vagas)}"></label>
       <label class="c">Valor mínimo (R$)<input id="fvMin" ${VLR} value="${esc(fmtVlr(f.vmin))}"></label>
@@ -4629,7 +4630,7 @@ function vEmp() {
 }
 function vEmpLista(C) {
   const f = S.fe, busca = !!qDe();
-  let L = C.emps.filter((e) => (busca || !f.sit || e.sit === f.sit) && (!f.cons || e.construtora_id === f.cons) && (!listaSel(f.bairro).length || listaSel(f.bairro).includes(e.bairro)) && (!f.disp || e._n) && (!f.mat || e._mat));
+  let L = C.emps.filter((e) => (busca || !f.sit || e.sit === f.sit) && (!f.cons || e.construtora_id === f.cons) && (!listaSel(f.bairro).length || bairroNoFiltro(listaSel(f.bairro), e.bairro)) && (!f.disp || e._n) && (!f.mat || e._mat));
   const fL = BA.filtra(L, qDe(), baEmp); L = fL.lista; qInfo(fL, 'empreendimentos');
   const cont = (s) => C.emps.filter((e) => !s || e.sit === s).length;
   const chips = [['', `Todos (${cont('')})`], ...SIT_ORD.map((s) => [s, `${SIT_PL[s]} (${cont(s)})`])];
@@ -4651,7 +4652,7 @@ function vEmpLista(C) {
     ${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todas as situações.</p>' : ''}
     <div class="painel form">
       <label class="c">Construtora<select id="feCons"><option value="">Todas</option>${consOp.map((c) => `<option value="${esc(c.id)}" ${f.cons === c.id ? 'selected' : ''}>${esc(c.nome)} (${c._n})</option>`).join('')}</select></label>
-      <div class="c">Bairros${MultiSel.html('feBairro', bairros.map((b) => [b, b]), listaSel(f.bairro), 'Todos', 'bairros')}</div>
+      <div class="c">Bairros${MultiSel.html('feBairro', (window.VIVERE_REGIOES ? window.VIVERE_REGIOES.opcoes(bairros) : (bairros).map((b) => [b, b])), listaSel(f.bairro), 'Todos', 'bairros')}</div>
       <label class="c chk"><input type="checkbox" id="feDisp" ${f.disp ? 'checked' : ''}> Só com imóveis disponíveis</label>
       <label class="c chk"><input type="checkbox" id="feMat" ${f.mat ? 'checked' : ''}> Só com material</label>
     </div>
@@ -5804,6 +5805,7 @@ vInicio = vInicioRD;
 document.addEventListener('toggle', (ev) => { const t = ev.target; if (!t || !t.matches || !t.matches('details[data-rd-g]')) return; const k = t.dataset.rdG; if (!S.rdAbertos) S.rdAbertos = new Set([...document.querySelectorAll('details[data-rd-g][open]')].map((d) => d.dataset.rdG)); if (t.open) S.rdAbertos.add(k); else S.rdAbertos.delete(k); }, true);
 document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-prazos]'); if (!t) return; ev.preventDefault(); window.VIVERE_RD.prazos(); });
 window.PAINEL_ABA = () => S.aba; window.PAINEL_IR = (k) => { S.aba = k; try { sessionStorage.setItem('painel.aba', k); } catch (e) {} render(); window.scrollTo(0, 0); };   // tarefas-prazos
+window.addEventListener('vivere-regioes', () => { try { if (!document.querySelector('[aria-modal=true], dialog[open]')) render(); } catch (e) { } });   // 171: lista de regiões chegou do banco
 window.VIVERE_RD = { prazos: () => (window.ABA_APP ? window.ABA_APP.abre('prazos') : abrir('prazos')), htmlPrazos: () => painelPrazos() }; /* trocas-abas-app */
 // "Prazos da Vivere" também no Mais do celular (nav-celular.js espelha #btnPrazosApp) e na lateral do computador
 (function () {
