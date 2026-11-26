@@ -26,7 +26,7 @@
       var alvo = desce(n.id, {});
       termos(n).forEach(function (t) { var k = norm(t); if (!k) return; porNome[k] = n.id; alcance[k] = (alcance[k] || []).concat(alvo); });
     });
-    Object.keys(alcance).forEach(function (k) { alcanceN[k] = alcance[k].map(norm).filter(Boolean); });
+    Object.keys(alcance).forEach(function (k) { alcanceN[k] = alcance[k].map(norm).filter(function (x, i, a) { return x && a.indexOf(x) === i; }); });
     R.nos = nos; R.porId = porId; R.pronto = nos.length > 0;
   }
   var prefixo = function (x, y) { return !!x && !!y && (x === y || y.indexOf(x) === 0 || x.indexOf(y) === 0); };
@@ -41,7 +41,7 @@
   var n1 = function (s) { var k = String(s || ''), v = memoN.get(k); if (v === undefined) { v = norm(k); if (memoN.size > 5000) memoN.clear(); memoN.set(k, v); } return v; };
   var bate1 = function (p, y) { // o motor das Oportunidades chama isto para cada lead × imóvel: resposta guardada por par
     var k = p + '\u0001' + y, v = memo.get(k); if (v !== undefined) return v;
-    v = prefixo(p, y) || (alcanceN[p] || []).some(function (s) { return prefixo(s, y); });
+    v = prefixo(p, y) || (alcanceN[p] || []).some(function (s) { return y === s || y.indexOf(s) === 0; }); // sub-região só num sentido (crítico)
     if (memo.size > 20000) memo.clear(); memo.set(k, v); return v;
   };
   R.bate = function (pedidos, bairro) {
@@ -87,6 +87,5 @@
     }, function () { });
   }
   window.VIVERE_REGIOES = R;
-  if (R.pronto) setTimeout(avisar, 0);
   setTimeout(carregar, 0);
 })();
