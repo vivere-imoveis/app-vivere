@@ -344,7 +344,7 @@ window.MultiSel = window.MultiSel || (function () {
     const alvo = (k) => { const v = new Set(); while (k && CI[k] && CI[k].alias_de && !v.has(k)) { v.add(k); k = CI[k].alias_de; } return k; };
     const pes = {};
     const st = (k, x) => { const i = CI[k] || {}; return i.parceiro || x.situacao === 'parceiro' ? 'parceiro' : i.saiu || x.situacao === 'saiu' ? 'saiu' : x.situacao === 'fora_da_equipe' ? 'fora' : 'atual'; };
-    Object.entries(C).forEach(([k, x]) => { if (x && !(CI[k] || {}).alias_de) pes[k] = { nome: x.nome || k, st: st(k, x), obs: (CI[k] || {}).papel || (CI[k] || {}).obs || '' }; });
+    Object.entries(C).forEach(([k, x]) => { if (x && !(CI[k] || {}).alias_de) pes[k] = { nome: (H.nomeCorK && H.nomeCorK(k)) || x.nome || k, st: st(k, x), obs: (CI[k] || {}).papel || (CI[k] || {}).obs || '' }; });
     Object.entries(CI).forEach(([k, x]) => { if (x && !x.alias_de && !pes[k]) pes[k] = { nome: x.nome || (k[0].toUpperCase() + k.slice(1)), st: st(k, {}), obs: x.papel || x.obs || '' }; });
     const explicito = {}; Object.entries(P.imobibrasil_corretores || {}).forEach(([n, k]) => (explicito[n.toLowerCase()] = k));
     const porNome = {}; Object.entries(C).forEach(([k, x]) => [x.nome_completo, (CI[k] || {}).nome_completo].filter(Boolean).forEach((n) => (porNome[slug(n)] = k)));
@@ -615,7 +615,7 @@ window.MultiSel = window.MultiSel || (function () {
         ${it.camada === 'locacao' ? linha('Contrato', esc([it.inicio && H.dt(it.inicio), it.termino && 'até ' + H.dt(it.termino)].filter(Boolean).join(' '))) : ''}
         ${it.data ? linha('Data', esc(H.dt(it.data))) : ''}
         ${it.camada === 'empreendimento' ? linha('Anúncios', esc(it.ativos + ' ativo(s) de ' + it.total)) + linha('Construtora', esc(it.construtora)) : ''}
-        ${ok('corretor') ? linha(it.camada === 'anuncio' || it.camada === 'locacao' ? 'Corretor (agenciou)' : 'Corretor', esc(it.corretor)) : ''}
+        ${ok('corretor') ? linha(it.camada === 'anuncio' || it.camada === 'locacao' ? 'Corretor (agenciou)' : 'Corretor', esc(it.cors && it.cors.length ? it.cors.map(nomeCorretor).join(', ') : it.corretor)) : ''}
         ${ok('proprietario') ? linha(it.camada === 'locacao' ? 'Locador' : it.camada === 'anuncio' ? 'Proprietário' : 'Vendedor', esc(it.prop)) : ''}
         ${ok('partes') ? linha(it.camada === 'locacao' ? 'Locatário' : 'Comprador', esc(it.parte || '')) : ''}
         ${pr ? linha('Ponto', `<span class="pill ${(PREC[pr] || PREC.rua)[1]}">${esc((PREC[pr] || PREC.rua)[0])}</span>` + (it.manual && it.manual.fonte && !v.g ? ` <span class="s">${esc(it.manual.fonte)}</span>` : '')) : ''}

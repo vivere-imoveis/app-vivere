@@ -45,7 +45,7 @@
     if (st.abre === x._id && st.modo === 'distribuir') return `<div class="filtros" style="margin:0">${seletor(x)}<button class="btn" data-lac-ok="${id}">Distribuir</button><button class="btn" data-lac-cancela="1">Cancelar</button></div>`;
     if (st.abre === x._id && st.modo === 'descartar') return `<div class="filtros" style="margin:0"><input type="text" data-lac-motivo="${id}" maxlength="200" placeholder="Motivo (ex.: já comprou, número errado)" aria-label="Motivo do descarte"><button class="btn" data-lac-desc-ok="${id}">Descartar</button><button class="btn" data-lac-cancela="1">Cancelar</button></div>`;
     if (s === 'a_classificar') return `<div class="filtros" style="margin:0"><button class="btn" data-lac-dist="${id}">Distribuir</button><button class="btn" data-lac-desc="${id}">Descartar</button></div>`;
-    if (s === 'distribuido') return `<div class="filtros" style="margin:0"><span class="s">no app de ${esc(x.corretor_nome || x.lead_painel || 'corretor')}</span></div>`;
+    if (s === 'distribuido') return `<div class="filtros" style="margin:0"><span class="s">no app de ${esc(x.corretor_nome ? (H.op && H.op.nomeCorretor ? H.op.nomeCorretor(x.corretor_nome) : x.corretor_nome) : (x.lead_painel || 'corretor'))}</span></div>`;
     return `<div class="filtros" style="margin:0"><button class="btn" data-lac-volta="${id}">Voltar para a fila</button></div>`;
   }
 
@@ -53,7 +53,7 @@
     const s = ST[sit(x)] || [sit(x), ''];
     const tel = telFmt(x.telefone), wa = waNum(x.telefone);
     const perfil = [x.tipo_imovel, x.bairro].filter(Boolean).join(' · ');
-    const situ = `<span class="pill ${s[1]}">${esc(s[0])}</span>${sit(x) === 'distribuido' && x.corretor_nome ? `<span class="s">${esc(x.corretor_nome)}${x.distribuido_em ? ' · ' + dataBR(x.distribuido_em) : ''}${x.distribuido_por ? ' · por ' + esc(x.distribuido_por) : ''}</span>` : ''}${sit(x) === 'descartado' && x.descarte_obs ? `<span class="s">${esc(x.descarte_obs)}</span>` : ''}${x.erro ? `<span class="pill bad" style="margin-top:4px">${esc(x.erro)}</span>` : ''}${st.abre === x._id && st.salvando ? '<span class="s">Gravando…</span>' : ''}${st.falha && st.falha.id === x._id ? `<span class="pill bad" style="margin-top:4px">${esc(st.falha.msg)}</span>` : ''}`;
+    const situ = `<span class="pill ${s[1]}">${esc(s[0])}</span>${sit(x) === 'distribuido' && x.corretor_nome ? `<span class="s">${esc((H.op && H.op.nomeCorretor ? H.op.nomeCorretor(x.corretor_nome) : x.corretor_nome))}${x.distribuido_em ? ' · ' + dataBR(x.distribuido_em) : ''}${x.distribuido_por ? ' · por ' + esc(x.distribuido_por) : ''}</span>` : ''}${sit(x) === 'descartado' && x.descarte_obs ? `<span class="s">${esc(x.descarte_obs)}</span>` : ''}${x.erro ? `<span class="pill bad" style="margin-top:4px">${esc(x.erro)}</span>` : ''}${st.abre === x._id && st.salvando ? '<span class="s">Gravando…</span>' : ''}${st.falha && st.falha.id === x._id ? `<span class="pill bad" style="margin-top:4px">${esc(st.falha.msg)}</span>` : ''}`;
     return `<tr id="lac-${esc(x._id)}">
       <td><b>${esc(x.nome || '(sem nome)')}</b><span class="s" data-sens>${wa ? `<a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(tel)}</a>` : esc(tel || '—')}${x.telefone_conferir ? ' · <span class="pill warn">conferir número</span>' : ''}</span></td>
       <td>${esc(INT[x.interesse] || x.interesse || 'A definir')}${perfil ? `<span class="s">${esc(perfil)}</span>` : ''}</td>

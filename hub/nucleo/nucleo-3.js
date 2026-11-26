@@ -1,6 +1,6 @@
 
 (function(){
-const COLS=['imoveis','contratos_locacao','cobrancas','repasses','receita_mensal','vendas','recebimentos_cleiton','documentos','tarefas','corretores','pendencias','controle','drive_mapa','leads','leads_contatos','crm_leads','crm','construcoes','mapa_detalhes','pessoas_dados','fichas-locacao_dados','oportunidades','drive_pastas','crm_etapas'];
+const COLS=['imoveis','contratos_locacao','cobrancas','repasses','receita_mensal','vendas','recebimentos_cleiton','documentos','tarefas','corretores','pendencias','controle','drive_mapa','leads','leads_contatos','crm_leads','crm','construcoes','mapa_detalhes','pessoas_dados','fichas-locacao_dados','oportunidades','drive_pastas','crm_etapas','corretores_exibicao'];
 const S={}; COLS.forEach(c=>S[c]={});
 let DB=null, carregado={};
 const ABAS=[
@@ -52,7 +52,7 @@ let aba='pendencias', abaGuardada=''; try{const a=abaReal(localStorage.getItem('
 if(/^#[a-z0-9-]+$/.test(location.hash)) abaGuardada=abaReal(location.hash.slice(1));
 if(/^#[a-z]+$/.test(location.hash) && ABAS.some(x=>x[0]===abaReal(location.hash.slice(1)))) aba=abaReal(location.hash.slice(1));
 let focoLinha=''; // linha realçada ao chegar pela busca (carteira: car-<cód>; vendas: ven-<id>)
-let filtroPend='abertas'; let filtroDoc='todos'; let destCob=null;
+let filtroPend='abertas', filtroPendMexido=false, filtroPendAuto=false; let filtroDoc='todos'; let destCob=null;
 let fImv={q:'',fin:'todas',st:'ativos',pg:0,de:'',ate:'',alerta:'',foco:[],focoTxt:'',c:{},por:(()=>{ try{ const v=+localStorage.getItem('hub_imv_por'); return [50,100].includes(v)?v:100; }catch(e){ return 100; } })()}; // por = imóveis por página (50 ou 100; o 20 saiu em 13/11/2026, pedido do Cleiton), escolha guardada por leitor (02/11/2026)
 let fLeads={q:'',cor:'',camp:'',mes:'',st:'',pg:0,int:''};
 let fCRM={q:'',cor:'',et:'',al:'',sel:'',int:''};
@@ -194,7 +194,7 @@ document.addEventListener('click',e=>{
   const sl=e.target.closest('[data-selo-mod]'); if(sl){ const m=MODS[sl.dataset.seloMod]; if(m&&ABAS.some(a=>a[0]===m.id)){ aba=m.id; try{localStorage.setItem('hubv.aba',aba)}catch(_){}; if(typeof m.foco==='function'){ try{ m.foco(sl.dataset.seloAlvo); }catch(_){} } render(); } return; }
   const fo=e.target.closest('[data-imvfoco]'); if(fo){ fImv.foco=[]; fImv.focoTxt=''; fImv.pg=0; render(); return; }
   const b=e.target.closest('[data-aba]'); if(b){aba=abaReal(b.dataset.aba); fImv.foco=[]; fImv.focoTxt=''; if(b.dataset.alerta){ Object.assign(fImv,{foco:[],alerta:b.dataset.alerta,fin:'todas',st:'todos',q:'',de:'',ate:'',per:'0',pg:0}); } destCob=b.dataset.cod||null; if(destCob) setTimeout(()=>{const l=document.getElementById('dev-'+destCob)||document.getElementById('cob-'+destCob); if(l) l.scrollIntoView({block:'center',behavior:'smooth'});},60); try{localStorage.setItem('hubv.aba',aba)}catch(_){}; render(); return;}
-  const f=e.target.closest('[data-fpend]'); if(f){filtroPend=f.dataset.fpend; render(); return;}
+  const f=e.target.closest('[data-fpend]'); if(f){filtroPend=f.dataset.fpend; filtroPendMexido=true; render(); return;}
   const fd=e.target.closest('[data-fdoc]'); if(fd){filtroDoc=fd.dataset.fdoc; render(); return;}
   const fi=e.target.closest('[data-fimv]'); if(fi){const [k,v]=fi.dataset.fimv.split(':'); fImv[k]=v; fImv.alerta=''; fImv.foco=[]; fImv.pg=0; render(); return;}
   const al=e.target.closest('[data-imvalerta]'); if(al){ fImv.alerta=al.dataset.imvalerta; fImv.foco=[]; if(fImv.alerta){ Object.assign(fImv,{fin:'todas',st:'todos',q:'',de:'',ate:'',per:'0'}); } fImv.pg=0; render(); return; }
@@ -282,10 +282,31 @@ const TIPO_CRM=/^(crm_|site_|portais_|agenciamento_|mapa_|link_mapa_|empreendime
 function areaPend(x){ const a=x.aba?abaPend(x):''; if(a&&ABAS.some(z=>z[0]===a)) return grupoDe(a)==='crm'?'crm':'erp'; return TIPO_CRM.test(String(x.tipo||''))?'crm':'erp'; }
 const ORD_PRIO={alta:0,media:1,baixa:2};
 const ordPend=(a,b)=>(ORD_PRIO[a.prioridade]??3)-(ORD_PRIO[b.prioridade]??3)||String(a.desde||'').localeCompare(String(b.desde||''));
-document.addEventListener('change',e=>{ const sel=e.target.closest&&e.target.closest('[data-fpend-sel]'); if(sel){ filtroPend=sel.value; render(); } });
+/* 26/11/2026 (sugestão 179 do Nícollas; donos decididos pelo Cleiton): cada pendência tem dono e a aba abre em "Minhas".
+   Com corretor = o corretor. Sem corretor, pelo tipo: site, portais, mapa e empreendimentos = Nícollas e William; negócio novo
+   no Drive = corretor(es) do nome da pasta + Cleiton + Nícollas; locação, jurídico, corretores (cc_) e o resto da gestão = Cleiton.
+   Quem está logado: no Claude, o dono do artefato (Cleiton); no HUB na web, o nome do login (acessos.nome). */
+const DONO_SITE=/^(site_|portais_|link_mapa_|mapa_|empreendimentos_)/;
+function donosPend(x){ const c=String(x.corretor||'').trim();
+  if(x.tipo==='drive_negocio'){ const m=String(x.titulo||'').split(' - '); const cor=m.length>1?m[m.length-1].split(/\s+e\s+/).map(t=>t.trim()).filter(Boolean):[]; return [...new Set([...(c?[c]:[]),...cor,'Cleiton','Nícollas'])]; }
+  if(c) return [c];
+  if(DONO_SITE.test(String(x.tipo||''))) return ['Nícollas','William'];
+  return ['Cleiton']; }
+let MEU_NOME='';
+const NM_ALIAS={william:'willian'};
+const nmTok=t=>semAc(String(t||'')).trim().split(/\s+/).filter(Boolean).map(w=>NM_ALIAS[w]||w);
+function ehMeu(dono){ const a=nmTok(dono), b=nmTok(MEU_NOME); if(!a.length||!b.length||a[0]!==b[0]) return false; return a.slice(1).every(w=>b.includes(w)); }
+const minhaPend=x=>donosPend(x).some(ehMeu);
+(async()=>{ try{ const u=await window.claude.use('user'); if(!u) return; let n='';
+  try{ const me=await u.me(); n=(me&&me.name)||''; }catch(e){}
+  if(!n){ try{ if(u.isOwner&&await u.isOwner()) n='Cleiton Paz'; }catch(e){} }
+  if(!n) return; MEU_NOME=n; render(); }catch(e){} })();
+document.addEventListener('change',e=>{ const sel=e.target.closest&&e.target.closest('[data-fpend-sel]'); if(sel){ filtroPend=sel.value; filtroPendMexido=true; render(); } });
 function pPendencias(){
   const todas=lista('pendencias');
-  let L=todas.filter(x=>filtroPend==='abertas'?x.status==='aberta':filtroPend==='dispensadas'?x.status==='dispensada':filtroPend.startsWith('area:')?x.status==='aberta'&&areaPend(x)===filtroPend.slice(5):x.status==='aberta'&&x.tipo===filtroPend);
+  // abre em "Minhas" uma vez, quando o nome e as pendências já chegaram e há alguma sua; sem nenhuma sua, segue em Todas
+  if(MEU_NOME&&!filtroPendMexido&&!filtroPendAuto&&carregado.pendencias){ filtroPendAuto=true; if(filtroPend==='abertas'&&todas.some(x=>x.status==='aberta'&&minhaPend(x))) filtroPend='minhas'; }
+  let L=todas.filter(x=>filtroPend==='minhas'?x.status==='aberta'&&minhaPend(x):filtroPend==='abertas'?x.status==='aberta':filtroPend==='dispensadas'?x.status==='dispensada':filtroPend.startsWith('area:')?x.status==='aberta'&&areaPend(x)===filtroPend.slice(5):x.status==='aberta'&&x.tipo===filtroPend);
   L.sort(ordPend);
   const abertas=todas.filter(x=>x.status==='aberta');
   const tiposPres=[...new Set(abertas.map(x=>x.tipo))];
@@ -294,12 +315,12 @@ function pPendencias(){
   const nDisp=todas.filter(x=>x.status==='dispensada').length;
   const op=(v,t)=>`<option value="${esc(v)}"${filtroPend===v?' selected':''}>${esc(t)}</option>`;
   const porTipo=tiposPres.map(t=>[t,abertas.filter(x=>x.tipo===t).length]).sort((a,b)=>b[1]-a[1]||rotTipo(a[0]).localeCompare(rotTipo(b[0]),'pt-BR'));
-  const fil=`<div class="filtros fpend-sel"><label for="fpend-sel">Mostrar</label><select id="fpend-sel" data-fpend-sel>${op('abertas',`Todas as abertas (${abertas.length})`)}${op('area:crm',`CRM (${nArea('crm')})`)}${op('area:erp',`Gestão (${nArea('erp')})`)}${porTipo.length?`<optgroup label="Por tipo">${porTipo.map(([t,n])=>op(t,`${rotTipo(t)} (${n})`)).join('')}</optgroup>`:''}${op('dispensadas',`Dispensadas (${nDisp})`)}</select></div>`;
-  return `<h2>Pendências e alertas</h2><p class="nota">Lista única, gerada a cada coleta. Vermelho = alta, âmbar = média, verde-azulado = baixa. "Dispensar" tira o item da lista e o coletor não o reabre. "CRM" e "Gestão" separam as pendências das duas partes do HUB.</p>${fil}${L.length?L.map(itemPend).join(''):vazio(carregado.pendencias?'Nada pendente neste filtro.':'Aguardando a primeira coleta.')}`;
+  const fil=`<div class="filtros fpend-sel"><label for="fpend-sel">Mostrar</label><select id="fpend-sel" data-fpend-sel>${MEU_NOME?op('minhas',`Minhas (${abertas.filter(minhaPend).length})`):''}${op('abertas',`Todas as abertas (${abertas.length})`)}${op('area:crm',`CRM (${nArea('crm')})`)}${op('area:erp',`Gestão (${nArea('erp')})`)}${porTipo.length?`<optgroup label="Por tipo">${porTipo.map(([t,n])=>op(t,`${rotTipo(t)} (${n})`)).join('')}</optgroup>`:''}${op('dispensadas',`Dispensadas (${nDisp})`)}</select></div>`;
+  return `<h2>Pendências e alertas</h2><p class="nota">Lista única, gerada a cada coleta. Vermelho = alta, âmbar = média, verde-azulado = baixa. "Dispensar" tira o item da lista e o coletor não o reabre. "CRM" e "Gestão" separam as pendências das duas partes do HUB. Abre em "Minhas" (as de que você é responsável); "Todas as abertas" mostra as de todos.</p>${fil}${L.length?L.map(itemPend).join(''):vazio(carregado.pendencias?'Nada pendente neste filtro.':'Aguardando a primeira coleta.')}`;
 }
 function itemPend(x){ return `<div class="pend ${esc(x.prioridade)} ${x.status==='dispensada'?'dispensada':''}"><div class="faixa"></div><div class="corpo">
     <div class="tit">${esc(x.titulo)}</div><div class="det">${esc(x.detalhe||'')}</div>
-    <div class="meta"><span class="pill">${esc(rotTipo(x.tipo))}</span>${x.cod?`<span class="cod">${esc(x.cod)}</span>`:''}${x.valor!=null?`<span>${brl(x.valor)}</span>`:''}${x.desde?`<span>desde ${dt(x.desde)}</span>`:''}${x.prazo?`<span>prazo ${dt(x.prazo)}</span>`:''}</div></div>
+    <div class="meta"><span class="pill">${esc(rotTipo(x.tipo))}</span>${x.cod?`<span class="cod">${esc(x.cod)}</span>`:''}${x.valor!=null?`<span>${brl(x.valor)}</span>`:''}${x.desde?`<span>desde ${dt(x.desde)}</span>`:''}${x.prazo?`<span>prazo ${dt(x.prazo)}</span>`:''}<span>resp.: ${esc(donosPend(x).join(', '))}</span></div></div>
     <div class="acoes">${x.aba&&ABAS.some(a=>a[0]===abaPend(x))?`<button class="btn" data-aba="${esc(abaPend(x))}" style="margin-right:6px">Abrir ${esc(rotAba(abaPend(x)))}</button>`:''}${x.refs_crm&&x.refs_crm.length?`<button class="btn" data-crmal="${esc(x.filtro_crm||'')}" style="margin-right:6px">Ver no CRM</button>`:''}${x.refs&&x.refs.length?`<button class="btn" data-aba="imoveis" data-alerta="${esc(x._id)}" style="margin-right:6px">Ver na aba Imóveis</button>`:''}${x.tipo==='boleto_atraso'?`<button class="btn" data-aba="cobranca" data-cod="${esc(x.cod||'')}" style="margin-right:6px">Ver na Cobrança</button>`:''}${x.cod&&pastaDoCodigo(x.cod)?`<span style="margin-right:6px">${botaoPasta(pastaDoCodigo(x.cod))}</span>`:''}${x.drive?`<span style="margin-right:6px">${botaoDrive('https://drive.google.com/drive/folders/'+x.drive)}</span>`:''}${DB?(x.status==='dispensada'?`<button class="btn" data-disp="${esc(x._id)}" data-para="aberta">Reabrir</button>`:`<button class="btn" data-disp="${esc(x._id)}" data-para="dispensada">Dispensar</button>`):''}</div></div>`; }
 async function alterna(id,para){
   if(!DB) return;
@@ -1186,16 +1207,30 @@ function pImoveis(){
   ${fImv.foco&&fImv.foco.length?`<div class="aviso" style="margin:0 0 10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span><b>${esc(fImv.focoTxt||'Imóvel selecionado')}</b> — os demais filtros ficam de lado.</span><button class="btn" data-imvfoco="">Mostrar todos os imóveis</button></div>`:''}
   <div id="imv-res">${tabImoveis()}</div>`;
 }
-let CHC={c:null,p:null,m:null};
-function chaveCorretor(nm){ const c0=S.corretores, p0=(S.controle||{}).parametros; if(CHC.c!==c0||CHC.p!==p0||!CHC.m) CHC={c:c0,p:p0,m:new Map()};
+let CHC={c:null,p:null,x:null,m:null};
+function chaveCorretor(nm){ const c0=S.corretores, p0=(S.controle||{}).parametros, x0=S.corretores_exibicao; if(CHC.c!==c0||CHC.p!==p0||CHC.x!==x0||!CHC.m) CHC={c:c0,p:p0,x:x0,m:new Map()};
   const k0=String(nm==null?'':nm); if(CHC.m.has(k0)) return CHC.m.get(k0); const r0=chaveCorretor0(nm); CHC.m.set(k0,r0); return r0; }
 function chaveCorretor0(nm){ nm=String(nm||'').trim(); if(!nm||nm.startsWith('(')) return ''; const CI=params().corretores_info||{}; const ex=params().imobibrasil_corretores||{};
   let k=Object.entries(ex).find(([n])=>n.toLowerCase()===nm.toLowerCase()); if(k) return k[1];
   // nome completo bate com o cadastro (ex.: "Fernanda Crissie" ≠ "Fernanda Silva"): só depois disso o primeiro nome decide (19/10/2026)
   { const C0=S.corretores||{}; const kn=Object.keys(C0).find(c=>[C0[c].nome_completo,C0[c].nome].some(n=>n&&semAc(n).trim()===semAc(nm))); if(kn) return kn; }
+  // nome de exibição (ex.: "Kamilly Araujo", que vem do app e da Vivian desde 25/11/2026): a chave do HUB que tem esse nome no mapa
+  { const C0=S.corretores||{}, M=mapaExib(); const ks=Object.keys(M).filter(c=>semAc(M[c]).trim()===semAc(nm)); const kn=ks.find(c=>C0[c])||''; if(kn) return kn; }
   let k1=semAc(nm.split(/\s+/)[0]).replace(/[^a-z0-9]+/g,'-'); const vistos=new Set(); while(CI[k1]&&CI[k1].alias_de&&!vistos.has(k1)){vistos.add(k1); k1=CI[k1].alias_de;}
   const C=S.corretores||{}; if(C[k1]) return k1; const c=Object.keys(C).filter(x=>x.split('-')[0]===k1); return c.length===1?c[0]:'nome:'+semAc(nm); }
-function nomeCorretor(k){ if(!k) return '—'; if(k.startsWith('nome:')) return k.slice(5); const c=(S.corretores||{})[k]; return c?c.nome:k; }
+// Nome de exibição dos corretores (25/11/2026, tarefa vis-nome-completo-corretores, decisões do Cleiton): nome e último sobrenome
+// (corretores_exibicao/mapa.nomes, por id do HUB e por id do app; mesma tabela de public.corretores.nome). Ex-corretor (saiu,
+// fora da equipe ou em saída) = "Vivere (<nome>)": a diretoria segue vendo quem agenciou; no site e no painel ele já é "Vivere".
+// Sem entrada no mapa e sem saída registrada, fica o nome de antes (cadastro de Pessoas).
+const SAIU_COR=['saiu','fora_da_equipe','em_saida'];
+function mapaExib(){ const d=(S.corretores_exibicao||{}).mapa; return (d&&d.nomes)||{}; }
+function nomeExibK(k){ k=String(k||''); if(!k||k.startsWith('nome:')) return ''; const M=mapaExib(); if(M[k]) return M[k];
+  const c=(S.corretores||{})[k], f=(S['cadastro-corretores_fichas']||{})[k], ci=(params().corretores_info||{})[k]||{};
+  if(!c&&!f) return '';
+  const saiu=(c&&SAIU_COR.includes(c.situacao))||(f&&SAIU_COR.includes(f.situacao))||ci.saiu;
+  if(!saiu||(c&&c.situacao==='parceiro')||ci.parceiro) return '';
+  const nm=(c&&(c.nome_completo||c.nome))||(f&&(f.nome_completo||f.nome))||k; return 'Vivere ('+nomePadrao(nm)+')'; }
+function nomeCorretor(k){ if(!k) return '—'; const e=nomeExibK(k); if(e) return e; if(k.startsWith('nome:')) return k.slice(5); const c=(S.corretores||{})[k]; return c?c.nome:k; }
 const STL={vendido:['vendido','ok'],visita:['visita','ok'],em_contato:['em contato','info'],sem_retorno:['sem retorno','warn'],descartado:['descartado',''],outro:['outro',''],sem_registro:['sem registro','']};
 // leads que os módulos acrescentam à aba Leads (ex.: Portais = leads do CanalPro ainda fora das planilhas). Mesmo formato de leads_contatos.
 // Captação em dois lados (01/11/2026): módulos com o gancho imoveisCaptados() entregam o imóvel de quem TEM (proprietário que
@@ -1291,7 +1326,7 @@ function nomePadrao(s){ const P=window.HUB_PESSOAS; try{ if(P&&typeof P.padrao==
 function pes(txt,ctx){ if(txt==null||txt==='') return ''; const P=window.HUB_PESSOAS; if(P&&typeof P.html==='function'){ try{ const h=P.html(String(txt),ctx||{}); if(h) return h; }catch(e){} } return esc(nomePadrao(txt)); }
 // nome de exibição de uma pessoa (cadastro de Pessoas), para busca e títulos
 function nomePes(txt,ctx){ const P=window.HUB_PESSOAS; try{ const id=P&&P.id&&P.id(String(txt||''),ctx||{}); const p=id&&P.pessoa(id); if(p&&p.nome) return p.nome; }catch(e){} return nomePadrao(txt); }
-function nomeCorPes(nm){ const k=chaveCorretor(nm); const P=window.HUB_PESSOAS; if(k&&!k.startsWith('nome:')){ try{ const p=P&&P.pessoa&&P.pessoa(k); if(p&&p.nome) return p.nome; }catch(e){} const c=(S.corretores||{})[k]; if(c) return c.nome_completo||c.nome; } return nomePadrao(nm); }
+function nomeCorPes(nm){ const k=chaveCorretor(nm); const P=window.HUB_PESSOAS; if(k&&!k.startsWith('nome:')){ const e=nomeExibK(k); if(e) return e; try{ const p=P&&P.pessoa&&P.pessoa(k); if(p&&p.nome) return p.nome; }catch(e){} const c=(S.corretores||{})[k]; if(c) return c.nome_completo||c.nome; } return nomePadrao(nm); }
 function pesCor(nm){ const k=chaveCorretor(nm); const t=nomeCorPes(nm); if(k&&!k.startsWith('nome:')&&window.HUB_PESSOAS) return `<button class="lk pes" data-pessoa="${esc(k)}" title="Abrir o cadastro de ${esc(t)}">${esc(t)}</button>`; return esc(t); }
 // "KAMILY AG/JAIME", "LUCIANO E DEIVIS", "DEIVIS/MILENA AG": cada nome vira link para a pessoa da equipe
 function corsVenda(t){ return String(t).split(/(\/|,| E )/).map(p=>{ if(/^(\/|,| E )$/.test(p)) return esc(p); const m=p.trim().match(/^(.*?)(\s+AG)?$/i); return m&&m[1]?pesCor(m[1])+(m[2]?esc(m[2]):''):esc(p); }).join(''); }
@@ -1357,7 +1392,7 @@ const alc=m=>AL_CRM[m]||[String(m),''];
 const etPill=e=>`<span class="pill ${GANHO_CRM.has(e)?'ok':e==='Perdido'?'':(e==='Novo'||e==='A captar')?'warn':'info'}">${esc(e||'Novo')}</span>`;
 function crmBase(){ return (S.crm||{}).base||{}; }
 function crmRes(){ return (S.crm||{}).resumo||{}; }
-function nomeCRM(slug){ const c=(crmBase().corretores||[]).find(x=>x.slug===slug); return c?c.nome:nomeCorretor(slug); }
+function nomeCRM(slug){ const e=nomeExibK(slug); if(e) return e; const c=(crmBase().corretores||[]).find(x=>x.slug===slug); return c?c.nome:nomeCorretor(slug); }
 function motivosLead(id){ const R=crmRes().cobrar||{}; for(const k in R){ const x=R[k].find(y=>y.id===id); if(x) return x.motivos; } return []; }
 function msgCobrar(slug){ const L=(crmRes().cobrar||{})[slug]||[]; const t={primeiro:'sem primeiro contato',vencida:'próxima ação vencida',parado:'sem registro há '+(crmRes().parado_dias||15)+'+ dias',sem_prox:'sem próxima ação marcada'};
   return `${nomeCRM(slug).split(' (')[0]}, retornos pendentes no CRM (planilha "CRM Vivere"):\n`+L.map(x=>`• ${x.nome} — ${x.motivos.map(m=>t[m]||m).join(', ')}${x.data_prox&&x.motivos.includes('vencida')?` (era ${dt(x.data_prox)})`:''}`).join('\n')+`\nRegistre o contato na aba Histórico e marque a próxima ação. Obrigado!`; }
@@ -1385,7 +1420,7 @@ function pCRM(){
   const leadsDe=k=>(R.por_corretor||{})[k]||{}; const nPlan=k=>lista('leads_contatos').filter(x=>chaveCorretor(x.corretor)===k||chaveCorretor(x.corretor)===((params().corretores_info||{})[k]||{}).alias_de).length;
   const funil=o=>(FCH?FCH.todasEtapas():ETAPAS_CRM).filter(e=>(o||{})[e]).map(e=>`${etPill(e)} ${o[e]}`).join(' ')||'—';
   const linCor=cors.filter(c=>!/\(saiu\)/.test(c.nome)||c.ativo).map(c=>{ const m=leadsDe(c.slug); const nc=((R.cobrar||{})[c.slug]||[]).length;
-    return `<tr><td>${esc(c.nome)}<span class="s">${esc(c.equipe||'')}</span></td><td>${c.ativo?(c.planilha?`<a class="btn" href="${escUrl(c.planilha)}" target="_blank" rel="noopener">Abrir painel</a>`:'criando…')+`<span class="s">${c.compartilhada?'compartilhada':'ainda não compartilhada'}</span>`:'<span class="pill">fora do CRM</span><span class="s">sem painel no app</span>'}</td><td class="n">${c.ativo?(m.total||0):'—'}</td><td>${c.ativo?funil(m.etapas):'—'}</td><td class="n">${c.ativo?(m.fechados||0):'—'}</td><td class="n">${c.ativo&&m.total?pct(m.conversao):'—'}</td><td>${nc?`<button class="btn" data-crmal="cobrar" data-crmcor="${esc(c.slug)}">${nc} a cobrar</button> <button class="btn" data-crmmsg="${esc(c.slug)}" title="Copia uma mensagem pronta para mandar ao corretor">Copiar mensagem</button>`:c.ativo?'<span class="pill ok">em dia</span>':'—'}</td></tr>`; }).join('');
+    return `<tr><td>${esc(nomeCRM(c.slug))}<span class="s">${esc(c.equipe||'')}</span></td><td>${c.ativo?(c.planilha?`<a class="btn" href="${escUrl(c.planilha)}" target="_blank" rel="noopener">Abrir painel</a>`:'criando…')+`<span class="s">${c.compartilhada?'compartilhada':'ainda não compartilhada'}</span>`:'<span class="pill">fora do CRM</span><span class="s">sem painel no app</span>'}</td><td class="n">${c.ativo?(m.total||0):'—'}</td><td>${c.ativo?funil(m.etapas):'—'}</td><td class="n">${c.ativo?(m.fechados||0):'—'}</td><td class="n">${c.ativo&&m.total?pct(m.conversao):'—'}</td><td>${nc?`<button class="btn" data-crmal="cobrar" data-crmcor="${esc(c.slug)}">${nc} a cobrar</button> <button class="btn" data-crmmsg="${esc(c.slug)}" title="Copia uma mensagem pronta para mandar ao corretor">Copiar mensagem</button>`:c.ativo?'<span class="pill ok">em dia</span>':'—'}</td></tr>`; }).join('');
   const camps=Object.entries(R.por_campanha||{}).sort((a,b)=>b[1].total-a[1].total);
   const linCamp=camps.map(([k,m])=>`<tr><td>${esc(k)}</td><td class="n">${m.total}</td><td>${funil(m.etapas)}</td><td class="n">${m.fechados}</td><td class="n">${pct(m.conversao)}</td></tr>`).join('');
   const cob=Object.entries(R.cobrar||{}).map(([k,L])=>`<div class="card"><h2 style="margin:0 0 6px">${esc(nomeCRM(k))} <span class="pill bad">${L.length}</span></h2><ul style="margin:0 0 8px 16px;padding:0">${L.slice(0,12).map(x=>`<li class="s">${esc(x.nome)} — ${esc(x.motivos.map(m=>alc(m)[0]).join(', '))}</li>`).join('')}${L.length>12?`<li class="s">e mais ${L.length-12}</li>`:''}</ul><button class="btn" data-crmmsg="${esc(k)}">Copiar mensagem</button> <button class="btn" data-crmal="cobrar" data-crmcor="${esc(k)}">Ver na lista</button></div>`).join('');
@@ -1430,7 +1465,7 @@ function blocoPrevisaoCRM(cors){
   const bt=(k,t)=>`<button class="btn" data-mesprevcrm="${k}" aria-pressed="${mesPrevCRM===k}">${t}</button>`;
   const lin=cors.filter(c=>c.ativo).map(c=>{ const Q=prev(T.filter(x=>x.cor===c.slug)); const falta=Q.semValor+Q.semData;
     return {c,Q,falta}; }).filter(o=>o.Q.abertos.n||o.Q.ganhos.n||o.falta).sort((a,b)=>b.Q.abertos.recPond-a.Q.abertos.recPond||b.Q.abertos.pond-a.Q.abertos.pond)
-    .map(({c,Q,falta})=>`<tr><td>${esc(c.nome)}</td><td class="n">${Q.abertos.n}</td>${F?`<td class="n">${v(Q.abertos.pond)}</td>`:''}${comRec?`<td class="n">${v(Q.abertos.recPond)}</td>`:''}<td class="n">${Q.ganhos.n}</td>${comRec?`<td class="n">${v(Q.ganhos.rec)}</td>`:''}<td class="n">${falta?`${Q.semValor} sem valor · ${Q.semData} sem data`:'—'}${Q.vencidos?` <span class="pill bad">${Q.vencidos} vencido${Q.vencidos>1?'s':''}</span>`:''}</td></tr>`).join('');
+    .map(({c,Q,falta})=>`<tr><td>${esc(nomeCRM(c.slug))}</td><td class="n">${Q.abertos.n}</td>${F?`<td class="n">${v(Q.abertos.pond)}</td>`:''}${comRec?`<td class="n">${v(Q.abertos.recPond)}</td>`:''}<td class="n">${Q.ganhos.n}</td>${comRec?`<td class="n">${v(Q.ganhos.rec)}</td>`:''}<td class="n">${falta?`${Q.semValor} sem valor · ${Q.semData} sem data`:'—'}${Q.vencidos?` <span class="pill bad">${Q.vencidos} vencido${Q.vencidos>1?'s':''}</span>`:''}</td></tr>`).join('');
   const cab=`<th>Corretor</th><th class="n">Negócios<br>no mês</th>${F?`<th class="n">${esc(F.valor.curto)}<br>ponderado</th>`:''}${comRec?'<th class="n">Receita<br>ponderada</th>':''}<th class="n">Ganhos<br>no mês</th>${comRec?'<th class="n">Receita<br>dos ganhos</th>':''}<th class="n">Falta<br>preencher</th>`;
   return `<h2 style="margin-top:4px">Previsão de ${esc(rot)}${F?` · ${esc(F.rot)}`:''}</h2><p class="nota">Valor × probabilidade (da etapa ou ajustada pelo corretor) dos negócios em aberto com fechamento previsto no mês; ganhos = chegaram à etapa de ganho com fechamento no mês. Receita da Vivere: Locação 1 aluguel, Venda 6% e Temporada 15% (o corretor ajusta no negócio); Captação sem receita. Os dados vêm do painel de cada corretor.</p>
   <div class="filtros" role="group" aria-label="Mês da previsão" style="margin:0 0 6px">${bt('este','Este mês')}${bt('prox','Próximo mês')}</div>${chips}
@@ -1457,7 +1492,7 @@ function blocoRelCRM(cors){
   const RC=window.RelatoriosCRM; if(!FCH||!RC) return '';
   const o=relCRMOpts(), Sx=RC.secoes(RC.calcular(relCRMItens(),o),o);
   const bt=(k,t)=>`<button class="btn" data-relcrmper="${k}" aria-pressed="${relCRM.per===k}">${esc(t)}</button>`;
-  const ops=cors.filter(c=>c.ativo).map(c=>`<option value="${esc(c.slug)}" ${relCRM.cor===c.slug?'selected':''}>${esc(c.nome)}</option>`).join('');
+  const ops=cors.filter(c=>c.ativo).map(c=>`<option value="${esc(c.slug)}" ${relCRM.cor===c.slug?'selected':''}>${esc(nomeCRM(c.slug))}</option>`).join('');
   const bx=(q,f,t)=>`<button class="btn" data-relcrmbx="${q}|${f}">${t}</button>`;
   return `<h2 style="margin-top:24px">Relatórios do CRM</h2><p class="nota">Conversão por etapa, tempo por etapa, motivos de perda, origem dos leads e ranking por corretor, com o funil escolhido acima (${esc(o.funil?FCH.def(o.funil).rot:'Todos')}). O período conta pela data de entrada do lead. O custo por origem entra com a integração do Meta e do Google Ads.</p>
   <div class="filtros" role="group" aria-label="Período" style="margin:0 0 6px">${RC.PERIODOS.map(([k,t])=>bt(k,t)).join('')}</div>
@@ -1501,7 +1536,7 @@ function cartoesCor(ativos){ const T=lista('crm_leads').map(x=>Object.assign({},
   const cart=(k,nome,sub,L)=>{ const n=num(L), on=fCRM.sel===k;
     return `<button type="button" class="crm-cor${on?' on':''}${n.al?' alerta':''}" data-crmsel="${esc(on?'':k)}" aria-pressed="${on}"><span class="nm">${esc(nome)}</span>${sub?`<span class="sb">${esc(sub)}</span>`:''}
       <span class="nn"><b>${n.t}</b> lead${n.t===1?'':'s'} · ${n.ab} em aberto · ${n.fe} fechado${n.fe===1?'':'s'}</span>${n.al?`<span class="pill bad">${n.al} a cobrar</span>`:'<span class="pill ok">em dia</span>'}</button>`; };
-  const cs=ativos.map(c=>cart(c.slug,c.nome,c.equipe||'',T.filter(x=>x.corretor===c.slug)));
+  const cs=ativos.map(c=>cart(c.slug,nomeCRM(c.slug),c.equipe||'',T.filter(x=>x.corretor===c.slug)));
   return `<div class="crm-cors">${cart('*','Todos os corretores',ativos.length+' no CRM',T)}${cs.join('')}</div>`; }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-crmsel]'); if(!b) return; const k=b.dataset.crmsel;
   Object.assign(fCRM,{sel:k,cor:k==='*'?'':k}); render(); if(k) setTimeout(()=>{ const t=document.querySelector('.crm-aberto'); if(t) t.scrollIntoView({block:'start',behavior:'smooth'}); },60); });
@@ -1738,6 +1773,8 @@ window.HUB={ versao:1, mais, menos, clsVal, S, lista, esc, dt, brl, brl0, hojeIS
     // Encaminhados (01/11/2026): leads repassados a corretor fora da Captação (portais, campanhas, planilhas), com o perfil efetivo
     encaminhados:()=>{ const ctx=ctxHub(); return leadsOp().filter(l=>!l.capt_id&&l.corretor&&!String(l.corretor).startsWith('(')).map(l=>({id:l.id,nome:l.nome,campanha:l.campanha||'',canal:l.canal||'',corretor:l.corretor,corretor_nome:nomeCorPes(l.corretor),data:l.data||'',status:l.status||'',etapa:l.etapa||'',aberto:l.aberto,imovel_interesse:l.imovel_interesse||'',perfil:OP.perfilDo(l,ctx)})); },
     nomeCorretor:nm=>{ try{ return nomeCorPes(nm)||nm; }catch(_){ return nm; } }},
+  // nome de exibição por chave (id do HUB ou do app): '' quando não há (25/11/2026, vis-nome-completo-corretores)
+  nomeCorK:k=>{ try{ return nomeExibK(k); }catch(_){ return ''; } },
   // botão 📍 do mapa no fim de um endereço: HUB.mapa('empreendimento', id) | ('imovel', id) | ('objeto', null, texto) | ('texto', null, texto, {bairro})
   mapa:(tipo,ref,txt,extra)=>mapaDe(tipo,ref,txt,extra),
   // botão 🗺 "ver no mapa do HUB" (alvo = i-<anúncio> | l-<locação> | v-<venda> | e-<empreendimento>) e o salto direto

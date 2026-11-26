@@ -36,7 +36,7 @@
         <td class="n"><b>${num(a.contatos_total)}</b>${det ? `<span class="s">${esc(det)}</span>` : ''}</td>
         <td class="n">${num(a.leads_total)}<span class="s">${a.ultimo_lead ? 'último ' + dt(a.ultimo_lead) : 'nenhum'}${a.destaque && d != null ? ` · ${d} d` : ''}</span></td>
         <td><span class="pill ${st[1]}">${esc(st[0])}${a.locado_cod ? ' ' + esc(a.locado_cod) : ''}</span></td>
-        <td>${esc(a.corretor || '—')}</td></tr>`;
+        <td>${esc(a.corretor ? (H.op && H.op.nomeCorretor ? H.op.nomeCorretor(a.corretor) : a.corretor) : '—')}</td></tr>`;
     }).join('');
     const nRet = A.filter((a) => a.status === 'REMOVIDO').length;
     return `<div class="filtros">${nRet ? `<button class="btn" data-portais-ret="1" aria-pressed="${F.retirados}">Mostrar retirados do portal (${nRet})</button>` : ''}</div>
@@ -45,7 +45,7 @@
 
   // repasse ao corretor: achado pela rotina nas planilhas de leads (nome + data)
   const repTxt = (r) => { r = r || {};
-    if (r.status === 'repassado') return `<span class="pill ok">${esc(r.corretor)}</span><span class="s">${esc((r.planilha || '') + (r.aba ? ' / ' + r.aba : ''))}</span>`;
+    if (r.status === 'repassado') return `<span class="pill ok">${esc((H.op && H.op.nomeCorretor ? H.op.nomeCorretor(r.corretor) : r.corretor))}</span><span class="s">${esc((r.planilha || '') + (r.aba ? ' / ' + r.aba : ''))}</span>`;
     if (r.status === 'lancado_sem_corretor') return `<span class="pill warn">lançado sem corretor</span><span class="s">${esc((r.planilha || '') + (r.aba ? ' / ' + r.aba : ''))}</span>`;
     return '<span class="pill">não lançado</span>'; };
   function filtraLeads() {

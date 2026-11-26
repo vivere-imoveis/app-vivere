@@ -24,14 +24,14 @@
   var lerFonte=function(){ try{ return localStorage.getItem(CHAVE)==='artefato'?'artefato':'supabase'; }catch(e){ return 'supabase'; } };
   var E={ fonte:lerFonte(), mcp:null, mcpPronto:false, semConector:false, mapa:null,
           espelhadas:0, diretas:0, falhas:0, puladas:0, ultimaFalha:'', fila:new Map(), timer:null, enviando:false,
-          lidas:{}, leituraErros:{}, caiuArtefato:{}, semCopia:0, leadsPaineis:0, leadsErro:'', leadsEm:null };
+          lidas:{}, leituraErros:{}, caiuArtefato:{}, sig:{}, semMudanca:{}, semCopia:0, leadsPaineis:0, leadsErro:'', leadsEm:null };
 
   /* ---------- conector ---------- */
   var pMcp=(window.claude&&window.claude.use?window.claude.use('mcp'):Promise.resolve(null)).then(function(m){
     E.mcp=m; E.mcpPronto=true; if(!m){ E.semConector=true; desenhaSelo(); return null; }
     return comPrazo(m.callTool(SERV,'hub_colecoes',{},{cache:false}),PRAZO).then(function(r){
       var p=r&&r.payload; if(typeof p==='string'){ try{p=JSON.parse(p);}catch(e){} }
-      var mapa={}; ((p&&p.colecoes)||[]).forEach(function(c){ mapa[c.colecao]=c.nivel; }); E.mapa=mapa; desenhaSelo(); agenda(); return m;
+      var mapa={}, sig={}; ((p&&p.colecoes)||[]).forEach(function(c){ mapa[c.colecao]=c.nivel; if(c.sig) sig[c.colecao]=String(c.sig); }); E.mapa=mapa; E.sig=sig; E.sigEm=Date.now(); desenhaSelo(); agenda(); return m;
     }).catch(function(e){ E.semConector=true; E.ultimaFalha=(e&&e.code)||'erro'; desenhaSelo(); return null; });
   }).catch(function(){ E.mcpPronto=true; E.semConector=true; desenhaSelo(); return null; });
 
@@ -161,7 +161,7 @@
       var c=filaLeitura.shift(); ativos++;
       (function(c){
         lerTudo(c).then(function(itens){
-          E.lidas[c]=itens.length; delete E.doCache[c]; cacheGravar(c,itens); var s=snapFalso(itens);
+          E.lidas[c]=itens.length; delete E.doCache[c]; delete E.semMudanca[c]; cacheGravar(c,itens,E.sig[c]); var s=snapFalso(itens);
           (OUVINTES[c]||[]).forEach(function(o){ if(!o.parado){ try{ o.ok(s); }catch(e){} } });
         }).catch(function(e){
           E.leituraErros[c]=(e&&e.code)||'erro'; caiParaArtefato(c);
@@ -170,7 +170,7 @@
     }
   }
   var kick=null; function chuta(){ if(!kick) kick=setTimeout(function(){ kick=null; proximaLeitura(); },60); } // junta os pedidos do início para valer a ordem de prioridade
-  function releia(c){ if(E.caiuArtefato[c]||!OUVINTES[c]||filaLeitura.indexOf(c)>=0) return; filaLeitura.push(c); proximaLeitura(); }
+  function releia(c){ if(E.sig) delete E.sig[c]; /* gravação do HUB em c: a assinatura da abertura deixa de valer */ if(E.caiuArtefato[c]||!OUVINTES[c]||filaLeitura.indexOf(c)>=0) return; filaLeitura.push(c); proximaLeitura(); }
   function caiParaArtefato(c){
     E.caiuArtefato[c]=1;
     (OUVINTES[c]||[]).forEach(function(o){ if(o.parado||o.real) return; try{ o.real=o.db.collection(c).onSnapshot(o.ok,o.err); }catch(e){} });
@@ -190,7 +190,7 @@
   function cacheLer(c){ return cacheDb().then(function(d){ if(!d) return null; return new Promise(function(res){ try{
     var g=d.transaction('col','readonly').objectStore('col').get(c); g.onsuccess=function(){ res(g.result||null); }; g.onerror=function(){ res(null); };
   }catch(e){ res(null); } }); }).catch(function(){ return null; }); }
-  function cacheGravar(c,itens){ cacheDb().then(function(d){ if(!d) return; try{ d.transaction('col','readwrite').objectStore('col').put({em:Date.now(),itens:itens},c); }catch(e){} }).catch(function(){}); }
+  function cacheGravar(c,itens,sig){ cacheDb().then(function(d){ if(!d) return; try{ d.transaction('col','readwrite').objectStore('col').put({em:Date.now(),itens:itens,sig:sig||null},c); }catch(e){} }).catch(function(){}); }
   E.doCache={};
 
   function ouveSupabase(db,c,ok,err){
@@ -199,14 +199,24 @@
     if(!(c in E.lidas)) cacheLer(c).then(function(x){
       if(!x||!Array.isArray(x.itens)||Date.now()-(x.em||0)>CACHE_MAX) return;
       if(o.parado||o.real||(c in E.lidas)) return; // a leitura nova (ou o artefato) já chegou: a cópia não volta por cima
-      E.doCache[c]=1; try{ ok(snapFalso(x.itens)); }catch(e){} desenhaSelo();
+      E.doCache[c]=1; o.viuCache=1; try{ ok(snapFalso(x.itens)); }catch(e){} desenhaSelo();
     });
     pMcp.then(function(m){
       if(o.parado) return;
       if(!m||!espelhavel(c)){ o.real=db.collection(c).onSnapshot(ok,err); return; } // fora do mapa ou sem conector: artefato
       if(E.caiuArtefato[c]){ o.real=db.collection(c).onSnapshot(ok,err); return; }
-      if(filaLeitura.indexOf(c)<0) filaLeitura.push(c); chuta();
+      // 25/11/2026 (vis-revisita-carregamento-hub-painel F1): assinatura igual à da cópia do aparelho = a coleção não mudou;
+      // usa a cópia e não baixa de novo. Sem assinatura (HUB web, conector antigo) ou diferente = lê como antes.
+      // Vale só nos primeiros 30 s depois do mapa (abertura); inscrição depois disso relê como antes (pega mudança de terceiros).
+      var sg=E.sig&&E.sig[c]; if(!sg||Date.now()-(E.sigEm||0)>30000){ enfileira(); return; }
+      cacheLer(c).then(function(x){
+        if(o.parado||o.real) return;
+        if(!x||x.sig!==sg||!Array.isArray(x.itens)){ enfileira(); return; }
+        if(!(c in E.lidas)){ E.lidas[c]=x.itens.length; E.semMudanca[c]=1; }
+        delete E.doCache[c]; if(!o.viuCache){ try{ ok(snapFalso(x.itens)); }catch(e){} } desenhaSelo();
+      });
     });
+    function enfileira(){ if(filaLeitura.indexOf(c)<0) filaLeitura.push(c); chuta(); }
     return function(){ o.parado=true; if(typeof o.real==='function') o.real(); };
   }
 
@@ -371,7 +381,7 @@
       '<p><b>Gravação:</b> '+(E.semConector?'só no artefato (sem o conector); o espelho diário copia':'primeiro no Supabase, depois no artefato')+' · diretas '+E.diretas+' · copiadas '+E.espelhadas+' · a enviar '+pendentes()+' · falhas '+E.falhas+(E.puladas?' · fora do mapa '+E.puladas:'')+(E.semCopia?' · não copiadas '+E.semCopia:'')+'</p>'+
       (E.falhas?'<p>Última falha: '+String(E.ultimaFalha).replace(/[<>&]/g,'')+'. O espelho diário cobre.</p>':'')+
       '<p><b>Gestão de leads:</b> '+(E.leadsPaineis?E.leadsPaineis+' leads dos painéis'+(E.leadsEm?' · lidos às '+E.leadsEm.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):''):(E.semConector?'sem o conector; mostrando o artefato':E.leadsErro?'painéis indisponíveis ('+String(E.leadsErro).replace(/[<>&]/g,'')+'); mostrando o artefato':'lendo os painéis…'))+'</p>'+
-      (sup?'<p>Coleções lidas do Supabase: '+lidas+(filaLeitura.length||ativos?' · lendo…':'')+(erros.length?' · voltaram ao artefato: '+erros.length:'')+'</p>':'')+
+      (sup?'<p>Coleções lidas do Supabase: '+lidas+(Object.keys(E.semMudanca).length?' (sem mudança, da cópia do aparelho: '+Object.keys(E.semMudanca).length+')':'')+(filaLeitura.length||ativos?' · lendo…':'')+(erros.length?' · voltaram ao artefato: '+erros.length:'')+'</p>':'')+
       '<div class="acoes"><button type="button" data-fonte="supabase" aria-pressed="'+sup+'"'+(E.semConector?' disabled':'')+'>Supabase</button>'+
       '<button type="button" data-fonte="artefato" aria-pressed="'+(!sup)+'">Artefato (reserva)</button>'+
       '<button type="button" class="larga" data-releitura="1">'+(sup?'Reler tudo do Supabase':'Reler os leads dos painéis')+'</button></div>';

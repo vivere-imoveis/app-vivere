@@ -67,7 +67,7 @@
       const fora = (x.status || 'ativo') !== 'ativo' ? ' <span class="pill info">fora</span>' : '';
       const semMeta = !Object.keys(M).some((k) => n0(M[k]) != null) ? ' <span class="pill warn">sem meta</span>' : '';
       const semId = det.sem_id_imobibrasil ? ' <span class="pill warn" title="Sem código do corretor no Imobibrasil: os agenciamentos não contam">sem código IB</span>' : '';
-      return `<tr id="mt-${esc(x._id)}"><td><b>${esc(x.nome || x._id)}</b>${fora}${semMeta}${semId}${pend}<span class="s">${esc(EQ[x.equipe] || '—')} · ${dt(x.de)} a ${dt(x.ate)}</span></td>
+      return `<tr id="mt-${esc(x._id)}"><td><b>${esc((H.nomeCorK && H.nomeCorK(x._id)) || x.nome || x._id)}</b>${fora}${semMeta}${semId}${pend}<span class="s">${esc(EQ[x.equipe] || '—')} · ${dt(x.de)} a ${dt(x.ate)}</span></td>
         ${CAMPOS.map(([k]) => cel(k, n0(M[k]), n0(R[k]) || 0, per)).join('')}
         <td><button class="btn" type="button" data-mt-edita="${esc(x._id)}">Editar</button></td></tr>${st.edita === x._id ? linhaEdicao(x) : ''}`;
     }).join('');

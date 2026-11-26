@@ -26,7 +26,11 @@
   const de = (anuId) => indice()['i-' + anuId] || null;
   let CI = null, CI_SIG = '';
   function capa(anuId) { pedeDados(); const C = H.S[CAP] || {}; const sig = Object.keys(C).map((k) => k + ':' + ((C[k] || {}).em || '')).join('|');
-    if (!CI || sig !== CI_SIG) { CI = {}; CI_SIG = sig; Object.values(C).forEach((doc) => Object.assign(CI, (doc && doc.i) || {})); } return CI[anuId] || null; }
+    // 25/11/2026: a c0 traz o endereço do Storage do site (a página publicada não abre imagem de fora); a miniatura em data URI
+    // (m0…m15, Edge Function hub-capas) vence; endereço externo sem miniatura = sem foto, em vez de imagem quebrada
+    if (!CI || sig !== CI_SIG) { CI = {}; CI_SIG = sig; Object.values(C).forEach((doc) => { const i = (doc && doc.i) || {};
+      Object.keys(i).forEach((k) => { const v = i[k]; if (typeof v !== 'string' || !v) return; if (/^https?:/i.test(v)) { if (!CI[k]) CI[k] = v; } else CI[k] = v; }); }); }
+    const v = CI[anuId] || null; return v && /^https?:/i.test(v) ? null : v; }
   let FI = null, FI_SIG = '';
   function guardadas(anuId) { const C = H.S[FT] || {}; const sig = Object.keys(C).map((k) => k + ':' + ((C[k] || {}).em || '')).join('|');
     if (!FI || sig !== FI_SIG) { FI = {}; FI_SIG = sig; Object.values(C).forEach((doc) => Object.assign(FI, (doc && doc.i) || {})); } return FI[anuId] || null; }

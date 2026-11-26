@@ -1709,7 +1709,7 @@ const TF = (() => {
   const pillPri = (t) => `<span class="pill ${t.prioridade === 'alta' ? 'alta' : t.prioridade === 'media' ? 'media' : ''}">${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}</span>`;
   const pillTipo = (t) => (t.tipo === 'lembrete' ? '<span class="pill tf-lemb">🔔 Lembrete</span>' : t.tipo === 'recado' ? '<span class="pill tf-rec">📌 Recado</span>' : ''); /* trocas-f5m: recados */
   const pillSit = (t) => (feita(t) ? `<span class="pill ok">${t.tipo === 'recado' ? 'Lido' : 'Feita'}</span>` : atrasada(t) ? '<span class="pill alta">Atrasada</span>' : deHoje(t) ? '<span class="pill media">Hoje</span>' : '');
-  const rotOrig = (t) => { if (S.gestor && (t.origem || 'corretor') === 'corretor') return esc(t._dono ? gCurto(t._dono) : 'Corretor'); const o = ORIG[t.origem] || ORIG.corretor; return t.origem === 'diretoria' && t.por ? `${o} · ${esc(t.por)}` : esc(o); };
+  const rotOrig = (t) => { if (S.gestor && (t.origem || 'corretor') === 'corretor') return esc(t._dono ? gExib(t._dono) : 'Corretor'); const o = ORIG[t.origem] || ORIG.corretor; return t.origem === 'diretoria' && t.por ? `${o} · ${esc(t.por)}` : esc(o); };
   const ba = (t) => ({ txt: [t.titulo, t.obs, ORIG[t.origem], t.por, t.tipo === 'lembrete' ? 'lembrete' : t.tipo === 'recado' ? 'recado' : 'tarefa'].filter(Boolean).join(' · ') });
   const filtra = (L, f) => {
     const h = hojeISO(), sem = emDias(7);
@@ -1739,9 +1739,9 @@ const TF = (() => {
       { k: 'origem', l: 'Origem', h: (t) => `<span class="peq">${rotOrig(t)}</span>` },
       { k: 'criado_em', l: 'Criada', h: (t) => `<span class="peq">${dt(t.criado_em)}</span>` },
     ];
-    if (S.gestor && S.verComo === 'todos') cols.splice(1, 0, { k: '_dono', l: 'Corretor', v: (t) => gCurto(t._dono || ''), h: (t) => `<span class="peq">${esc(gCurto(t._dono || ''))}</span>` });
+    if (S.gestor && S.verComo === 'todos') cols.splice(1, 0, { k: '_dono', l: 'Corretor', v: (t) => gExib(t._dono || ''), h: (t) => `<span class="peq" style="white-space:normal">${esc(gExib(t._dono || ''))}</span>` });
     const cartao = (t) => `<div class="cm-l1">${btOk(t)}<span class="cm-nome tf-tit${feita(t) ? ' tf-feita' : ''}">${esc(t.titulo)}</span>${pillTipo(t)}${hitBA(t)}<span class="cm-v">${pillPri(t)}</span></div>
-      <div class="cm-lin"><b>${esc(rotQuando(t))}</b> ${pillSit(t)} · ${rotOrig(t)}${S.gestor && S.verComo === 'todos' && t._dono && (t.origem || 'corretor') !== 'corretor' ? ' · para ' + esc(gCurto(t._dono)) : ''}</div>${t.obs ? `<div class="cm-lin mut">${esc(t.obs)}</div>` : ''}${autorLin(t, 'cm-lin mut peq')}`;
+      <div class="cm-lin"><b>${esc(rotQuando(t))}</b> ${pillSit(t)} · ${rotOrig(t)}${S.gestor && S.verComo === 'todos' && t._dono && (t.origem || 'corretor') !== 'corretor' ? ' · para ' + esc(gExib(t._dono)) : ''}</div>${t.obs ? `<div class="cm-lin mut">${esc(t.obs)}</div>` : ''}${autorLin(t, 'cm-lin mut peq')}`;
     const quem = S.gestor ? (S.verComo === 'todos' ? 'de todos os painéis' : 'de ' + esc(gCurto(S.verComo))) : '';
     const nota = S.gestor
       ? `Tarefas ${quem}, ${(/\/painel(\.html)?$/.test(location.pathname)) ? 'ao vivo' : 'na foto do dia'} (só leitura). Para passar uma tarefa a um corretor, use “+ Atribuir tarefa”: ela chega ao painel dele na próxima rodada diária.`
@@ -2035,6 +2035,13 @@ const gPaineis = () => Object.entries(S.G.paineis || {}).map(([slug, p]) => ({ .
   .sort((a, b) => (a.ordem ?? 99) - (b.ordem ?? 99) || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
 const gNome = (slug) => { const p = (S.G.paineis || {})[slug]; return p ? (p.nome || slug) : slug; };
 const gCurto = (slug) => { const p = (S.G.paineis || {})[slug]; return (p && p.curto) || String(gNome(slug)).split(' ')[0]; };
+/* 26/11/2026 (sugestões 181 e 178 do Nícollas): nas colunas Corretor da visão de todos os painéis, o nome de exibição
+   (nome e último sobrenome, como em public.corretores), nunca o primeiro nome curto: "Fe" e as três Fernandas confundiam. */
+const gExib = (slug) => { if (!slug) return '—'; let n = String(gNome(slug) || slug).trim();
+  if (n === slug) n = slug.split('-').map((w) => w ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(' ');
+  const par = (n.match(/\(.*?\)/) || [''])[0], t = n.replace(par, '').split(/\s+/).filter(Boolean);
+  const cu = String(((S.G.paineis || {})[slug] || {}).curto || ''), dupla = / e /.test(cu) ? cu.split(' e ').slice(1).join(' e ') : '';   // dupla (ex.: "Fe e Thaymison")
+  return (t.length > 2 ? t[0] + ' ' + t[t.length - 1] : t.join(' ')) + (dupla ? ' e ' + dupla : '') + (par ? ' ' + par : ''); };
 const GF_MEMO = new Map();   // trocas-carregamento-f1c: mesmo recorte enquanto S.G[alvo] não muda
 function gFiltra(alvo, v) {
   const fonte = S.G[alvo], gk = alvo + '|' + v, gm = GF_MEMO.get(gk);
@@ -2698,12 +2705,13 @@ function vLeads() {
     { k: 'campanha', l: 'Origem', h: (r) => `<span class="peq">${esc(r.campanha || '—')}</span>` },
   ];
   const colsV = colunasDaTela(cols);   // 16/11/2026 (fatia 2): colunas e ordem escolhidas pelo corretor; Nome sempre primeiro
+  if (S.gestor && S.verComo === 'todos') colsV.splice(1, 0, { k: '_dono', l: 'Corretor', v: (r) => gExib(r._dono || ''), h: (r) => `<span class="peq" style="white-space:normal">${esc(gExib(r._dono || ''))}</span>` });   // 26/11/2026, sugestão 178
   const blocos = { previsao: () => blocoPrevisao(Ltodos.filter((l) => (!FU || l._f === S.funil) && (!S.filtroInt || l._int === S.filtroInt)), FU ? S.funil : null), interesse: () => chipsInt };
   const etapasVis = telaVis('leads_blocos', 'etapas') || (S.filtroEtapa !== 'abertos');
   return `<section class="sec">
     <div class="linha" style="justify-content:space-between"><h2>Meus leads</h2><div class="linha">${btnArq()}${S.gestor ? '<button class="b" type="button" data-bl="abrir" aria-label="Base de leads da Vivere">📇 <span class="so-pc">Base de leads</span><span class="so-cel">Base</span></button>' : ''}<button class="b" type="button" data-relabre="" aria-label="Relatórios e exportação">📊 Relatórios</button><button class="b" type="button" data-tela="leads" aria-label="Personalizar Meus leads">🧩 Personalizar</button><button class="b" type="button" data-voz="" aria-label="Registrar por voz: como funciona">🎤</button><button class="b" type="button" data-conversa="" aria-label="Registrar conversa">✦ <span class="so-pc">Registrar conversa</span><span class="so-cel">Conversa</span></button><button class="b p" type="button" id="novoLead">+ Novo lead</button></div></div>
     ${avisoDemora()}${avisoPerfis()}${chipsFunil}${telaOrdem('leads_blocos').map((k) => (blocos[k] ? blocos[k]() : '')).join('')}
-    ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca || !etapasVis ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
+    ${VisoesCRM.montar('leads', S.prefs, { lista: () => `${busca ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todos os leads, de qualquer funil e etapa.</p>' : ''}${S.gestor && S.verComo === 'todos' ? '<p class="mut peq" style="margin:0">Leads de todos os painéis. Para ver os de um corretor só, escolha o nome no <b>Ver como</b>.</p>' : ''}<div class="chips" role="group" aria-label="Filtrar por etapa"${busca || !etapasVis ? ' hidden' : ''}>${chips.map(([k, t]) => `<button type="button" data-etapa="${esc(k)}" aria-pressed="${S.filtroEtapa === k}">${esc(t)}</button>`).join('')}</div>
     ${tabela('leads', colsV, L, { padrao: { c: 'entrada', d: -1 }, abre: (r) => 'lead:' + r.id, vazio: S.demora ? 'Ainda carregando os seus leads…' : 'Nenhum lead neste filtro.', cartao: (r) => cartaoLeadMovel(r, FU) })}`, ...visoesLeads(L0.filter((l) => !FU || l._f === S.funil).filter((l) => !S.filtroInt || l._int === S.filtroInt), FU) })}
   </section>`;
 }
@@ -5066,7 +5074,7 @@ function cartaoLeadMovel(r, FU) {
   const fe = c('fechamento') && r.fechamento_prev && r._ab ? `fecha em ${dt(r.fechamento_prev)}` : '';
   return `
       <div class="cm-l1"><span class="cm-nome">${esc(r.nome)}</span>${dupDe(r.id)}${pillLado(r)}${c('interesse') ? pillInt(r) : ''}${c('alertas') && r._av.some((a) => a.p === 'alta') ? '<span class="pill alta">atrasado</span>' : ''}${hitBA(r)}<span class="cm-v">${FU ? '' : pillFunil(r)}${pillEtapa(r)}</span></div>
-      <div class="cm-lin"><b>${esc(fone(r.telefone))}</b>${c('origem') ? ' · ' + esc(r.campanha || 'sem origem') : ''}</div>
+      ${S.gestor && S.verComo === 'todos' && r._dono ? `<div class="cm-lin">👤 ${esc(gExib(r._dono))}</div>` : ''}<div class="cm-lin"><b>${esc(fone(r.telefone))}</b>${c('origem') ? ' · ' + esc(r.campanha || 'sem origem') : ''}</div>
       ${vl || fe ? `<div class="cm-lin">${[vl, fe].filter(Boolean).join(' · ')}</div>` : ''}
       <div class="cm-lin">${c('proxima') ? (r.prox_acao || r.data_prox ? `Próxima: <b>${esc(r.prox_acao || 'ação')}</b> ${dt(r.data_prox)}` : '<span class="falta">Sem próxima ação</span>') + ' · ' : ''}último ${r._ult ? dt(r._ult).slice(0, 10) : '—'} · entrada ${r.entrada ? dt(r.entrada).slice(0, 10) : '—'}</div>${c('autor') ? autorLin(r, 'cm-lin mut peq') : ''}
       <div class="cm-lin">${btnConversaLead(r)}</div>`;

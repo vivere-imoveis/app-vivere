@@ -65,6 +65,7 @@
     try { id = (P && P.id && P.id(String(nome || ''), { fonte: 'corretor' })) || ''; } catch (e) { id = ''; }
     let txt = String(nome || '').trim();
     try { const p = id && P.pessoa(id); if (p && p.nome) txt = p.nome; } catch (e) {}
+    try { const e = (id && H.nomeCorK && H.nomeCorK(id)) || (H.op && H.op.nomeCorretor ? H.op.nomeCorretor(nome) : ''); if (e) txt = e; } catch (e) {} // nome e último sobrenome; ex-corretor = Vivere (<nome>) (25/11/2026)
     const FX = H.S['cadastro-corretores_fichas'] || {}, n0 = semAc(nome).trim();
     // sem o módulo Pessoas, acha a ficha pelo nome ("Deivis Vieira" casa com "Deivis Vieira Gomes")
     if (!id && n0) { const k = Object.keys(FX).find((f) => [FX[f].nome, FX[f].nome_completo].some((v) => v && (semAc(v).trim() === n0 || semAc(v).trim().startsWith(n0 + ' ')))); if (k) id = k; }
