@@ -810,12 +810,12 @@ const AVISO_GESTOR_FORM = '<div class="faixa-dono"><b>Painel do gestor: só leit
 // trocas-bloco3-fatiaB (188/189): a diretoria cadastra em nome do agenciador escolhido; quem fez e quando ficam no documento
 function gestorPodeEditar(n) { return !!(n && n.feito_por && n.feito_por.uid && n.feito_por.uid === S.uid); }
 function gestorPodeGravar(n, silencioso) {
-  const msg = !n || n.tipo !== 'novo_imovel' ? SO_LEITURA : !n.agenciador ? 'Escolha o agenciador no alto do formulário antes de salvar ou anexar.' : n.criado_em && !gestorPodeEditar(n) ? 'Este cadastro é do corretor: só ele altera.' : !S.uid ? 'Não deu para identificar o seu acesso. Recarregue a página.' : '';
+  const msg = !n || n.tipo !== 'novo_imovel' ? SO_LEITURA : !n.agenciador ? 'Escolha o agenciador no alto do formulário antes de salvar ou anexar.' : n.criado_em && !gestorPodeEditar(n) ? `Este cadastro foi feito por ${(n.feito_por && n.feito_por.nome) || 'outra pessoa'}: só quem fez altera.` : !S.uid ? 'Não deu para identificar o seu acesso. Recarregue a página.' : '';
   if (msg && !silencioso) toast(msg);
   return !msg;
 }
 function gestorFormHTML(n) {
-  if (n.criado_em && !gestorPodeEditar(n)) return '<div class="faixa-dono"><b>Cadastro feito pelo corretor:</b> só ele altera. Para pedir mudança, fale com ele ou peça o complemento na decisão.</div>';
+  if (n.criado_em && !gestorPodeEditar(n)) return `<div class="faixa-dono"><b>Cadastro feito por ${esc((n.feito_por && n.feito_por.nome) || 'corretor ' + gExib(n.agenciador))}:</b> só quem fez altera. Para pedir mudança, fale com quem fez ou peça o complemento na decisão.</div>`;
   const ps = Object.keys(S.G.paineis || {}).sort((a, b) => gExib(a).localeCompare(gExib(b), 'pt-BR'));
   const fixo = !!(n.agFixo || n.criado_em || ['fotos', 'docs', 'fotos_lazer', 'foto_placa'].some((k) => (n[k] || []).length));
   const sel = `<select id="nvAgenciador" aria-label="Agenciador"${fixo ? ' disabled' : ''}><option value="">Escolha o corretor</option>${ps.map((p) => `<option value="${esc(p)}" ${p === n.agenciador ? 'selected' : ''}>${esc(gExib(p))}</option>`).join('')}</select>`;
@@ -3660,6 +3660,7 @@ async function comprimir(file) {
 }
 async function enviarArquivos(files, destino, tipoDoc) {
   if (S.gestor && !gestorPodeGravar(S.novo)) return;
+  if (S.gestor) { S.novo.agFixo = true; const sa = document.getElementById('nvAgenciador'); if (sa) sa.disabled = true; }   // o agenciador trava já no início do envio
   if (!S.assets) { toast('Envio de arquivos indisponível neste acesso. Fale com a diretoria.'); return; }
   const err = document.getElementById('eNovo'); if (err) err.textContent = '';
   let n = 0;
@@ -4772,7 +4773,7 @@ function fecharPedindo() {
     if (S.aberto.tipo === 'fotosimv') { const o = document.getElementById('fotosObs'); if (o && o.value.trim() !== String(S.novo.obs || '').trim()) { S.novo.obs = o.value; S.novo.sujo = true; } }
     if (novoTemConteudo(S.novo)) {
       S.descartarAte = Date.now() + 5000;
-      if (S.gestor && !gestorPodeGravar(S.novo, true)) { toast('Painel do gestor: sem o agenciador, este cadastro não fica salvo. Toque fora (ou Esc) de novo para fechar e descartar.'); return; }
+      if (S.gestor && !gestorPodeGravar(S.novo, true)) { toast(S.novo.agenciador ? 'Este cadastro não foi feito por você: nada é salvo daqui. Toque fora (ou Esc) de novo para fechar.' : 'Painel do gestor: sem o agenciador, este cadastro não fica salvo. Toque fora (ou Esc) de novo para fechar e descartar.'); return; }
       if (S.novo.sujo) gravarNovo('rascunho', true).then((ok) => { if (ok && S.novo) S.novo.sujo = false; });
       toast('O rascunho fica salvo em Solicitações. Toque fora (ou Esc) de novo para fechar.'); return;
     }
@@ -4986,7 +4987,7 @@ document.addEventListener('click', async (ev) => {
     const e = document.getElementById('eNovo'); e.textContent = '';
     if (t.id === 'enviarFotos') { if (!(S.novo.fotos || []).length) { e.textContent = 'Escolha ao menos uma foto.'; return; } S.novo.obs = val('fotosObs'); }
     else { S.novo.faltantes = faltantes(S.novo); }
-    const ok = await gravarNovo('pendente'); if (ok) { if ((S.novo.faltantes || []).length) toast(`Enviado para aprovação com ${S.novo.faltantes.length} itens faltando. A diretoria pode pedir o complemento.`); S.novo.sujo = false; fechar(); S.aba = 'solicitacoes'; try { sessionStorage.setItem('painel.aba', S.aba); } catch (er) {} render(); } return;
+    const ok = await gravarNovo('pendente'); if (ok) { if ((S.novo.faltantes || []).length) toast(`Enviado para aprovação${S.gestor ? ' em nome de ' + gExib(S.novo.agenciador) : ''} com ${S.novo.faltantes.length} itens faltando. A diretoria pode pedir o complemento.`); S.novo.sujo = false; fechar(); S.aba = 'solicitacoes'; try { sessionStorage.setItem('painel.aba', S.aba); } catch (er) {} render(); } return;
   }
   if (d.alterar) { if (!S.meus[d.alterar]) return abrir('alt', d.alterar); abrir('meu', d.alterar, true); const da = document.getElementById('detAlt'); if (da) { da.open = true; da.scrollIntoView({ block: 'start' }); const p1 = da.querySelector('input,select,textarea'); if (p1) p1.focus({ preventScroll: true }); } return; }
   if (d.copiar !== undefined) { try { await navigator.clipboard.writeText(d.copiar); toast('Copiado.'); } catch (e) { toast('Copie manualmente: ' + d.copiar); } return; }
