@@ -3530,7 +3530,7 @@ function campoHTML(c, d) {
 function secCampos(campos, d) {
   const vis = campos.filter((c) => !c.se || c.se(d)), rec = vis.filter((c) => c.rec);
   let h = vis.filter((c) => !c.rec).map((c) => campoHTML(c, d)).join('');
-  if (rec.length) h += `<details class="rec-campos"${rec.some((c) => !vazio_(d[c.k])) ? ' open' : ''}><summary>${esc(rec.map((c) => rotulo(c, d)).join(' e '))} (opcional)</summary><div class="form">${rec.map((c) => campoHTML(c, d)).join('')}</div></details>`;
+  if (rec.length) h += `<details class="rec-campos"${rec.some((c) => !vazio_(d[c.k])) || (S.novo && S.novo.recAberto) ? ' open' : ''}><summary>${esc(rec.map((c) => rotulo(c, d)).join(' e '))} (opcional)</summary><div class="form">${rec.map((c) => campoHTML(c, d)).join('')}</div></details>`;
   return h;
 }
 // trocas-bloco3-form (185): CPF 000.000.000-00 e CNPJ 00.000.000/0000-00; texto com letras fica como está
@@ -5043,6 +5043,7 @@ document.addEventListener('input', (ev) => {   // trocas-bloco3-form (184): o ra
   S.novo.dados[el.dataset.campo] = el.dataset.vlr != null ? (numVlr(el.value) ?? '') : el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value.trim();
   S.novo.sujo = true; agendarRascunho();
 });
+document.addEventListener('toggle', (ev) => { const el = ev.target; if (S.novo && el && el.classList && el.classList.contains('rec-campos')) S.novo.recAberto = el.open; }, true);   // trocas-bloco3-form (187): o grupo aberto continua aberto quando a gaveta se redesenha
 let tRasc;
 function agendarRascunho() { clearTimeout(tRasc); tRasc = setTimeout(() => { if (S.novo && S.novo.sujo && S.novo.tipo === 'novo_imovel' && S.novo.status_atual !== 'complemento') gravarNovo('rascunho', true).then((ok) => { if (ok && S.novo) S.novo.sujo = false; }); }, 4000); }
 function continuar(id) { const so = S.sol[id]; if (!so) return; S.novo = { ...JSON.parse(JSON.stringify(so)), id, status_atual: statusDe(id, so) }; return abrir(so.tipo === 'fotos' ? 'fotosimv' : 'novoimv'); }
