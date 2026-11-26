@@ -1,4 +1,4 @@
-/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco4-crm */ /* trocas-bloco3-fatiaB */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
+/* painel.js do modelo dos painéis (base e61d91aa68350727), com 2 trocas para o app: mapa hospedado aqui e A CAPTAR do app. Montado por montar_painel_app.py. */ /* trocas-bloco5-textos */ /* trocas-bloco4-crm */ /* trocas-bloco3-fatiaB */ /* trocas-bloco3-form */ /* trocas-inicio-pendencias */ /* trocas-inicio-espaco */ /* trocas-proximidades */ /* trocas-tour-perto */ /* trocas-roteiro-mapa */ /* trocas-mapa-3d */ /* trocas-prazos-menu */ /* trocas-abas-dentro */ /* trocas-visoes-todos */ /* trocas-meus-cel */ /* trocas-paginacao-meus */ /* trocas-redesenho-f1 */ /* trocas-carregamento-f1d */ /* trocas-carregamento-f1c */ /* trocas-medir */ /* trocas-carregamento-f1 */ /* trocas-gestor-ao-vivo */ /* trocas-4b2 */ /* trocas-f3b-placa-lazer */ /* trocas-p3b-placa-lazer */ /* trocas-pizza-agenc */ /* trocas-leads-todos-primeiro */ /* trocas-sol-detalhe */ /* trocas-leads-arquivados */ /* trocas-perfil-confirmar */ /* trocas-followup-app */ /* trocas-usabilidade-f1 */ /* trocas-usabilidade-f2 */ /* trocas-usabilidade-f3 */
 /* MODELO DO PAINEL DO CORRETOR · painel.js — os 5 blocos <script> do painel, na ordem original.
    Cada bloco roda isolado: um erro num bloco nao impede os seguintes (como em scripts separados). */
 
@@ -1380,6 +1380,7 @@ const DEM_NUCLEO = (cfg) => {
       ${d.obs ? `<div class="dm-mut">${esc(d.obs)}</div>` : ''}<div class="dm-meta"><span>${dt(d.criado_em)}</span>${validade(d)}</div><div class="dm-ac">${acoes(d)}</div>${detalhe(d)}</div>`;
   }
 
+  let INFO_DM = false;   // trocas-bloco5 (182): explicação recolhida, abre no ícone i
   function render() {
     if (!cfg.carregado()) return `<section class="dm" id="dm-raiz"><h2>Demandas extras</h2><div class="dm-vazio">Carregando…</div></section>`;
     const nv = novasIds(); nv.forEach((id) => NOVAS_SESSAO.add(id));
@@ -1401,8 +1402,8 @@ const DEM_NUCLEO = (cfg) => {
     const tab = `<div class="tabela dm-tab"><table data-ord-dados="1"><thead><tr>${th('demanda')}${th('finalidade')}${th('bairros')}${th('comodos')}${th('area', 'n')}${th('valor', 'n')}${th('autor')}${th('data')}${th('validade')}</tr></thead><tbody>${L.map(linhaTab).join('')}</tbody></table></div>`;
     const avisoPed = PA.length && !F.pedidos ? `<div class="dm-alerta"><b>${PA.length} pedido${PA.length > 1 ? 's' : ''} de alteração em aberto</b> em demandas que você pode editar. ${B('', 'data-dm-peds="1"', 'Ver')}</div>` : '';
     const bloqueio = cfg.bloqueioNova ? cfg.bloqueioNova() : '';   // ex.: painel ainda sem identificação do corretor
-    return `<section class="dm" id="dm-raiz"><div class="dm-cab"><h2>Demandas extras</h2>${B(cfg.btnP, `data-dm-acao="nova"${bloqueio ? ` disabled title="${esc(bloqueio)}"` : ''}`, '+ Nova demanda')}</div>${bloqueio ? `<p class="dm-mut" style="margin:6px 0 0">${esc(bloqueio)}</p>` : ''}
-      <p class="dm-nota">${cfg.nota}</p>${avisoPed}
+    return `<section class="dm" id="dm-raiz"><div class="dm-cab"><h2>Demandas extras<button type="button" class="dm-i" data-dm-info aria-expanded="${INFO_DM}" aria-controls="dm-info" title="O que é esta tela" aria-label="O que é esta tela">i</button></h2>${B(cfg.btnP, `data-dm-acao="nova"${bloqueio ? ` disabled title="${esc(bloqueio)}"` : ''}`, '+ Nova demanda')}</div>${bloqueio ? `<p class="dm-mut" style="margin:6px 0 0">${esc(bloqueio)}</p>` : ''}
+      <div class="dm-info${INFO_DM ? ' aberta' : ''}" id="dm-info" aria-hidden="${!INFO_DM}"><div><p class="dm-nota">${cfg.nota}</p></div></div>${avisoPed}
       <div class="dm-chips" role="group" aria-label="Finalidade">${chips1}</div><div class="dm-chips" role="group" aria-label="Situação">${chips2}</div>
       ${L.length ? `${ordM}${tab}<div class="dm-cards">${L.map(cartao).join('')}</div>` : vazio}</section>`;
   }
@@ -1512,12 +1513,19 @@ const DEM_NUCLEO = (cfg) => {
   });
   document.addEventListener('change', (e) => { if (!FORM || !e.target || !e.target.id) return; if (e.target.id === 'dm-f-fin') FORM.finalidade = e.target.value; if (e.target.id === 'dm-f-tipo') FORM.tipo = e.target.value; });
   document.addEventListener('ms-change', (e) => { const x = e.detail || {}; if (FORM && x.id === 'dm-f-bai') FORM.bairros = (x.valores || []).slice(); });
+  document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-dm-info]'); if (!t) return; e.preventDefault(); INFO_DM = !INFO_DM;   // trocas-bloco5 (182): abre sem redesenhar a tela, para a animação correr
+    document.querySelectorAll('[data-dm-info]').forEach((b) => b.setAttribute('aria-expanded', String(INFO_DM))); const c = document.getElementById('dm-info'); if (c) { c.classList.toggle('aberta', INFO_DM); c.setAttribute('aria-hidden', String(!INFO_DM)); } });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && FORM && !document.querySelector('#dm-modal .ms-pop:not([hidden])')) fechaModal(); });
 
   if (!document.getElementById('dm-css')) {
     const s = document.createElement('style'); s.id = 'dm-css';
     s.textContent = `.dm-cab{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.dm-cab h2{margin:0}
 .dm-nota{color:var(--muted);font-size:12px;margin:8px 0 12px}
+.dm-i{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:0 0 0 8px;padding:0;vertical-align:3px;border:1px solid var(--line);border-radius:50%;background:var(--panel);color:var(--muted);font:italic 700 13px Georgia,serif;line-height:1;cursor:pointer;transition:background .2s ease,color .2s ease,border-color .2s ease}
+.dm-i:hover,.dm-i[aria-expanded="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}.dm-i:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dm-info{display:grid;grid-template-rows:0fr;opacity:0;margin:0 0 10px;transition:grid-template-rows .32s ease,opacity .32s ease}.dm-info>div{overflow:hidden;min-height:0}.dm-info.aberta{grid-template-rows:1fr;opacity:1}
+.dm-info .dm-nota{margin:0;padding:8px 0 2px;text-align:justify}
+@media (prefers-reduced-motion:reduce){.dm-info,.dm-i{transition:none}}
 .dm-chips,.dm-ordm{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;align-items:center}.dm-ordm span{font-size:12px;color:var(--muted)}
 .dm-chip{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
 .dm-chip[aria-pressed="true"]{color:var(--ink);border-color:var(--ink);font-weight:600}
@@ -1740,12 +1748,38 @@ const TF = (() => {
   };
   const selo = () => lista().filter((t) => atrasada(t) || deHoje(t)).length;
   const btOk = (t) => `<button type="button" class="tf-ok${feita(t) ? ' on' : ''}" data-tf-ok="${esc(t.id)}" aria-pressed="${feita(t)}" aria-label="${feita(t) ? 'Reabrir' : t.tipo === 'recado' ? 'Marcar como lido' : 'Marcar como feita'}: ${esc(t.titulo)}" title="${feita(t) ? 'Reabrir' : 'Marcar como feita'}">✓</button>`;
-  const soLer = () => S.gestor;
+  /* trocas-bloco5 (156, 26/11/2026, Nícollas; condição do Cleiton): a diretoria conclui, edita e exclui tarefas de qualquer painel,
+     sempre com registro (quem, quando e o quê, em gestor_log no próprio documento; o banco guarda a versão anterior em
+     painel_docs_hist) e a excluída vai para o Arquivo (excluida: true), nunca some. Sem a ponte do app, segue só leitura. */
+  const gestorTf = () => !!(S.gestor && window.VIVERE_PONTE && VIVERE_PONTE.gravarTarefaEm);
+  const soLer = () => S.gestor && !gestorTf();
+  const arq = () => Object.entries(S.tarefas || {}).filter(([, t]) => t && t.excluida && t.titulo).map(([id, t]) => ({ id, ...t }));
+  const filtrosVis = () => (S.gestor ? FILTROS.concat([['arquivo', 'Arquivo']]) : FILTROS);
+  const quemG = () => { let n = ''; try { n = ((window.VIVERE_PONTE && VIVERE_PONTE.estado && VIVERE_PONTE.estado()) || {}).eu_nome || ''; } catch (e) { n = ''; } return String(n || S.info.saudacao || S.info.corretor || 'Diretoria').trim(); };
+  const CAMPOS_TF = { titulo: 'texto', obs: 'observação', data: 'data', hora: 'hora', prioridade: 'prioridade', tipo: 'tipo' };
+  async function gravarTfG(id, patch, acao, okMsg) {
+    const t = (S.tarefas || {})[id];
+    if (!gestorTf() || !t || !t._dono) { toast(!gestorTf() ? SO_LEITURA : 'Não deu para achar o painel desta tarefa. Recarregue a página.'); return false; }
+    if (t.excluida) { toast('Esta tarefa está no Arquivo: fica como foi excluída.'); return false; }
+    let rot = acao, antes = null;
+    if (acao === 'editou') {
+      const m = Object.keys(CAMPOS_TF).filter((k) => String(patch[k] ?? '') !== String(t[k] ?? ''));
+      if (!m.length) { toast('Nada mudou.'); return true; }
+      rot = 'editou: ' + m.map((k) => CAMPOS_TF[k]).join(', '); antes = {}; m.forEach((k) => { antes[k] = t[k] ?? ''; });
+    }
+    const ent = { acao: rot, por: quemG(), em: agora() }; if (antes) ent.antes = antes;
+    const p = { ...patch, gestor_log: (Array.isArray(t.gestor_log) ? t.gestor_log : []).concat([ent]).slice(-30), atualizado_em: agora(), atualizado_por: 'gestor' };
+    const completo = {}; Object.keys(t).forEach((k) => { if (k.charAt(0) !== '_') completo[k] = t[k]; }); Object.assign(completo, p);
+    try { await VIVERE_PONTE.gravarTarefaEm(t._dono, t._id || id, p, completo); toast(okMsg + ' · painel de ' + gCurto(t._dono)); return true; }
+    catch (e) { toast('Não foi possível salvar: ' + ((e && e.message) || 'erro desconhecido')); return false; }
+  }
+  const logHTML = (t) => { const L = Array.isArray(t.gestor_log) ? t.gestor_log : []; if (!L.length) return '';
+    return `<details class="painel tf-log" style="margin-top:12px"><summary class="peq" style="cursor:pointer"><b>Registro da diretoria</b> (${L.length})</summary>${L.slice().reverse().map((g) => `<div class="mut peq" style="margin-top:4px">${dt(g.em)} · ${esc(g.por || 'Diretoria')} ${esc(g.acao || '')}${g.antes ? ' (antes: ' + esc(Object.entries(g.antes).map(([k, v]) => (CAMPOS_TF[k] || k) + ' “' + String(v || '—').slice(0, 60) + '”').join('; ')) + ')' : ''}</div>`).join('')}</details>`; };
 
   function vista() {
     const L0 = lista();
-    const cont = (f) => filtra(L0, f).length;
-    const fb = BA.filtra(qDe() ? L0 : filtra(L0, S.tfFiltro), qDe(), ba);
+    const cont = (f) => (f === 'arquivo' ? arq().length : filtra(L0, f).length);
+    const fb = BA.filtra(qDe() ? L0 : S.gestor && S.tfFiltro === 'arquivo' ? arq() : filtra(L0, S.tfFiltro), qDe(), ba);
     const L = fb.lista; qInfo(fb, 'tarefas');
     const cols = [
       { k: '_ok', l: 'Feita', ord: false, h: btOk },
@@ -1760,13 +1794,14 @@ const TF = (() => {
       <div class="cm-lin"><b>${esc(rotQuando(t))}</b> ${pillSit(t)} · ${rotOrig(t)}${S.gestor && S.verComo === 'todos' && t._dono && (t.origem || 'corretor') !== 'corretor' ? ' · para ' + esc(gExib(t._dono)) : ''}</div>${t.obs ? `<div class="cm-lin mut">${esc(t.obs)}</div>` : ''}${autorLin(t, 'cm-lin mut peq')}`;
     const quem = S.gestor ? (S.verComo === 'todos' ? 'de todos os painéis' : 'de ' + esc(gCurto(S.verComo))) : '';
     const nota = S.gestor
-      ? `Tarefas ${quem}, ${(/\/painel(\.html)?$/.test(location.pathname)) ? 'ao vivo' : 'na foto do dia'} (só leitura). Para passar uma tarefa a um corretor, use “+ Atribuir tarefa”: ela chega ao painel dele na próxima rodada diária.`
+      ? gestorTf() ? `Tarefas ${quem}, ao vivo. Como diretoria, você conclui, edita e exclui as tarefas de qualquer painel: fica registrado quem fez, quando e o quê, e a excluída vai para o Arquivo. Para passar uma tarefa nova a um corretor, use “+ Atribuir tarefa”: ela chega ao painel dele na próxima rodada diária.`
+      : `Tarefas ${quem}, ${(/\/painel(\.html)?$/.test(location.pathname)) ? 'ao vivo' : 'na foto do dia'} (só leitura). Para passar uma tarefa a um corretor, use “+ Atribuir tarefa”: ela chega ao painel dele na próxima rodada diária.`
       : 'Suas tarefas e lembretes do dia a dia, fora dos leads. A Vivian também anota aqui o que você pedir pelo WhatsApp, e a diretoria pode passar tarefas para você; as delas chegam na rodada diária da Vivere.';
     return `<section class="sec">
     <div class="linha" style="justify-content:space-between"><div><h2 style="margin:0">Tarefas e lembretes</h2><p class="mut peq" style="margin:2px 0 0">${nota}</p></div>
       <div class="linha">${S.gestor ? '<button class="b p" type="button" data-tf-atrib="">+ Atribuir tarefa</button>' : '<button class="b p" type="button" data-tf-nova="">+ Nova tarefa</button>'}</div></div>
     ${qDe() ? '<p class="mut peq" style="margin:0">Com a busca, a lista procura em todas as tarefas, feitas ou não.</p>' : ''}
-    <div class="chips" role="group" aria-label="Filtrar tarefas"${qDe() ? ' hidden' : ''}>${FILTROS.map(([k, t]) => `<button type="button" data-tf-filtro="${k}" aria-pressed="${S.tfFiltro === k}">${esc(t)} (${cont(k)})</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Filtrar tarefas"${qDe() ? ' hidden' : ''}>${filtrosVis().map(([k, t]) => `<button type="button" data-tf-filtro="${k}" aria-pressed="${S.tfFiltro === k}">${esc(t)} (${cont(k)})</button>`).join('')}</div>
     ${tabela('tarefas', cols, L, { padrao: { c: '_quando', d: 1 }, abre: (t) => 'tarefa:' + t.id, cartao, vazio: S.tfFiltro === 'abertas' && !qDe() ? 'Nada a fazer por aqui. Toque em “+ Nova tarefa” para anotar.' : 'Nenhuma tarefa neste filtro.' })}
     ${S.gestor ? blocoAtrib() : ''}
     </section>`;
@@ -1796,10 +1831,10 @@ const TF = (() => {
     const info = novo ? '' : `<p class="mut peq" style="margin:4px 0 0">${S.gestor && t._dono ? `Painel de <b>${esc(gNome(t._dono))}</b> · ` : ''}${rotOrig(t)} · criada em ${dt(t.criado_em)}${feita(t) && t.feita_em ? ' · feita em ' + dt(t.feita_em) : ''}</p>${autorLin(t, 'mut peq', 1)}`;
     return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Tarefa">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Anotar' : t.tipo === 'lembrete' ? 'Lembrete' : t.tipo === 'recado' ? 'Recado' : 'Tarefa'}</p><h3>${novo ? 'Nova tarefa' : esc(t.titulo)}</h3>${novo ? '' : pillSit(t)}${info}</div><button class="b" type="button" data-fechar>Fechar</button></div>
-    ${soLer() ? `<div class="painel"><p style="margin:0">${esc(t.obs || 'Sem observação.')}</p><p class="mut peq" style="margin:8px 0 0">${esc(rotQuando(t))} · prioridade ${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}. Só leitura no painel do gestor.</p></div>` : `
+    ${soLer() || t.excluida ? `<div class="painel">${t.excluida ? `<p class="peq" style="margin:0 0 6px"><b>Excluída</b>${t.excluida_em ? ' em ' + dt(t.excluida_em) : ''}${t.excluida_por ? ' por ' + esc(t.excluida_por) : ''}: está no Arquivo, com o registro guardado.</p>` : ''}<p style="margin:0">${esc(t.obs || 'Sem observação.')}</p><p class="mut peq" style="margin:8px 0 0">${esc(rotQuando(t))} · prioridade ${esc((PRI.find((p) => p[0] === t.prioridade) || PRI[1])[1])}. ${t.excluida ? '' : ' Só leitura no painel do gestor.'}</p></div>` : `
     <form id="fTarefa" class="form" data-id="${esc(id || '')}">${campos(t)}
       <div class="inteiro linha"><button class="b p" type="submit">${novo ? 'Anotar' : 'Salvar'}</button>${novo ? '' : `<button class="b" type="button" data-tf-ok="${esc(id)}">${feita(t) ? 'Reabrir' : t.tipo === 'recado' ? '✓ Marcar como lido' : '✓ Marcar como feita'}</button><button class="b" type="button" data-tf-exc="${esc(id)}">Excluir</button>`}<span class="erro" id="eTarefa"></span></div>
-    </form>`}
+    </form>`}${novo ? '' : logHTML(t)}
   </div>`;
   }
   function gavetaAtrib() {
@@ -1829,7 +1864,8 @@ const TF = (() => {
     if (!x.titulo) { const e = document.getElementById('eTarefa'); if (e) e.textContent = 'Escreva o que fazer.'; return; }
     if (x.hora && !x.data) x.data = hojeISO();   // hora sem data = hoje
     const base = { ...x, atualizado_em: agora(), atualizado_por: 'painel' };
-    const ok = id
+    const ok = id && S.gestor ? await gravarTfG(id, x, 'editou', 'Tarefa salva.')   // trocas-bloco5 (156)
+      : id
       ? await gravar(() => db.collection('tarefas').doc(id).update(base), 'Tarefa salva.')
       : await gravar(() => db.collection('tarefas').doc(novoId()).set({ ...base, situacao: 'a_fazer', feita_em: '', excluida: false, origem: 'corretor', por: S.info.corretor || '', criado_em: agora() }), 'Tarefa anotada.');
     if (ok) fechar();
@@ -1837,13 +1873,13 @@ const TF = (() => {
   async function alternar(id) {
     const t = (S.tarefas || {})[id]; if (!t) return;
     const f = !feita(t);
-    const ok = await gravar(() => db.collection('tarefas').doc(id).update({ situacao: f ? 'feita' : 'a_fazer', feita_em: f ? agora() : '', atualizado_em: agora(), atualizado_por: 'painel' }), f ? 'Feita. ✓' : 'Tarefa reaberta.');
+    const ok = S.gestor ? await gravarTfG(id, { situacao: f ? 'feita' : 'a_fazer', feita_em: f ? agora() : '' }, f ? 'concluiu' : 'reabriu', f ? 'Feita. ✓' : 'Tarefa reaberta.') : await gravar(() => db.collection('tarefas').doc(id).update({ situacao: f ? 'feita' : 'a_fazer', feita_em: f ? agora() : '', atualizado_em: agora(), atualizado_por: 'painel' }), f ? 'Feita. ✓' : 'Tarefa reaberta.');
     if (ok && S.aberto && S.aberto.tipo === 'tarefa') fechar();
   }
   async function excluir(id, bt) {
     if (!bt.dataset.confirma) { bt.dataset.confirma = '1'; bt.textContent = 'Toque de novo para excluir'; return; }
     // exclusão marcada (excluida: true) para a rotina levar à Vivian; a linha some do painel
-    const ok = await gravar(() => db.collection('tarefas').doc(id).update({ excluida: true, atualizado_em: agora(), atualizado_por: 'painel' }), 'Tarefa excluída.');
+    const ok = S.gestor ? await gravarTfG(id, { excluida: true, excluida_em: agora(), excluida_por: quemG() }, 'excluiu', 'Tarefa excluída: foi para o Arquivo.') : await gravar(() => db.collection('tarefas').doc(id).update({ excluida: true, atualizado_em: agora(), atualizado_por: 'painel' }), 'Tarefa excluída.');
     if (ok) fechar();
   }
   async function atribuir(form) {
@@ -3233,7 +3269,8 @@ function vPesquisa() {
     { k: 'cad', l: 'Cadastrado / Atualizado', ords: [['cad', 'Cadastrado'], ['atu', 'Atualizado']], h: (r) => `<span style="white-space:nowrap"><span class="mut peq">Cad.</span> ${dt(r.cad)}</span><br><span style="white-space:nowrap"><span class="mut peq">Atu.</span> ${dt(r.atu)}</span>` },
     { k: 'link', l: 'Links', ord: false, h: (r) => [r.link ? `<a href="${escUrl(r.link)}" target="_blank" rel="noopener">site</a>` : '', r.lat != null ? `<button class="copiar" type="button" data-vermapa="${esc(r.id)}">🗺 mapa</button>` : '', gmapsDe(r) ? `<a href="${escUrl(gmapsDe(r))}" target="_blank" rel="noopener">📍 Google</a>` : ''].filter(Boolean).join(' · ') || '—' },
   ];
-  return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>Pesquisar imóveis</h2><span class="mut peq">${L.length} de ${S.vitrine.length} anúncios ativos</span><button class="b pv-filt-bt${nFiltrosVit() ? ' p' : ''}" type="button" data-pvfiltro aria-expanded="${!!S.pvFiltro}">Filtros${nFiltrosVit() ? ` (${nFiltrosVit()})` : ''} ${S.pvFiltro ? '▲' : '▼'}</button></div>
+  return `<section class="sec"><div class="linha" style="justify-content:space-between"><h2>Pesquisar imóveis</h2><span class="mut peq">${L.length} de ${S.vitrine.length} anúncios ativos · catálogo geral</span><button class="b pv-filt-bt${nFiltrosVit() ? ' p' : ''}" type="button" data-pvfiltro aria-expanded="${!!S.pvFiltro}">Filtros${nFiltrosVit() ? ` (${nFiltrosVit()})` : ''} ${S.pvFiltro ? '▲' : '▼'}</button></div>
+    ${S.gestor && S.verComo !== 'todos' ? `<p class="mut peq" style="margin:4px 0 8px">Esta é a lista geral do site, igual para todos os corretores: o <b>Ver como</b> não muda o que aparece aqui. Os imóveis de ${esc(gCurto(S.verComo))} estão em <button type="button" class="dm-lk" data-aba="imoveis">Meus imóveis</button>.</p>` : ''}
     <div class="pv-filtros${S.pvFiltro ? ' aberto' : ''}">${formFiltrosVit()}</div>
     ${m2Bloco(L)}
     ${tabela('vit', cols, L, { padrao: { c: 'atu', d: -1 }, pag: qDe() ? 0 : 50, pagina: S.pagVit, abre: (r) => 'vit:' + r.id, vazio: 'Nenhum imóvel com esses filtros.', cartao: (r) => `<div class="com-capa">${capaHtml(r.id, r)}<div class="txt">
@@ -5693,6 +5730,12 @@ function rdPendencias() {
 document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-pend]'); if (!t || !window.PENDENCIAS) return; ev.preventDefault();
   const id = t.dataset.rdPend; if (id && PENDENCIAS.abrirImovel) PENDENCIAS.abrirImovel(id); else PENDENCIAS.abrir(); });
 document.addEventListener('pendencias:carregadas', () => { if (S.aba === 'inicio') render(); });
+/* trocas-bloco5 (180, 26/11/2026, Nícollas): no painel do gestor os números somam todos os painéis. Título "Números gerais"
+   e, quando quem olha tem painel próprio, a troca para ver só os seus (é o Ver como no próprio painel). */
+const rdMeuSlug = () => { let m = S.info.slug || ''; if (!m) { try { m = ((window.VIVERE_PONTE && VIVERE_PONTE.estado && VIVERE_PONTE.estado()) || {}).painel || ''; } catch (e) { m = ''; } } return (S.G.paineis || {})[m] ? m : ''; };
+const rdNumTitulo = () => !S.gestor ? 'Seus números' : S.verComo === 'todos' ? 'Números gerais' : S.verComo === rdMeuSlug() ? 'Seus números' : 'Números de ' + esc(gCurto(S.verComo));
+const rdNumAlterna = () => { if (!S.gestor) return ''; const eu = rdMeuSlug(); if (!eu) return ''; const bt = (k, t) => `<button type="button" data-ver="${esc(k)}" aria-pressed="${S.verComo === k}">${t}</button>`;
+  return `<div class="chips rd-num-alt" role="group" aria-label="Quais números" style="margin:0 0 10px">${bt('todos', 'Gerais')}${bt(eu, 'Só os meus')}</div>`; };
 function vInicioRD() {
   const L = Object.values(S.leads), av0 = todosAvisos();
   const fAv = BA.filtra(av0, qDe(), (a) => { const l = S.leads[a.id] || {}, m = a.imv ? S.meus[a.imv] || {} : null; if (m) { const x = baImv({ ...m, descricao: '' }); return { ...x, txt: [a.t, a.o, x.txt].join(' · ') }; } return { ...baLead(l), txt: [a.t, a.o, baLead(l).txt].join(' · ') }; });
@@ -5737,7 +5780,7 @@ function vInicioRD() {
   const cart = telaOrdem('inicio_cartoes');
   const nums = cart.map((k) => (NUM[k] ? NUM[k]() : '')).filter(Boolean);
   const prev = cart.includes('previsao') ? `<div class="rd-prev">${cartaoPrevisaoInicio()}</div>` : '';
-  const numeros = nums.length || prev ? `<section aria-labelledby="rdNumT"><h2 id="rdNumT">Seus números</h2>${nums.length ? `<div class="rd-numeros${nums.length % 2 ? ' rd-impar' : ''}">${nums.join('')}</div>` : ''}${prev}</section>` : '';
+  const numeros = nums.length || prev ? `<section aria-labelledby="rdNumT"><h2 id="rdNumT">${rdNumTitulo()}</h2>${rdNumAlterna()}${nums.length ? `<div class="rd-numeros${nums.length % 2 ? ' rd-impar' : ''}">${nums.join('')}</div>` : ''}${prev}</section>` : '';
   const metas = secs.includes('metas') && window.MetasCRM ? (MetasCRM.blocoDuplo || MetasCRM.bloco)({ doc: (S.metas || {}).atual, eq: (S.metasEq || {}).placar, hoje: hojeISO() }) : '';
   const prim = String(S.info.saudacao || '').trim() || (S.info.corretor || '').split(' ')[0];
   const data = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
