@@ -250,7 +250,7 @@ const DEM_NUCLEO = (cfg) => {
     const corpo = f.modo === 'pedir'
       ? `<p class="dm-mut" style="margin:0">${esc(resumo(f.d))} · de ${esc(f.d.autor || '—')}</p><label class="dm-c">O que precisa mudar<textarea id="dm-f-texto" rows="4" placeholder="Ex.: o cliente agora aceita também o Rio Tavares">${esc(f.texto || '')}</textarea></label>`
       : `<div class="dm-form"><label class="dm-c">Finalidade<select id="dm-f-fin">${opt(FINS, f.finalidade)}</select></label><label class="dm-c">Tipo<select id="dm-f-tipo">${opt(TIPOS, f.tipo)}</select></label>
-        <div class="dm-c dm-int">Bairros${ms ? ms.html('dm-f-bai', bs.map((b) => [b, b]), f.bairros || [], 'Qualquer bairro', 'bairros') : `<input id="dm-f-baitxt" value="${esc((f.bairros || []).join(', '))}" placeholder="Separe por vírgula">`}</div>
+        <div class="dm-c dm-int">Bairros${ms ? ms.html('dm-f-bai', (window.VIVERE_REGIOES && window.VIVERE_REGIOES.pronto ? window.VIVERE_REGIOES.opcoes(bs) : bs.map((b) => [b, b])), f.bairros || [], 'Qualquer bairro', 'bairros') : `<input id="dm-f-baitxt" value="${esc((f.bairros || []).join(', '))}" placeholder="Separe por vírgula">`}</div>
         <div class="dm-int dm-tri"><label class="dm-c">Dormitórios (mín.)<input id="dm-f-dorm" type="number" min="0" max="9" inputmode="numeric" value="${esc(f.dorm_min || '')}"></label>
           <label class="dm-c">Suítes (mín.)<input id="dm-f-suites" type="number" min="0" max="9" inputmode="numeric" value="${esc(f.suites_min || '')}"></label>
           <label class="dm-c">Vagas (mín.)<input id="dm-f-vagas" type="number" min="0" max="9" inputmode="numeric" value="${esc(f.vagas_min || '')}"></label></div>

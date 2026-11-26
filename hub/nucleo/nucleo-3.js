@@ -386,7 +386,7 @@ const OP = (() => {
   const tipoDeRef = (ref) => TIPO_REF[String(ref || '').slice(0, 2).toUpperCase()] || '';
   const finN = memo((f) => { const s = sem(f); return /temp/.test(s) ? 'Temporada' : /loc|alug/.test(s) ? 'Locação' : /vend|compr/.test(s) || s === 'v' ? 'Venda' : ''; });
   const bairros = (b) => (Array.isArray(b) ? b : String(b || '').split(/[,;/]| e (?=[A-Z])/)).map((x) => String(x).trim()).filter(Boolean);
-  const mesmoBairro = (a, b) => { const x = limpa(a), y = limpa(b); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); };
+  const mesmoBairro = (a, b) => { const x = limpa(a), y = limpa(b); if (!x || !y) return false; if (x === y || x.includes(y) || y.includes(x)) return true; const R = window.VIVERE_REGIOES; return !!(R && R.pronto && R.bate([a], b)); };   // 171: o bairro pedido abrange as sub-regiões (lista pelo modulos/regioes.js)
   const dormDe = (txt) => { const ns = []; sem(txt).replace(/(\d)(?:\s*(?:e|a|,)\s*\d)*\s*(?:dorm|quarto|suite|qto)/g, (m, a) => { ns.push(+a); return m; }); return ns.length ? Math.min(...ns) : null; };
   const areaDe = (txt) => { const m = sem(txt).match(/(\d{2,4})\s*(?:a|–|-|até)\s*(\d{2,4})\s*m/); return m ? [+m[1], +m[2]] : null; };
   const vagasDe = (txt) => { const m = sem(txt).match(/(\d)\s*vaga/); return m ? +m[1] : null; };
@@ -460,13 +460,13 @@ const OP = (() => {
     opt = opt || {}; if (!p) return [];
     const excl0 = opt.excluir || new Set();
     // mesmo perfil, mesmas exclusões e mesmas opções no mesmo contexto = mesmo resultado (leads da mesma campanha)
-    let cm = CASM.get(ctx); if (!cm) { cm = new Map(); CASM.set(ctx, cm); } if (cm.size > 5000) cm.clear();
+    const rgv = (window.VIVERE_REGIOES || {}).nos; let cm = CASM.get(ctx); if (!cm || cm.rg !== rgv) { cm = new Map(); cm.rg = rgv; CASM.set(ctx, cm); } if (cm.size > 5000) cm.clear();   // 171: lista nova de regiões limpa o cache do cruzamento
     const ck = JSON.stringify([p, [...excl0].sort(), opt.max || 8, +opt.folga || 0, opt.relaxa]);
     const hit = cm.get(ck); if (hit) return hit.map((x) => Object.assign({}, x, { motivos: x.motivos.slice() }));
     const res = casar0(p, ctx, opt); cm.set(ck, res); return res.map((x) => Object.assign({}, x, { motivos: x.motivos.slice() }));
   }
   function casar0(p, ctx, opt) {
-    const fam = familia(p.tipo), B = p.bairros || [], LB = B.map((b) => limpa(b)), excl = opt.excluir || new Set(), out = [];
+    const fam = familia(p.tipo), B = p.bairros || [], LB = B.map((b) => limpa(b)), excl = opt.excluir || new Set(), out = []; const RG = window.VIVERE_REGIOES;
     const passo = (relaxaBairro) => { const r = [];
       for (const it of ctx.itens) {
         if (excl.has(it.id)) continue; const m = []; let pts = 0; const D = der(it);
@@ -475,7 +475,7 @@ const OP = (() => {
         if (it.origem === 'emp') { if (p.fin && p.fin !== 'Venda') continue; }
         else if (fam) { const f2 = D.fa; if (f2 && f2 !== fam) continue; if (f2 === fam) { pts += 2; m.push(it.tipo); } }
         const mesmoEmp = p.emp && it.emp === p.emp;
-        const y = D.lb; const bOk = B.length ? !!y && LB.some((x) => !!x && (x === y || x.includes(y) || y.includes(x))) : false;
+        const y = D.lb; const bOk = B.length ? (!!y && LB.some((x) => !!x && (x === y || x.includes(y) || y.includes(x)))) || !!(RG && RG.pronto && RG.bate(B, it.bairro)) : false;   // 171: região ou bairro-mãe abrange as sub-regiões
         if (B.length && !bOk && !mesmoEmp && !relaxaBairro) continue;
         if (bOk) { pts += 3; m.push(it.bairro); } else if (B.length && !mesmoEmp) { pts -= 1; m.push('outro bairro: ' + (it.bairro || '?')); }
         if (mesmoEmp) { pts += 2; m.push('mesmo empreendimento'); }
@@ -562,7 +562,7 @@ function leadsOp(){ const crm=S.crm_leads||{}, op=S.oportunidades||{};
       lado:x.lado==='tem'?'tem':'procura',papel:x.papel||'',_int:intHub(x,intOp(crm[id],id)),imovel_tem:x.imovel_tem||'',capt_id:x.capt_id||'',
       historico:[...(c.hist||[]).map(h=>({em:h.dh,tipo:h.tipo,texto:h.txt})),...(x.progresso?[{em:x.data,tipo:'Progresso',texto:x.progresso}]:[])],oport:o,
       aberto:!(FECHADO_ST.has(x.status)||!ABERTAS_CRM.has(c.etapa))}; }); }
-function opsHub(l){ const ctx=ctxHub(); if(OPMEMO.ctx!==ctx) OPMEMO={ctx,m:new Map()};
+function opsHub(l){ const ctx=ctxHub(), rgv=(window.VIVERE_REGIOES||{}).nos; if(OPMEMO.ctx!==ctx||OPMEMO.rg!==rgv) OPMEMO={ctx,rg:rgv,m:new Map()}; /* 171: nova lista de regiões refaz o cruzamento */
   const sig=JSON.stringify([l.perfil,l.perfil_sugerido,l.oport,l.campanha,l.imovel_interesse,l.historico.length,l.lado,(ctxCapt(),CAPTC.k)]); const c=OPMEMO.m.get(l.id); if(c&&c.sig===sig) return c.r;
   const p=OP.perfilDo(l,ctx), marcas=(l.oport||{}).marcas||{}, ia=(l.oport||{}).ia||null;
   const iaIts=ia?(ia.ofertas||[]).map(o=>{ const it=ctx.porId.get(o.id); return it?{it,motivos:[],ia:o.motivo,alerta:it.origem==='fora'?'fora do site: confirmar disponibilidade com o agenciador':it.origem==='emp'?'lançamento: confirmar tabela com a construtora':''}:null; }).filter(Boolean):[];
@@ -1245,7 +1245,7 @@ function ctxCapt(){ const ms=Object.values(MODS).filter(m=>typeof m.imoveisCapta
 // casa um perfil de quem procura com os captados: só com bairro definido (sem bairro casaria com tudo)
 function captDoPerfil(p,max){ if(!p||!(p.bairros||[]).length) return []; return OP.casar(p,ctxCapt(),{max:max||20,relaxa:false,folga:0.2}).map(x=>Object.assign({},x,{alerta:''})); }
 let INTC={k:null,m:null};
-function interessadosCapt(){ ctxCapt(); const k=[CAPTC.k,S.leads_contatos,S.crm_leads,S.oportunidades,S.imoveis,S.empreendimentos_fichas,extraLeads().length];
+function interessadosCapt(){ ctxCapt(); const k=[CAPTC.k,S.leads_contatos,S.crm_leads,S.oportunidades,S.imoveis,S.empreendimentos_fichas,extraLeads().length,(window.VIVERE_REGIOES||{}).nos];
   if(INTC.m&&INTC.k&&INTC.k.every((v,i)=>v===k[i])) return INTC.m; const m=new Map();
   leadsOp().forEach(l=>{ if(!l.aberto||l.lado==='tem') return; const o=opsHub(l); (o.capt||[]).forEach(x=>{ const a=m.get(x.it.id)||[]; a.push({id:l.id,nome:l.nome,corretor:l.corretor||'',campanha:l.campanha||''}); m.set(x.it.id,a); }); });
   INTC={k,m}; return m; }

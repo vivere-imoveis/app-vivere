@@ -15,7 +15,7 @@
   const comodos = (g) => [g.dorm ? g.dorm + '+ dorm.' : '', g.vagas ? g.vagas + '+ vaga' + (g.vagas > 1 ? 's' : '') : ''].filter(Boolean).join(' · ') || '—';
   const nomeCor = (p) => { const c = ((((H.S.site_leads || {})._resumo || {}).corretores) || []).find((x) => x.id === p); return c ? String(c.nome || p).split(' ')[0] : p; };
   const familia = (t) => { t = nrm(t); return /cobertura/.test(t) ? 'Cobertura' : /(apart|studio|loft|flat|kitnet|apto)/.test(t) ? 'Apartamento' : /(casa|house|sobrado|geminad)/.test(t) ? 'Casa' : /(terreno|lote|land|gleba)/.test(t) ? 'Terreno' : /(comerc|sala|loja|galp|ponto)/.test(t) ? 'Sala/comercial' : ''; };
-  const bairroBate = (bs, b) => { const x = nrm(b); return !!x && bs.some((y) => { y = nrm(y); return y && (x === y || x.startsWith(y + ' ') || y.startsWith(x + ' ')); }); };
+  const bairroBate = (bs, b) => { const x = nrm(b); if (!x) return false; if (bs.some((y) => { y = nrm(y); return y && (x === y || x.startsWith(y + ' ') || y.startsWith(x + ' ')); })) return true; const R = window.VIVERE_REGIOES; return !!(R && R.pronto && R.bate(bs, b)); };   // 171: região ou bairro-mãe abrange as sub-regiões
   function grupos() {
     const M = new Map();
     Object.entries(H.S[C] || {}).forEach(([, d]) => {

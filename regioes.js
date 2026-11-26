@@ -9,7 +9,7 @@
   'use strict';
   var LOJA = 'vivere.regioes.v1';
   var norm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); };
-  var R = { pronto: false, nos: [], versao: 'regioes 2026-11-26.1' };
+  var R = { pronto: false, nos: [], versao: 'regioes 2026-11-26.2' };
   var porNome = {}, filhos = {}, alcance = {}, alcanceN = {}, memo = new Map(), memoN = new Map();
 
   function montar(lista) {
@@ -70,13 +70,23 @@
   };
 
   function avisar() { try { window.dispatchEvent(new CustomEvent('vivere-regioes')); } catch (e) { } }
+  // HUB (fatia 3b, 26/11/2026): sem a ponte do app, o HUB lê a lista pelo conector (hub_ler 'regioes') e entrega aqui.
+  // Mesmo formato de public.regioes ({id, nome, pai, nivel, apelidos, ordem, ativo}); guarda no aparelho e avisa se mudou.
+  R.carregarLista = function (lista) {
+    if (!Array.isArray(lista) || !lista.length) return false;
+    var antes = JSON.stringify(R.nos.map(function (n) { return [n.id, n.nome, n.pai, n.apelidos]; }));
+    montar(lista);
+    try { localStorage.setItem(LOJA, JSON.stringify({ em: Date.now(), lista: lista })); } catch (e) { }
+    if (JSON.stringify(R.nos.map(function (n) { return [n.id, n.nome, n.pai, n.apelidos]; })) !== antes) avisar();
+    return true;
+  };
   try { var guardada = JSON.parse(localStorage.getItem(LOJA) || 'null'); if (guardada && guardada.lista) montar(guardada.lista); } catch (e) { }
 
   var tentativas = 0;
   function carregar() {
     var p = window.VIVERE_PONTE && window.VIVERE_PONTE.contextoApp && window.VIVERE_PONTE.contextoApp();
     var sb = p && p.sb;
-    if (!sb) { if (++tentativas < 40) setTimeout(carregar, 250); return; } // a ponte ainda não ficou pronta
+    if (!sb) { if (!window.HUB && ++tentativas < 40) setTimeout(carregar, 250); return; } // a ponte ainda não ficou pronta (no HUB não há ponte: a lista vem pelo carregarLista)
     var limite = new Promise(function (ok) { setTimeout(function () { ok({ error: 'tempo' }); }, 8000); });
     Promise.race([sb.from('regioes').select('id,nome,pai,nivel,apelidos,ordem,ativo').eq('ativo', true).limit(2000), limite]).then(function (r) {
       if (!r || r.error || !Array.isArray(r.data) || !r.data.length) return;
