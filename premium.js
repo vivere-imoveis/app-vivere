@@ -220,9 +220,66 @@
   document.addEventListener('click', function (ev) { var t = ev.target.closest && ev.target.closest('[data-pm-cb-fecha]'); if (t) { var g = document.getElementById('pm-cb-gaveta'); if (g) g.remove(); } });
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { var g = document.getElementById('pm-cb-gaveta'); if (g) { g.remove(); ev.stopPropagation(); } } }, true);
 
+  /* ---------- F2 · celular (body.nc-on): próxima ação em 1 toque e Registrar conversa como folha ---------- */
+  var cel = function () { return document.body && document.body.classList.contains('nc-on'); };
+  function ac1() {   // WhatsApp ao lado do Abrir, na linha do lead do Agora (toque; com mouse já há as ações do hover)
+    if (mouse.matches || !cel()) return;
+    [].forEach.call(document.querySelectorAll('.rd-agora .rd-it [data-lead]'), function (ab) {
+      var it = ab.closest('.rd-it'); if (!it || it.querySelector('.pm-ac1')) return;
+      var id = ab.dataset.lead, l = leadDe(id) || {}, tel = numZap(l.telefone); if (tel.length < 10) return;
+      var a = document.createElement('a'); a.className = 'b pm-ac1'; a.href = 'https://wa.me/55' + tel; a.target = '_blank'; a.rel = 'noopener';
+      a.setAttribute('aria-label', 'WhatsApp de ' + (l.nome || 'o cliente')); a.title = 'WhatsApp'; a.innerHTML = ic('balao');
+      ab.before(a);
+    });
+  }
+  var FO = { el: null };
+  function recuo(liga) {
+    var b = document.body; if (!b) return;
+    if (liga) { [].forEach.call(document.querySelectorAll('body > header.topo, body > .wrap'), function (e) { e.style.setProperty('--pm-oy', Math.round(innerHeight / 2 - e.getBoundingClientRect().top) + 'px'); }); b.classList.add('pm-recua'); }
+    else if (b.classList.contains('pm-recua')) { b.classList.remove('pm-recua'); }
+  }
+  function folha() {
+    var g = cel() && document.querySelector('#sobre > .sobre > .gaveta[aria-label="Registrar conversa"]');
+    if (!g) { if (FO.el) { FO.el = null; recuo(false); } return; }
+    if (FO.el === g) return;
+    var ja = !!FO.el; FO.el = g; g.parentElement.classList.add('pm-folha'); if (ja) g.parentElement.classList.add('pm-ja');   // redesenho da mesma folha: sem subir de novo
+    if (!g.querySelector('.pm-alca')) { var h = document.createElement('button'); h.type = 'button'; h.className = 'pm-alca'; h.setAttribute('aria-label', 'Fechar (ou arraste para baixo)'); g.prepend(h); }
+    requestAnimationFrame(function () { recuo(true); });
+  }
+  function fechaFolha(g) { var f = g.querySelector('[data-fechar]'); if (f) f.click(); setTimeout(function () { if (g.isConnected) { g.classList.add('pm-solta'); g.style.transform = ''; recuo(true); } }, 60); }
+  var AR = null;
+  document.addEventListener('pointerdown', function (ev) {
+    var g = ev.target.closest && ev.target.closest('.pm-folha > .gaveta'); if (!g || ev.button > 0) return;
+    if (!ev.target.closest('.pm-alca') && !(ev.target.closest('.cab') && !ev.target.closest('button,a,input,select,textarea'))) return;
+    AR = { g: g, y0: ev.clientY, dy: 0, pts: [[ev.clientY, ev.timeStamp]], id: ev.pointerId, moveu: false };
+    try { ev.target.setPointerCapture(ev.pointerId); } catch (e) { }
+    g.classList.remove('pm-solta'); g.classList.add('pm-arrasta');
+  });
+  document.addEventListener('pointermove', function (ev) {
+    if (!AR || ev.pointerId !== AR.id) return;
+    var dy = ev.clientY - AR.y0; AR.dy = dy > 0 ? dy : dy / 4;   // para cima, resiste
+    if (Math.abs(dy) > 4) AR.moveu = true;
+    AR.pts.push([ev.clientY, ev.timeStamp]); if (AR.pts.length > 5) AR.pts.shift();
+    AR.g.style.transform = 'translateY(' + AR.dy + 'px)';
+    AR.g.parentElement.style.background = 'rgba(8,11,18,' + Math.max(0, .42 * (1 - AR.dy / AR.g.offsetHeight)).toFixed(3) + ')';
+  });
+  function soltaArrasto(ev) {
+    if (!AR || (ev && ev.pointerId !== AR.id)) return;
+    var a = AR; AR = null; var g = a.g, p = a.pts, v = 0;
+    if (p.length > 1) { var u = p[p.length - 1], q = p[0]; v = (u[0] - q[0]) / Math.max(1, u[1] - q[1]); }   // px por ms
+    g.classList.remove('pm-arrasta'); g.classList.add('pm-solta'); g.parentElement.style.background = '';
+    if (!a.moveu && ev && ev.target.closest && ev.target.closest('.pm-alca')) { g.style.transform = ''; fechaFolha(g); return; }   // toque na alça: fecha
+    if (a.dy > g.offsetHeight * .3 || v > .5) {
+      g.style.transform = 'translateY(100%)'; recuo(false);
+      var feito = false, vai = function () { if (feito) return; feito = true; fechaFolha(g); };
+      g.addEventListener('transitionend', vai, { once: true }); setTimeout(vai, 460);
+    } else g.style.transform = '';
+  }
+  document.addEventListener('pointerup', soltaArrasto); document.addEventListener('pointercancel', soltaArrasto);
+
   /* ---------- a cada desenho do Início ---------- */
   function aplica() {
-    atalhoMenu();
+    atalhoMenu(); folha(); ac1();
     var ini = document.querySelector('.rd-inicio'); if (!ini || ini.dataset.pm === '1') return;
     ini.dataset.pm = '1';
     var sec = ini.querySelector('.rd-agora'); if (sec) { filtro(sec); acoes(sec); }

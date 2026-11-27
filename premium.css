@@ -161,3 +161,45 @@ body.ml-on.ml-min #ml .pm-k-atalho{justify-content:center;padding:7px 0}
   @keyframes pm-aviso-o{from{opacity:0}to{opacity:1}}
 }
 @media (prefers-reduced-transparency:reduce){body.ml-on #ml{background:var(--material)!important;-webkit-backdrop-filter:none;backdrop-filter:none}}
+
+/* ===== F2 · Celular e tablet em pé (body.nc-on, até 1023 px) — prancha 4 (27/11/2026) ===== */
+/* Topo em vidro: o conteúdo passa por baixo, desfocado */
+body.nc-on header.topo{background:color-mix(in srgb,var(--bg) 74%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);border-bottom-color:transparent;box-shadow:0 1px 0 color-mix(in srgb,var(--line) 70%,transparent)}
+/* Barra de abas flutuante: cápsula de vidro solta das bordas, com a aba ativa em pílula */
+body.nc-on .nc-barra{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));padding:5px;border:0;border-radius:24px;background:color-mix(in srgb,var(--panel) 78%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(20px);backdrop-filter:saturate(1.6) blur(20px);box-shadow:var(--sh-3)}
+@media (min-width:701px){body.nc-on .nc-barra{padding-inline:5px;left:50%;right:auto;width:min(560px,calc(100vw - 24px));translate:-50% 0}}
+body.nc-on .nc-barra button{border-radius:19px;padding:6px 2px 4px;transition:transform var(--t-press) var(--ease-out),background-color .2s var(--ease-out),color .15s ease}
+body.nc-on .nc-barra button:active{transform:scale(.94)}
+body.nc-on .nc-barra button[aria-current="page"]{background:color-mix(in srgb,var(--brass) 14%,transparent)}
+body.nc-on{padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+body.nc-on .toast{bottom:calc(92px + env(safe-area-inset-bottom))!important}
+/* Linhas de 64 px com resposta ao toque */
+body.nc-on .rd-it,body.nc-on .rd-pend-it{min-height:64px}
+body.nc-on .lista-m>.cm[data-abre]{min-height:64px;transition:transform var(--t-press) var(--ease-out),background-color .15s ease}
+body.nc-on .rd-it:active,body.nc-on .lista-m>.cm[data-abre]:active{transform:scale(.98)}
+body.nc-on .rd-it:has(.b:active,.tf-ok:active,a:active),body.nc-on .lista-m>.cm:has(button:active,a:active){transform:none}
+body.nc-on .rd-it{transition:transform var(--t-press) var(--ease-out)}
+/* Próxima ação em 1 toque: WhatsApp ao lado do Abrir (premium.js) */
+.pm-ac1{display:none}
+body.nc-on .pm-ac1{display:inline-grid;place-items:center;width:40px;min-height:40px;padding:0;color:var(--teal)}
+body.nc-on .pm-ac1 svg,body.nc-on .pm-ac1 .ic{width:19px!important;height:19px!important;margin:0!important}
+/* Registrar conversa como folha que sobe de baixo; fecha arrastando; o fundo escurece e a página recua */
+body.nc-on .sobre.pm-folha{z-index:50;align-items:flex-end;justify-content:center;background:rgba(8,11,18,.42);animation:pm-veu var(--t-sheet) var(--ease-drawer) both}
+body.nc-on .sobre.pm-folha>.gaveta{width:min(640px,100%);height:auto;max-height:92dvh;border-radius:18px 18px 0 0;box-shadow:var(--sh-3);padding-top:6px;animation:pm-sobe var(--t-sheet) var(--ease-drawer) both;overscroll-behavior:contain;touch-action:pan-y}
+body.nc-on .sobre.pm-folha>.gaveta.pm-arrasta{animation:none;transition:none}
+body.nc-on .sobre.pm-folha>.gaveta.pm-solta{transition:transform var(--t-sheet) var(--ease-drawer)}
+.pm-alca{display:none}
+body.nc-on .pm-folha .pm-alca{display:block;width:100%;height:22px;margin:0 0 -6px;border:0;background:none;padding:0;cursor:grab;touch-action:none;position:relative}
+body.nc-on .pm-folha .pm-alca::after{content:"";position:absolute;left:50%;top:8px;width:38px;height:5px;margin-left:-19px;border-radius:3px;background:color-mix(in srgb,var(--muted) 45%,transparent)}
+body.nc-on .pm-folha .gaveta>.cab{touch-action:none}
+@keyframes pm-sobe{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes pm-veu{from{background:rgba(8,11,18,0)}}
+body.nc-on.pm-recua>header.topo,body.nc-on.pm-recua>.wrap{transform:scale(.955);transform-origin:50% var(--pm-oy,0px);transition:transform var(--t-sheet) var(--ease-drawer)}
+body.nc-on>header.topo,body.nc-on>.wrap{transition:transform var(--t-sheet) var(--ease-drawer)}
+body.nc-on .sobre.pm-folha.pm-ja,body.nc-on .sobre.pm-folha.pm-ja>.gaveta{animation:none}
+@media (prefers-reduced-motion:reduce){
+  body.nc-on .sobre.pm-folha,body.nc-on .sobre.pm-folha>.gaveta{animation:pm-aviso-o .15s linear both}
+  body.nc-on.pm-recua>header.topo,body.nc-on.pm-recua>.wrap{transform:none;transition:none}
+  body.nc-on .rd-it:active,body.nc-on .lista-m>.cm[data-abre]:active,body.nc-on .nc-barra button:active{transform:none}
+}
+@media (prefers-reduced-transparency:reduce){body.nc-on header.topo{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}body.nc-on .nc-barra{background:var(--panel);-webkit-backdrop-filter:none;backdrop-filter:none}}
