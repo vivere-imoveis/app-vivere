@@ -1,0 +1,121 @@
+@charset "UTF-8";
+/* premium.css — camada comum da repaginação premium do painel (27/11/2026, tarefa vis-repaginacao-premium-painel, F1a).
+   Regras das skills de design do Emil Kowalski (emil-design-eng, apple-design, ui-cheatsheet), já aprovadas nas pranchas 3 e 4.
+   Só aparência: nada de leitura nova, nada de gravação. Carregada por último, depois do redesenho.css.
+   Regras da casa que continuam: nenhuma cor de destaque nova, ícones de traço, menus dentro dos cartões. */
+
+:root{
+  --ease-out:cubic-bezier(.23,1,.32,1);       /* entradas e respostas: começa rápido */
+  --ease-in-out:cubic-bezier(.77,0,.175,1);   /* o que se move na tela (indicador de abas) */
+  --ease-drawer:cubic-bezier(.32,.72,0,1);    /* folhas e gavetas */
+  --t-press:160ms; --t-pop:180ms; --t-tab:280ms; --t-sheet:420ms;
+  /* sombra fina no lugar da borda sólida: anel finíssimo + profundidade */
+  --sh-ring:0 0 0 1px rgba(16,22,34,.07);
+  --sh-1:0 0 0 1px rgba(16,22,34,.06),0 1px 2px rgba(16,22,34,.05),0 2px 8px -2px rgba(16,22,34,.06);
+  --sh-2:0 0 0 1px rgba(16,22,34,.06),0 4px 10px -2px rgba(16,22,34,.08),0 18px 40px -12px rgba(16,22,34,.18);
+  --sh-3:0 0 0 1px rgba(16,22,34,.08),0 12px 24px -6px rgba(16,22,34,.16),0 40px 80px -24px rgba(16,22,34,.32);
+  --material:color-mix(in srgb,var(--soft) 55%,var(--bg));   /* menu lateral: um pouco mais denso que o conteúdo */
+  --aviso-bg:#141a26; --aviso-tx:#f4f5f0;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --sh-ring:0 0 0 1px rgba(255,255,255,.07);
+  --sh-1:0 0 0 1px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.035),0 2px 8px -2px rgba(0,0,0,.45);
+  --sh-2:0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.04),0 18px 40px -12px rgba(0,0,0,.6);
+  --sh-3:0 0 0 1px rgba(255,255,255,.08),inset 0 1px 0 rgba(255,255,255,.05),0 40px 80px -24px rgba(0,0,0,.75);
+  --material:#141922; --aviso-bg:#232a37; --aviso-tx:#e7e8e2}}
+:root[data-theme="dark"]{
+  --sh-ring:0 0 0 1px rgba(255,255,255,.07);
+  --sh-1:0 0 0 1px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.035),0 2px 8px -2px rgba(0,0,0,.45);
+  --sh-2:0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.04),0 18px 40px -12px rgba(0,0,0,.6);
+  --sh-3:0 0 0 1px rgba(255,255,255,.08),inset 0 1px 0 rgba(255,255,255,.05),0 40px 80px -24px rgba(0,0,0,.75);
+  --material:#141922; --aviso-bg:#232a37; --aviso-tx:#e7e8e2}
+
+body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;-webkit-tap-highlight-color:transparent}
+
+/* Números alinhados em coluna em todo valor */
+.num,.rd-n-v,.rd-g-n,.ml-n,.mt-num,.mt-v,.mt-pct,td,.rd-ag-dia,.tab-num{font-variant-numeric:tabular-nums lining-nums}
+
+/* Cartões: sombra fina no lugar da borda cinza (a borda fica transparente: nada muda de lugar) */
+.painel,.cartao,.rd-grupos,#app-nativo .cartao{border-color:transparent;box-shadow:var(--sh-1)}
+.rd-numeros{border-color:transparent;box-shadow:var(--sh-1);background:color-mix(in srgb,var(--line) 70%,transparent)}
+.rd-it{border-top-style:solid;border-top-color:color-mix(in srgb,var(--line) 60%,transparent)}
+
+/* Resposta ao toque: encolhe um pouco e volta (160 ms). Hover só com mouse. */
+button.b,a.b,.rd-n,.tf-ok,.rd-acoes .b,#ml button,#ml a.ml-g{transition:transform var(--t-press) var(--ease-out),background-color .15s ease,border-color .15s ease,box-shadow .2s var(--ease-out),color .15s ease}
+button.b:active:not(:disabled),a.b:active,.rd-n:active,.tf-ok:active,#ml button:active,#ml a.ml-g:active{transform:scale(.97)}
+.rd-g summary:active{background:var(--soft)}
+@media (hover:hover) and (pointer:fine){
+  .rd-acoes .b.p:hover{box-shadow:var(--sh-2)}
+  .rd-n:hover{background:color-mix(in srgb,var(--soft) 55%,var(--panel))}
+}
+
+/* Menu lateral como material: camada mais densa, item ativo como cartão com fio de latão */
+body.ml-on #ml{background:var(--material);border-right-color:transparent;box-shadow:inset -1px 0 0 color-mix(in srgb,var(--line) 70%,transparent)}
+@supports (backdrop-filter:blur(1px)){body.ml-on #ml{background:color-mix(in srgb,var(--material) 86%,transparent);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%)}}
+#ml .ml-g,#ml .ml-s{border-radius:9px!important}
+#ml .ml-g[aria-current="page"],#ml .ml-s[aria-selected="true"]{background:var(--panel)!important;border-color:transparent;box-shadow:var(--sh-1)}
+#ml .ml-g[aria-current="page"]::before{content:"";position:absolute;left:-1px;top:9px;bottom:9px;width:2px;border-radius:2px;background:var(--brass)}
+body.ml-on.ml-min #ml .ml-g[aria-current="page"]::before{top:12px;bottom:12px}
+#ml .ml-g:hover,#ml .ml-s:hover{border-color:transparent!important}
+@media (hover:hover) and (pointer:fine){#ml .ml-g:not([aria-current="page"]):hover,#ml .ml-s:not([aria-selected="true"]):hover{background:color-mix(in srgb,var(--panel) 55%,transparent)}}
+#ml .ml-n{font-variant-numeric:tabular-nums}
+/* A CAPTAR separado: contorno e seta, porque leva a outro módulo (10/11/2026) */
+#ml a.ml-g[href*="acaptar"]{border-radius:10px!important;margin:8px 0 4px;padding-right:12px}
+#ml a.ml-g[href*="acaptar"]::after{content:"";flex:none;margin-left:auto;width:6px;height:6px;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;transform:rotate(45deg);opacity:.75}
+body.ml-on.ml-min #ml a.ml-g[href*="acaptar"]::after{display:none}
+
+/* Aviso no canto (padrão Sonner): escuro, sombra funda, entra subindo; Desfazer quando houver (premium.js) */
+.toast{border-radius:12px!important;background:var(--aviso-bg)!important;color:var(--aviso-tx)!important;box-shadow:var(--sh-3);padding:12px 16px!important;line-height:1.35}
+.toast:not([hidden]){animation:pm-aviso var(--t-pop) var(--ease-out) both}
+@keyframes pm-aviso{from{opacity:0;translate:0 8px;scale:.98}to{opacity:1;translate:0 0;scale:1}}
+@media (min-width:1024px){.toast{left:auto!important;right:24px;transform:none!important;bottom:24px!important;max-width:400px!important;min-width:280px}}
+.toast .pm-desfazer{all:unset;cursor:pointer;margin-left:14px;padding:5px 10px;border-radius:8px;font:600 13px/1 var(--body);background:rgba(255,255,255,.10);color:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.toast .pm-desfazer:focus-visible{outline:2px solid var(--aviso-tx)}
+
+/* ===== F1b · Início no computador ===== */
+.pm-oculto{display:none!important}
+.pm-filtrado .rd-g-c>p.rd-nota{display:none}
+/* Agora: filtro com indicador que desliza */
+.rd-agora{position:relative}
+.pm-filtro{position:relative;display:inline-flex;gap:2px;padding:3px;margin:8px 0 10px;border-radius:10px;background:color-mix(in srgb,var(--soft) 80%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--line) 60%,transparent)}
+.pm-filtro button{all:unset;position:relative;z-index:1;cursor:pointer;padding:5px 12px;border-radius:7px;font:500 13px/1.2 var(--body);color:var(--muted);transition:color .15s ease}
+.pm-filtro button[aria-pressed="true"]{color:var(--ink)}
+.pm-filtro button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.pm-ind{position:absolute;z-index:0;top:3px;bottom:3px;left:0;width:0;border-radius:7px;background:var(--panel);box-shadow:var(--sh-1);transition:transform var(--t-tab) var(--ease-in-out),width var(--t-tab) var(--ease-in-out)}
+@media (min-width:900px){.rd-agora>.pm-filtro{position:absolute;top:7px;right:8px;margin:0}}
+/* Linha do lead: WhatsApp, Feito e Abrir aparecem ao passar o mouse, por cima do Abrir */
+.rd-it.pm-com-acoes{position:relative}
+.pm-acoes{position:absolute;top:50%;right:16px;translate:0 -50%;display:flex;gap:6px;padding-left:26px;opacity:0;pointer-events:none;transition:opacity 150ms var(--ease-out);background:linear-gradient(90deg,transparent,var(--pm-linha,var(--panel)) 22px)}
+.pm-acoes .b{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.pm-acoes .b:not(.pm-ac-tx){width:40px;padding:0}
+.pm-acoes .ic{width:17px;height:17px}
+@media (hover:hover) and (pointer:fine){
+  .rd-it.pm-com-acoes:hover{--pm-linha:color-mix(in srgb,var(--soft) 65%,var(--panel));background:var(--pm-linha)}
+  .rd-it.pm-com-acoes:hover .pm-acoes,.rd-it.pm-com-acoes:focus-within .pm-acoes{opacity:1;pointer-events:auto}
+}
+/* Minhas metas em anéis */
+.mt-lin.pm-com-anel{grid-template-columns:60px minmax(0,1fr);column-gap:14px;align-items:center}
+.mt-lin.pm-com-anel>:not(.pm-anel-box){grid-column:2}
+.pm-anel-box{grid-column:1;grid-row:1 / span 6;align-self:center}
+.mt-lin.pm-com-anel .barra-prog{display:none}
+.pm-anel{width:60px;height:60px;display:block;overflow:visible}
+.pm-anel-t{fill:none;stroke:color-mix(in srgb,var(--line) 75%,transparent);stroke-width:6}
+.pm-anel-v{fill:none;stroke-width:6;stroke-linecap:round;transform:rotate(-90deg);transform-origin:30px 30px}
+.pm-anel-v.pm-enche{transition:stroke-dashoffset 1100ms var(--ease-out)}
+.pm-anel-p{font:600 13px var(--body);fill:var(--ink);text-anchor:middle;dominant-baseline:central;font-variant-numeric:tabular-nums}
+/* Agenciamentos em rosca, com o total no meio */
+.pm-rosca{position:relative;display:inline-grid;place-items:center;flex:0 0 auto}
+.pm-rosca svg{-webkit-mask:radial-gradient(circle,transparent 0 47px,#000 48px);mask:radial-gradient(circle,transparent 0 47px,#000 48px)}
+.pm-rosca-n{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1;pointer-events:none}
+.pm-rosca-n b{font:500 30px/1 var(--display);font-variant-numeric:tabular-nums}
+.pm-rosca-n small{font-size:11.5px;color:var(--muted);margin-top:4px}
+@media (prefers-reduced-motion:reduce){.pm-ind{transition:none}.pm-anel-v.pm-enche{transition:none}.pm-acoes{transition:none}}
+
+/* Acessibilidade */
+@media (prefers-reduced-motion:reduce){
+  button.b,a.b,.rd-n,.tf-ok,#ml button,#ml a.ml-g{transition:background-color .15s ease,color .15s ease}
+  button.b:active,a.b:active,.rd-n:active,.tf-ok:active,#ml button:active,#ml a.ml-g:active{transform:none}
+  .toast:not([hidden]){animation:pm-aviso-o .15s linear both}
+  @keyframes pm-aviso-o{from{opacity:0}to{opacity:1}}
+}
+@media (prefers-reduced-transparency:reduce){body.ml-on #ml{background:var(--material)!important;-webkit-backdrop-filter:none;backdrop-filter:none}}
