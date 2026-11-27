@@ -137,7 +137,7 @@ body.ml-on #ml{min-width:208px;max-width:240px;padding:16px 12px 24px;gap:2px}
 }
 .marca #btnPrazosApp{display:none!important}
 
-/* trocas-inicio-espaco */ (23/11/2026): metas em 2 cards na coluna da esquerda; pizza e agenda na da direita */
+/* trocas-inicio-espaco (23/11/2026): metas em 2 cards na coluna da esquerda; pizza e agenda na da direita */
 .rd-inicio .rd-col1{display:grid!important;gap:24px!important;align-content:start}
 .rd-inicio .rd-metas2{margin-top:14px}
 .rd-metas2 .mt-duplo{display:grid;gap:12px}

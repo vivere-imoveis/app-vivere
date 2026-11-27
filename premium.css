@@ -183,7 +183,7 @@ body.nc-on .rd-it{transition:transform var(--t-press) var(--ease-out)}
 .pm-ac1{display:none}
 body.nc-on .pm-ac1{display:inline-grid;place-items:center;width:40px;min-height:40px;padding:0;color:var(--teal)}
 body.nc-on .pm-ac1 svg,body.nc-on .pm-ac1 .ic{width:19px!important;height:19px!important;margin:0!important}
-/* Registrar conversa como folha que sobe de baixo; fecha arrastando; o fundo escurece e a página recua */
+/* Gavetas como folha que sobe de baixo (todas; antes só o Registrar conversa); fecha arrastando; o fundo escurece e a página recua */
 body.nc-on .sobre.pm-folha{z-index:50;align-items:flex-end;justify-content:center;background:rgba(8,11,18,.42);animation:pm-veu var(--t-sheet) var(--ease-drawer) both}
 body.nc-on .sobre.pm-folha>.gaveta{width:min(640px,100%);height:auto;max-height:92dvh;border-radius:18px 18px 0 0;box-shadow:var(--sh-3);padding-top:6px;animation:pm-sobe var(--t-sheet) var(--ease-drawer) both;overscroll-behavior:contain;touch-action:pan-y}
 body.nc-on .sobre.pm-folha>.gaveta.pm-arrasta{animation:none;transition:none}

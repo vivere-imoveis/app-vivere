@@ -220,7 +220,7 @@
   document.addEventListener('click', function (ev) { var t = ev.target.closest && ev.target.closest('[data-pm-cb-fecha]'); if (t) { var g = document.getElementById('pm-cb-gaveta'); if (g) g.remove(); } });
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { var g = document.getElementById('pm-cb-gaveta'); if (g) { g.remove(); ev.stopPropagation(); } } }, true);
 
-  /* ---------- F2 · celular (body.nc-on): próxima ação em 1 toque e Registrar conversa como folha ---------- */
+  /* ---------- F2 · celular (body.nc-on): próxima ação em 1 toque e gavetas como folha que sobe de baixo (todas, escolha do Cleiton 27/11 20h40) ---------- */
   var cel = function () { return document.body && document.body.classList.contains('nc-on'); };
   function ac1() {   // WhatsApp ao lado do Abrir, na linha do lead do Agora (toque; com mouse já há as ações do hover)
     if (mouse.matches || !cel()) return;
@@ -239,14 +239,14 @@
     else if (b.classList.contains('pm-recua')) { b.classList.remove('pm-recua'); }
   }
   function folha() {
-    var g = cel() && document.querySelector('#sobre > .sobre > .gaveta[aria-label="Registrar conversa"]');
+    var g = cel() && document.querySelector('#sobre > .sobre > .gaveta');
     if (!g) { if (FO.el) { FO.el = null; recuo(false); } return; }
     if (FO.el === g) return;
-    var ja = !!FO.el; FO.el = g; g.parentElement.classList.add('pm-folha'); if (ja) g.parentElement.classList.add('pm-ja');   // redesenho da mesma folha: sem subir de novo
+    var ja = !!FO.el && FO.el.getAttribute('aria-label') === g.getAttribute('aria-label'); FO.el = g; g.parentElement.classList.add('pm-folha'); if (ja) g.parentElement.classList.add('pm-ja');   // redesenho da mesma folha: sem subir de novo
     if (!g.querySelector('.pm-alca')) { var h = document.createElement('button'); h.type = 'button'; h.className = 'pm-alca'; h.setAttribute('aria-label', 'Fechar (ou arraste para baixo)'); g.prepend(h); }
     requestAnimationFrame(function () { recuo(true); });
   }
-  function fechaFolha(g) { var f = g.querySelector('[data-fechar]'); if (f) f.click(); setTimeout(function () { if (g.isConnected) { g.classList.add('pm-solta'); g.style.transform = ''; recuo(true); } }, 60); }
+  function fechaFolha(g) { var f = g.querySelector('[data-fechar]'); if (f) f.click(); else if (g.parentElement) g.parentElement.click(); setTimeout(function () { if (g.isConnected) { g.classList.add('pm-solta'); g.style.transform = ''; recuo(true); } }, 60); }
   var AR = null;
   document.addEventListener('pointerdown', function (ev) {
     var g = ev.target.closest && ev.target.closest('.pm-folha > .gaveta'); if (!g || ev.button > 0) return;
