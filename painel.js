@@ -5805,6 +5805,7 @@ vInicio = vInicioRD;
 document.addEventListener('toggle', (ev) => { const t = ev.target; if (!t || !t.matches || !t.matches('details[data-rd-g]')) return; const k = t.dataset.rdG; if (!S.rdAbertos) S.rdAbertos = new Set([...document.querySelectorAll('details[data-rd-g][open]')].map((d) => d.dataset.rdG)); if (t.open) S.rdAbertos.add(k); else S.rdAbertos.delete(k); }, true);
 document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-prazos]'); if (!t) return; ev.preventDefault(); window.VIVERE_RD.prazos(); });
 window.PAINEL_ABA = () => S.aba; window.PAINEL_IR = (k) => { S.aba = k; try { sessionStorage.setItem('painel.aba', k); } catch (e) {} render(); window.scrollTo(0, 0); };   // tarefas-prazos
+window.PAINEL_PM = { S, zapNum, toast, brl, leadsComOfertas: () => leadsComOfertas(), opsCache: (i, l) => opsCache(i, l), htmlOferta: (i, x) => htmlOferta(i, x), capaSrc: (i) => capaSrc(i) };   // trocas-premium-f1 (27/11/2026): o que o premium.js usa
 window.addEventListener('vivere-regioes', () => { try { if (!document.querySelector('[aria-modal=true], dialog[open]')) render(); } catch (e) { } });   // 171: lista de regiões chegou do banco
 window.VIVERE_RD = { prazos: () => (window.ABA_APP ? window.ABA_APP.abre('prazos') : abrir('prazos')), htmlPrazos: () => painelPrazos() }; /* trocas-abas-app */
 // "Prazos da Vivere" também no Mais do celular (nav-celular.js espelha #btnPrazosApp) e na lateral do computador
