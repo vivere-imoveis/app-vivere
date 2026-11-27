@@ -138,8 +138,9 @@
     var q = semAc(BK.el.querySelector('input').value).trim(), toks = q.split(/\s+/).filter(Boolean), lista = BK.el.querySelector('.pm-k-lista');
     BK.res = toks.length ? BK.idx.filter(function (x) { return toks.every(function (t) { return x.k.indexOf(t) >= 0; }); }).slice(0, 8) : [];
     BK.i = Math.min(BK.i, Math.max(0, BK.res.length - 1));
+    var inp0 = BK.el.querySelector('input'); if (BK.res.length) inp0.setAttribute('aria-activedescendant', 'pm-k-op' + BK.i); else inp0.removeAttribute('aria-activedescendant');
     lista.innerHTML = BK.res.length ? BK.res.map(function (x, n) {
-      return '<button type="button" role="option" class="pm-k-it' + (n === BK.i ? ' on' : '') + '" aria-selected="' + (n === BK.i) + '" data-pm-k="' + n + '"><span class="pm-k-ic">' + ic(x.t === 'lead' ? 'pessoas' : 'predio') + '</span><span class="pm-k-tx"><b' + (x.t === 'lead' ? ' class="sens"' : '') + '>' + esc(x.a) + '</b><span' + (x.t === 'lead' ? ' class="sens"' : '') + '>' + esc(x.b) + '</span></span><span class="pm-k-tp">' + (x.t === 'lead' ? 'Lead' : 'Imóvel') + '</span></button>';
+      return '<button type="button" role="option" id="pm-k-op' + n + '" class="pm-k-it' + (n === BK.i ? ' on' : '') + '" aria-selected="' + (n === BK.i) + '" data-pm-k="' + n + '"><span class="pm-k-ic">' + ic(x.t === 'lead' ? 'pessoas' : 'predio') + '</span><span class="pm-k-tx"><b' + (x.t === 'lead' ? ' class="sens"' : '') + '>' + esc(x.a) + '</b><span' + (x.t === 'lead' ? ' class="sens"' : '') + '>' + esc(x.b) + '</span></span><span class="pm-k-tp">' + (x.t === 'lead' ? 'Lead' : 'Imóvel') + '</span></button>';
     }).join('') : '<p class="pm-k-vazio">' + (toks.length ? 'Nada encontrado nos seus leads e imóveis.' : 'Digite o nome, o telefone, o código ou o bairro.') + '</p>';
   }
   function bkAbre() {
@@ -151,9 +152,9 @@
       document.body.appendChild(BK.el);
       BK.el.querySelector('input').addEventListener('input', function () { BK.i = 0; bkPinta(); });
     }
-    BK.idx = bkIndice(); BK.i = 0; BK.el.hidden = false; var inp = BK.el.querySelector('input'); inp.value = ''; bkPinta(); inp.focus();
+    BK.volta = document.activeElement; BK.idx = bkIndice(); BK.i = 0; BK.el.hidden = false; var inp = BK.el.querySelector('input'); inp.value = ''; bkPinta(); inp.focus();
   }
-  function bkFecha() { if (BK.el) BK.el.hidden = true; }
+  function bkFecha() { if (BK.el && !BK.el.hidden) { BK.el.hidden = true; try { if (BK.volta && BK.volta.isConnected) BK.volta.focus({ preventScroll: true }); } catch (e) { } } }
   function bkVai(n) {
     var x = BK.res[n]; if (!x) return; bkFecha();
     var b = document.createElement('button'); b.type = 'button'; b.hidden = true;
@@ -162,7 +163,7 @@
   }
   document.addEventListener('keydown', function (ev) {
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey && (ev.key === 'k' || ev.key === 'K')) {
-      if (document.querySelector('[aria-modal="true"]:not(.pm-k-caixa)')) return;   // com uma gaveta aberta, não abre por cima
+      if ([].some.call(document.querySelectorAll('[aria-modal="true"]:not(.pm-k-caixa)'), function (g) { return g.offsetParent !== null || g.getClientRects().length; })) return;   // com uma gaveta visível aberta, não abre por cima
       ev.preventDefault(); if (BK.el && !BK.el.hidden) bkFecha(); else bkAbre(); return;
     }
     if (!BK.el || BK.el.hidden) return;
@@ -188,7 +189,7 @@
     if (ini.querySelector('.pm-combina') || typeof leadsComOfertas !== 'function' || typeof opsCache !== 'function') return;
     var por = {};
     try {
-      if (S.opsAquecendo) return;
+      if (S.opsAquecendo) { var tent = +(ini.dataset.pmCb || 0); if (tent < 20) { ini.dataset.pmCb = tent + 1; setTimeout(function () { if (ini.isConnected) combina(ini); }, 1500); } return; }   // ofertas ainda sendo calculadas: tenta de novo
       leadsComOfertas().forEach(function (par) { var id = par[0], l = par[1], o = opsCache(id, l) || {};
         (o.novas || []).forEach(function (x) { var it = x.it || {}; if (!it.id || it.origem !== 'site') return; var g = por[it.id] || (por[it.id] = { it: it, leads: [] }); g.leads.push([id, l, x]); }); });
     } catch (e) { return; }
