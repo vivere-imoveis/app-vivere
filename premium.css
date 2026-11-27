@@ -111,6 +111,47 @@ body.ml-on.ml-min #ml a.ml-g[href*="acaptar"]::after{display:none}
 .pm-rosca-n small{font-size:11.5px;color:var(--muted);margin-top:4px}
 @media (prefers-reduced-motion:reduce){.pm-ind{transition:none}.pm-anel-v.pm-enche{transition:none}.pm-acoes{transition:none}}
 
+/* ===== F1c · Busca rápida Ctrl K e "Combina com seus leads" ===== */
+#pm-k,#pm-cb-gaveta{position:fixed;inset:0;z-index:70}
+#pm-k[hidden]{display:none}
+.pm-k-fundo{position:absolute;inset:0;background:var(--shade)}
+.pm-k-caixa{position:relative;margin:12vh auto 0;width:min(580px,calc(100% - 24px));background:var(--panel);border-radius:14px;box-shadow:var(--sh-3);overflow:hidden}
+.pm-k-campo{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent);color:var(--muted)}
+.pm-k-campo input{flex:1;min-width:0;border:0;background:transparent;font:16px var(--body);color:var(--ink);outline:none;padding:4px 0}
+.pm-k-campo input::-webkit-search-cancel-button{display:none}
+#pm-k kbd,#ml .pm-k-atalho kbd{font:500 11px/1.4 var(--body);padding:1px 6px;border-radius:5px;box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);white-space:nowrap}
+.pm-k-lista{max-height:min(420px,60vh);overflow:auto;padding:6px}
+.pm-k-it{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:9px 10px;border-radius:9px;cursor:pointer}
+.pm-k-it.on{background:var(--soft)}
+.pm-k-it:focus-visible{outline:2px solid var(--accent)}
+.pm-k-ic{flex:none;width:32px;height:32px;border-radius:8px;background:var(--soft);display:grid;place-items:center}
+.pm-k-it.on .pm-k-ic{background:var(--panel)}
+.pm-k-tx{flex:1;min-width:0;display:grid}
+.pm-k-tx b{font-weight:500}
+.pm-k-tx span{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pm-k-tp{flex:none;font-size:11.5px;color:var(--muted)}
+.pm-k-vazio{margin:10px 12px;color:var(--muted);font-size:13.5px}
+#ml .pm-k-atalho{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;margin:0 0 10px;padding:7px 10px;border-radius:9px;background:var(--panel);box-shadow:var(--sh-ring);color:var(--muted);font-size:13px}
+#ml .pm-k-atalho:focus-visible{outline:2px solid var(--accent)}
+#ml .pm-k-atalho kbd{margin-left:auto}
+#ml .pm-k-atalho .ic{width:16px;height:16px}
+body.ml-on.ml-min #ml .pm-k-atalho{justify-content:center;padding:7px 0}
+.pm-combina .painel{display:grid;padding:14px 0 6px}
+.pm-combina h2{margin:0 16px 6px;font:500 22px/1.15 var(--display)}
+.pm-combina h2 small{font:400 15px var(--body);color:var(--muted)}
+.rd-it.pm-cb-it{padding-left:16px}
+.pm-cb-capa{flex:none;width:44px;height:44px;border-radius:8px;overflow:hidden;background:var(--soft);display:grid;place-items:center;color:var(--muted)}
+.pm-cb-capa img{width:100%;height:100%;object-fit:cover;display:block}
+.pm-cb-it .b{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:40px}
+.pm-cb-it .b .ic{width:16px;height:16px}
+.pm-cb-n{font-style:normal}
+#pm-cb-gaveta{display:flex;justify-content:flex-end}
+#pm-cb-gaveta .gaveta{position:relative;box-shadow:var(--sh-3);animation:pm-gaveta var(--t-sheet) var(--ease-drawer) both}
+@keyframes pm-gaveta{from{translate:100% 0}to{translate:0 0}}
+.pm-cb-lead{display:grid;gap:6px}
+.pm-cb-nome{margin:0;font-weight:600}
+@media (prefers-reduced-motion:reduce){#pm-cb-gaveta .gaveta{animation:none}}
+
 /* Acessibilidade */
 @media (prefers-reduced-motion:reduce){
   button.b,a.b,.rd-n,.tf-ok,#ml button,#ml a.ml-g{transition:background-color .15s ease,color .15s ease}
