@@ -136,6 +136,7 @@ body.ml-on.ml-min #ml a.ml-g[href*="acaptar"]::after{display:none}
 #ml .pm-k-atalho kbd{margin-left:auto}
 #ml .pm-k-atalho .ic{width:16px;height:16px}
 body.ml-on.ml-min #ml .pm-k-atalho{justify-content:center;padding:7px 0}
+.rd-inicio .pm-combina{margin-top:14px}
 .pm-combina .painel{display:grid;padding:14px 0 6px}
 .pm-combina h2{margin:0 16px 6px;font:500 22px/1.15 var(--display)}
 .pm-combina h2 small{font:400 15px var(--body);color:var(--muted)}
