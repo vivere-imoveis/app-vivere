@@ -228,3 +228,20 @@ body.nc-on .sobre.pm-folha.pm-ja,body.nc-on .sobre.pm-folha.pm-ja>.gaveta{animat
 .chips button{transition:transform var(--t-press) var(--ease-out),background-color .15s ease,border-color .15s ease,color .15s ease}
 .chips button:active{transform:scale(.97)}
 @media (prefers-reduced-motion:reduce){.pm-rec svg{transition:none}.chips button:active,.pm-rec:active{transform:none}}
+section.sec>div:first-child:has(>h2>.pm-rec),section.sec>div:first-child>h2:has(>.pm-rec){position:relative}
+section.sec>div:first-child>h2:has(>.pm-rec){display:flex;align-items:center;gap:6px}
+/* Régua de uma linha fora do Início (cartões do Gestor, do A CAPTAR...) */
+#conteudo .cartoes.pm-regua{display:flex!important;gap:0!important;background:var(--panel);border-radius:12px;box-shadow:var(--sh-1);overflow-x:auto;scrollbar-width:none}
+#conteudo .cartoes.pm-regua::-webkit-scrollbar{display:none}
+#conteudo .cartoes.pm-regua>.cartao{flex:1 1 0;min-width:120px;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;padding:10px 14px 11px!important;position:relative}
+#conteudo .cartoes.pm-regua>.cartao+.cartao::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:1px;background:color-mix(in srgb,var(--line) 80%,transparent)}
+#conteudo .cartoes.pm-regua .r{font:400 12px var(--body)!important;letter-spacing:0!important;text-transform:none!important;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#conteudo .cartoes.pm-regua .v{font:500 22px/1.15 var(--display)!important;margin-top:3px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#conteudo .cartoes.pm-regua .s{font-size:11.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#conteudo .cartoes.pm-regua>.cartao.alerta .v{color:var(--bad)}
+@media (max-width:700px){
+  #conteudo .cartoes.pm-regua{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:1px!important;background:color-mix(in srgb,var(--line) 75%,transparent);overflow:hidden}
+  #conteudo .cartoes.pm-regua>.cartao{min-width:0;background:var(--panel)!important}
+  #conteudo .cartoes.pm-regua>.cartao+.cartao::before{display:none}
+  #conteudo .cartoes.pm-regua>.cartao:last-child:nth-child(odd){grid-column:1/-1}
+}

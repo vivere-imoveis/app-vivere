@@ -290,18 +290,22 @@
   var salvaRec = function () { gS.set('painel-recolhidos', JSON.stringify(REC)); };
   var abaAtual = function () { var a = document.querySelector('nav.abas [aria-selected="true"]'); return a ? a.textContent.trim().replace(/\s*\d+$/, '') : ''; };
   var tituloDe = function (h) { var c = h.cloneNode(true); [].forEach.call(c.querySelectorAll('button,.badge,.pill'), function (x) { x.remove(); }); return c.textContent.replace(/\(\d+\)|\d+/g, '').replace(/\s+/g, ' ').trim().slice(0, 80); };
-  var irmaos = function (h) { var L = [], n = h.nextElementSibling; while (n && !n.matches('h2,.pm-tudo')) { L.push(n); n = n.nextElementSibling; } return L; };
+  var irmaos = function (h) {
+    var cab = h.parentElement && h.parentElement.matches('section.sec > div:first-child') ? h.parentElement : null;   // título no cabeçalho de uma seção: recolhe o resto da seção
+    if (cab) { var R = [], m = cab.nextElementSibling; while (m) { R.push(m); m = m.nextElementSibling; } return R; }
+    var L = [], n = h.nextElementSibling; while (n && !n.matches('h2,.pm-tudo')) { L.push(n); n = n.nextElementSibling; } return L; };
   function pinta(h, f) {
     irmaos(h).forEach(function (x) { x.classList.toggle('pm-recolhido', f); });
-    var b = h.querySelector(':scope > .pm-rec'); if (b) { b.setAttribute('aria-expanded', String(!f)); b.setAttribute('aria-label', (f ? 'Abrir ' : 'Recolher ') + tituloDe(h)); }
+    var b = h.querySelector('.pm-rec'); if (b) { b.setAttribute('aria-expanded', String(!f)); b.setAttribute('aria-label', (f ? 'Abrir ' : 'Recolher ') + tituloDe(h)); }
     h.classList.toggle('pm-h-fechado', f);
   }
   function secoes() {
     var c = document.getElementById('conteudo'), aba = abaAtual(); if (!c) return;
-    var hs = [].filter.call(document.querySelectorAll('#conteudo .painel > h2, #sobre .painel > h2'), function (h) { return irmaos(h).length && tituloDe(h); });
+    var varias = document.querySelectorAll('#conteudo section.sec').length >= 2;   // a seção que é a página inteira da aba não se recolhe
+    var hs = [].filter.call(document.querySelectorAll('#conteudo .painel > h2, #sobre .painel > h2' + (varias ? ', #conteudo section.sec > div:first-child > h2:first-child' : '')), function (h) { return irmaos(h).length && tituloDe(h); });
     hs.forEach(function (h) {
       var k = (h.closest('#sobre') ? 'gaveta' : aba) + '|' + tituloDe(h); h.dataset.pmK = k;
-      if (!h.querySelector(':scope > .pm-rec')) { var b = document.createElement('button'); b.type = 'button'; b.className = 'pm-rec'; b.title = 'Recolher ou abrir esta parte';
+      if (!h.querySelector('.pm-rec')) { var b = document.createElement('button'); b.type = 'button'; b.className = 'pm-rec'; b.title = 'Recolher ou abrir esta parte';
         b.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'; h.appendChild(b); }
       var f = !!REC[k]; if (h.classList.contains('pm-h-fechado') !== f || irmaos(h).some(function (x) { return x.classList.contains('pm-recolhido') !== f; })) pinta(h, f);
     });
@@ -315,9 +319,16 @@
     var b = ev.target.closest && ev.target.closest('.pm-rec, [data-pm-tudo]'); if (!b) return;
     ev.preventDefault(); ev.stopPropagation();
     if (b.classList.contains('pm-rec')) { var h = b.parentElement, k = h.dataset.pmK, f = !REC[k]; if (f) REC[k] = 1; else delete REC[k]; pinta(h, f); }
-    else { var fecha = b.dataset.pmTudo === 'recolher'; [].forEach.call(document.querySelectorAll('#conteudo .painel > h2[data-pm-k]'), function (h) { if (fecha) REC[h.dataset.pmK] = 1; else delete REC[h.dataset.pmK]; pinta(h, fecha); }); }
+    else { var fecha = b.dataset.pmTudo === 'recolher'; [].forEach.call(document.querySelectorAll('#conteudo h2[data-pm-k]'), function (h) { if (fecha) REC[h.dataset.pmK] = 1; else delete REC[h.dataset.pmK]; pinta(h, fecha); }); }
     salvaRec(); secoes();
   }, true);
+  function reguas() {   // quadros grandes só no Início (regra de 22/11/2026): fora dele os cartões viram uma régua de uma linha
+    var naInicio = /in[ií]cio/i.test(abaAtual());
+    [].forEach.call(document.querySelectorAll('#conteudo .cartoes'), function (g) {
+      var ok = !naInicio && !g.closest('.rd-inicio') && g.children.length >= 2 && [].every.call(g.children, function (x) { return x.matches('.cartao'); });
+      g.classList.toggle('pm-regua', ok);
+    });
+  }
   var termos = function (v) { return String(v || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean); };
   function etiquetas(inp) {
     if (!inp || !inp.id) return; var L = termos(inp.value), box = inp.parentElement && inp.parentElement.querySelector(':scope > .pm-chips[data-para="' + inp.id + '"]');
@@ -338,7 +349,7 @@
 
   /* ---------- a cada desenho do Início ---------- */
   function aplica() {
-    atalhoMenu(); folha(); ac1(); todosPrimeiro(document.body); secoes(); [].forEach.call(document.querySelectorAll('input[type="search"][id]'), etiquetas);
+    atalhoMenu(); folha(); ac1(); todosPrimeiro(document.body); secoes(); reguas(); [].forEach.call(document.querySelectorAll('input[type="search"][id]'), etiquetas);
     var ini = document.querySelector('.rd-inicio'); if (!ini || ini.dataset.pm === '1') return;
     ini.dataset.pm = '1';
     var sec = ini.querySelector('.rd-agora'); if (sec) { filtro(sec); acoes(sec); }
