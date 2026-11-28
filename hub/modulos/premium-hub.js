@@ -389,6 +389,10 @@
       if (!td.firstChild) return; var sp = document.createElement('span'); while (td.firstChild) sp.appendChild(td.firstChild); td.appendChild(sp); td.classList.add('ph-pil-td');
       veste(sp, td.classList.contains('lr-mais') ? 'mare' : 'neutro');
     });
+    [].forEach.call(c.querySelectorAll('td.lr-l:not(.ph-pil-td)'), function (td) {   // Líquido: só o valor vira pílula; o texto de apoio (.s) fica embaixo, como está
+      var alvo = null; [].some.call(td.childNodes, function (x) { if (x.nodeType === 3 && x.textContent.trim()) { alvo = x; return true; } if (x.nodeType === 1 && !x.classList.contains('s')) { alvo = x; return true; } return false; });
+      if (!alvo) return; var sp = document.createElement('span'); alvo.before(sp); sp.appendChild(alvo); td.classList.add('ph-pil-td'); veste(sp, 'mare');
+    });
   }
   function aplica() {
     var c = document.getElementById('conteudo'); if (!c) return;
