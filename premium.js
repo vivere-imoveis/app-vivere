@@ -6,7 +6,7 @@
    3) Minhas metas em anéis, que se preenchem só na 1ª abertura do dia;
    4) agenciamentos em rosca, com o total no meio;
    5) tarefa marcada como feita no Início: aviso com Desfazer;
-   6) busca rápida Ctrl K (leads e imóveis já carregados, sem animação), também no alto do menu lateral;
+   6) busca rápida Ctrl L / Ctrl K (leads e imóveis já carregados, sem animação), também no alto do menu lateral;
    7) "Combina com seus leads": até 3 imóveis da pauta que batem com mais leads, com Enviar (a mesma oferta da aba Ofertas).
    Usa só o que o painel.js expõe em window.PAINEL_PM (S, zapNum, toast, brl, ofertas), sempre com teste antes. ?premium=0 desliga no aparelho. */
 (function () {
@@ -140,12 +140,13 @@
   }
   function bkPinta() {
     var q = semAc(BK.el.querySelector('input').value).trim(), toks = q.split(/\s+/).filter(Boolean), lista = BK.el.querySelector('.pm-k-lista');
-    BK.res = toks.length ? BK.idx.filter(function (x) { return toks.every(function (t) { return x.k.indexOf(t) >= 0; }); }).slice(0, 8) : [];
+    var todos = toks.length ? BK.idx.filter(function (x) { return toks.every(function (t) { return x.k.indexOf(t) >= 0; }); }) : [];
+    BK.res = todos.slice(0, 8); var mais = todos.length - BK.res.length;   // acima de 8: avisa quantos ficaram de fora (decisão do Cleiton, 27/11/2026)
     BK.i = Math.min(BK.i, Math.max(0, BK.res.length - 1));
     var inp0 = BK.el.querySelector('input'); if (BK.res.length) inp0.setAttribute('aria-activedescendant', 'pm-k-op' + BK.i); else inp0.removeAttribute('aria-activedescendant');
     lista.innerHTML = BK.res.length ? BK.res.map(function (x, n) {
       return '<button type="button" role="option" id="pm-k-op' + n + '" class="pm-k-it' + (n === BK.i ? ' on' : '') + '" aria-selected="' + (n === BK.i) + '" data-pm-k="' + n + '"><span class="pm-k-ic">' + ic(x.t === 'lead' ? 'pessoas' : 'predio') + '</span><span class="pm-k-tx"><b' + (x.t === 'lead' ? ' class="sens"' : '') + '>' + esc(x.a) + '</b><span' + (x.t === 'lead' ? ' class="sens"' : '') + '>' + esc(x.b) + '</span></span><span class="pm-k-tp">' + (x.t === 'lead' ? 'Lead' : 'Imóvel') + '</span></button>';
-    }).join('') : '<p class="pm-k-vazio">' + (toks.length ? 'Nada encontrado nos seus leads e imóveis.' : 'Digite o nome, o telefone, o código ou o bairro.') + '</p>';
+    }).join('') + (mais > 0 ? '<p class="pm-k-mais">e mais ' + mais.toLocaleString('pt-BR') + ' — refine a busca</p>' : '') : '<p class="pm-k-vazio">' + (toks.length ? 'Nada encontrado nos seus leads e imóveis.' : 'Digite o nome, o telefone, o código ou o bairro.') + '</p>';
   }
   function bkAbre() {
     if (!Sx()) return;
@@ -166,7 +167,7 @@
     document.body.appendChild(b); b.click(); b.remove();
   }
   document.addEventListener('keydown', function (ev) {
-    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey && (ev.key === 'k' || ev.key === 'K')) {
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey && /^[kl]$/i.test(ev.key)) {   // Ctrl L (pedido do Cleiton, 27/11/2026) e Ctrl K abrem a busca rápida
       if ([].some.call(document.querySelectorAll('[aria-modal="true"]:not(.pm-k-caixa)'), function (g) { return g.offsetParent !== null || g.getClientRects().length; })) return;   // com uma gaveta visível aberta, não abre por cima
       ev.preventDefault(); if (BK.el && !BK.el.hidden) bkFecha(); else bkAbre(); return;
     }
@@ -184,8 +185,8 @@
   function atalhoMenu() {   // no menu lateral do computador: "Buscar · Ctrl K"
     var ml = document.getElementById('ml'); if (!ml || ml.querySelector('.pm-k-atalho')) return;
     var topo = ml.querySelector('.ml-topo'); if (!topo) return;
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'pm-k-atalho'; b.setAttribute('data-pm-k-abre', ''); b.title = 'Busca rápida (Ctrl K)';
-    b.innerHTML = ic('lupa') + '<span class="ml-tx">Buscar</span><kbd class="ml-tx">Ctrl K</kbd>'; topo.after(b);
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'pm-k-atalho'; b.setAttribute('data-pm-k-abre', ''); b.title = 'Busca rápida (Ctrl L ou Ctrl K)';
+    b.innerHTML = ic('lupa') + '<span class="ml-tx">Buscar</span><kbd class="ml-tx">Ctrl L</kbd>'; topo.after(b);
   }
 
   /* ---------- 7) Combina com seus leads (F1c): imóveis da pauta que batem com mais leads seus, com Enviar ---------- */
@@ -204,7 +205,7 @@
     var nomeC = function (n) { var p = (String(n || '').trim() || 'Lead').split(/\s+/); return p.length > 1 ? p[0] + ' ' + p[p.length - 1].charAt(0) + '.' : p[0]; };
     var its = top.map(function (g, n) { var it = g.it, f = src(it.id), l1 = g.leads[0][1] || {};
       return '<div class="rd-it pm-cb-it"><span class="pm-cb-capa">' + (f ? '<img src="' + esc(f) + '" alt="" loading="lazy">' : ic('predio')) + '</span><div class="rd-it-t"><b>' + esc(it.ref || '') + (it.valor ? ' · ' + esc(brlF(it.valor)) : '') + '</b><span>Combina com <em class="sens pm-cb-n">' + esc(nomeC(l1.nome)) + '</em>' +
-        (g.leads.length > 1 ? ' e mais ' + (g.leads.length - 1).toLocaleString('pt-BR') + (g.leads.length === 2 ? ' lead seu' : ' leads seus') : '') + (it.bairro ? ' · ' + esc(it.bairro) : '') + '</span></div><button class="b" type="button" data-pm-cb="' + n + '">' + ic('enviar') + 'Enviar</button></div>'; }).join('');
+        (g.leads.length > 1 ? ' e mais ' + (g.leads.length - 1).toLocaleString('pt-BR') + (g.leads.length === 2 ? ' lead seu' : ' leads seus') : '') + (it.bairro ? ' · ' + esc(it.bairro) : '') + '</span></div><button class="b" type="button" data-pm-cb="' + n + '" aria-label="Enviar ' + esc(it.ref || 'imóvel') + '" title="Enviar">' + ic('enviar') + '<span class="pm-cb-tx">Enviar</span></button></div>'; }).join('');
     var sec = document.createElement('section'); sec.className = 'pm-combina'; sec.setAttribute('aria-labelledby', 'pmCbT'); sec._top = top;
     sec.innerHTML = '<div class="painel"><h2 id="pmCbT">Combina com seus leads <small>imóveis da pauta que batem com o perfil</small></h2>' + its + '</div>';
     var col = ini.querySelector('.rd-col1'); if (col) col.appendChild(sec);

@@ -303,6 +303,9 @@
       if (p !== ctx.painel) d.url = 'painel.html?ver=' + encodeURIComponent(p); // a diretoria abre o painel do corretor pelo "ver"
       saida[p] = d;
     });
+    // ainda empatou (curto escrito à mão igual, ou dois primeiros nomes iguais): o "Ver como" mostra o nome completo (decisão do Cleiton, 27/11/2026)
+    var vez2 = {}; Object.keys(saida).forEach(function (p) { var k = saida[p].curto.toLowerCase(); vez2[k] = (vez2[k] || 0) + 1; });
+    Object.keys(saida).forEach(function (p) { if (vez2[saida[p].curto.toLowerCase()] > 1) saida[p].curto = saida[p].nome; });
     return saida;
   }
   function sincronizarGestor() {
