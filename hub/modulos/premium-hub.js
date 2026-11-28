@@ -222,7 +222,7 @@
   /* ---------- F1b-4) rodapé do menu lateral: coletas, tema e privacidade; no topo ficam Metas, A captar e Painéis ---------- */
   var PE_IDS = ['coletas', 'tema-btn', 'btnPrivado'];
   function rodape() {
-    var b = document.body, on = b.classList.contains('ml-on') && !b.classList.contains('tc-on'), pe = document.getElementById('ph-ml-pe');
+    var b = document.body, on = false, pe = document.getElementById('ph-ml-pe');   // 28/11/2026 (pedido do Cleiton): coletas, tema e privacidade voltam lá para cima, junto com Metas, A captar e Painéis; o rodapé do menu lateral fica sem eles
     var els = PE_IDS.map(function (id) { return document.getElementById(id); }).filter(Boolean);
     if (on) {
       if (!pe) { pe = document.createElement('div'); pe.id = 'ph-ml-pe'; pe.setAttribute('role', 'group'); pe.setAttribute('aria-label', 'Coletas, tema e privacidade'); b.appendChild(pe); }
