@@ -333,3 +333,48 @@ section.sec>div:first-child>h2:has(>.pm-rec){padding-right:30px}
   .vcrm-chips .vcrm-b:active,.vk .vk-card .copiar:active,.vp .vp-l:active:not([disabled]){transform:none}
   .vk .vk-card,.vp .vp-l{transition:none}
 }
+
+/* ===== F6 · acabamento de Imóveis/Ofertas e Mais (A CAPTAR, Vistorias, Estudo de Mercado, Solicitações) — 27/11/2026, 23h40 ===== */
+/* Telas do app abertas como aba (Estudo de Mercado, A CAPTAR, Acessos…): o mesmo título com fio de latão das abas do painel */
+#aba-app .aba-app-t{display:inline-block;font:600 16px/1.3 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--panel);border:0;border-left:4px solid var(--brass);border-radius:6px;padding:8px 14px;margin:4px 0 14px;box-shadow:var(--sh-1)}
+@media (max-width:700px){#aba-app .aba-app-t{font-size:13px;letter-spacing:.12em;padding:7px 12px;margin:2px 0 10px}}
+/* A CAPTAR: os 5 quadros viram a régua de uma linha (quadros grandes só no Início); no celular, a grade de 2 linhas cheias de antes, em um só cartão */
+#app-nativo .resumo-ac{display:flex!important;gap:0!important;flex-wrap:wrap;background:var(--panel);border-radius:12px;box-shadow:var(--sh-1);overflow:hidden}
+#app-nativo .resumo-ac>div{flex:1 1 0;min-width:110px;border:0!important;border-radius:0!important;background:transparent!important;padding:10px 14px 11px!important;position:relative;display:flex;flex-direction:column-reverse;justify-content:flex-end}
+#app-nativo .resumo-ac>div+div::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:1px;background:color-mix(in srgb,var(--line) 80%,transparent)}
+#app-nativo .resumo-ac b{font:500 22px/1.15 var(--display)!important;font-variant-numeric:tabular-nums;margin-top:3px}
+#app-nativo .resumo-ac span{font-size:12px!important;color:var(--muted);line-height:1.3}
+@media (max-width:700px){
+  #app-nativo .resumo-ac.resumo-ac.resumo-ac{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:1px!important;background:color-mix(in srgb,var(--line) 75%,transparent)}
+  #app-nativo .resumo-ac>div{background:var(--panel)!important;min-width:0;padding:8px 10px!important}
+  #app-nativo .resumo-ac>div+div::before{display:none}
+  #app-nativo .resumo-ac b{font-size:19px!important}
+}
+/* Subabas das telas do app (A CAPTAR, Acessos): a mesma resposta ao toque das pílulas do painel */
+#app-nativo .subabas button{transition:transform var(--t-press) var(--ease-out),background-color .15s ease,border-color .15s ease,color .15s ease}
+#app-nativo .subabas button:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){#app-nativo .subabas button:not([aria-selected="true"]):hover{color:var(--ink);border-color:color-mix(in srgb,var(--ink) 30%,var(--line))}}
+/* Meus imóveis: atualização dos agenciamentos em rosca com o total no meio (como no Início); no celular, rosca menor ao lado da legenda */
+.pm-agenc .pm-rosca svg{-webkit-mask:radial-gradient(circle closest-side,transparent 0 63%,#000 calc(63% + 1px));mask:radial-gradient(circle closest-side,transparent 0 63%,#000 calc(63% + 1px))}
+.pm-agenc .pm-rosca-n b{font-size:26px}
+@media (max-width:560px){   /* rosca e título lado a lado; a legenda (que filtra) ocupa a largura toda embaixo */
+  .pm-agenc{display:grid!important;grid-template-columns:auto minmax(0,1fr);gap:4px 14px!important;align-items:center!important}
+  .pm-agenc>div{display:contents!important}
+  .pm-agenc>.pm-rosca{grid-row:1/3}
+  .pm-agenc>div>b{grid-column:2;align-self:end}
+  .pm-agenc>div>p{grid-column:2;grid-row:2;align-self:start}
+  .pm-agenc>div>.chips{grid-column:1/-1;grid-row:3;margin-top:8px}
+  .pm-agenc .pm-rosca svg{width:88px;height:88px}
+  .pm-agenc .pm-rosca-n b{font-size:21px}
+  .pm-agenc .pm-rosca-n small{font-size:10.5px}
+}
+/* Cartão do imóvel: selo longo ("Agenciamento dividido 50/50…") quebra linha dentro do cartão em vez de passar da borda */
+.imv .cab{flex-wrap:wrap;min-width:0}
+.imv .cab .pill{white-space:normal;overflow-wrap:anywhere;max-width:100%}
+/* Sem foto: quadro discreto com o ícone de imagem no lugar do texto solto */
+.capa .sem{display:grid;place-items:center;gap:2px;color:color-mix(in srgb,var(--muted) 80%,transparent)}
+.capa .sem::before{content:"";width:20px;height:20px;background:currentColor;opacity:.75;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5'/%3E%3Ccircle cx='9' cy='10' r='1.8'/%3E%3Cpath d='m21 16-5-5-9 9'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5'/%3E%3Ccircle cx='9' cy='10' r='1.8'/%3E%3Cpath d='m21 16-5-5-9 9'/%3E%3C/svg%3E") center/contain no-repeat}
+.capa.p .sem::before{width:16px;height:16px}
+/* Estudo de Mercado e A CAPTAR: cartão de abertura e listas com sombra fina, como o resto do painel */
+#app-nativo .lista-acessos table{font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){#app-nativo .subabas button:active{transform:none}}

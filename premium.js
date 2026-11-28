@@ -376,9 +376,22 @@
     });
   }
 
+
+  /* ---------- F6 · Meus imóveis (27/11/2026): atualização dos agenciamentos em rosca, com o total no meio ---------- */
+  function agencRosca() {
+    [].forEach.call(document.querySelectorAll('#conteudo .painel > svg[aria-label="Atualização dos agenciamentos"]'), function (svg) {
+      if (svg.closest('.rd-agenc') || svg.parentElement.classList.contains('pm-rosca')) return;
+      var box = svg.parentElement, tot = 0;
+      [].forEach.call(box.querySelectorAll('[data-fm^="fx|"] > span:last-child > b'), function (b) { tot += parseInt(b.textContent, 10) || 0; });
+      box.classList.add('pm-agenc');
+      var w = document.createElement('span'); w.className = 'pm-rosca'; svg.before(w); w.appendChild(svg);
+      if (tot) w.insertAdjacentHTML('beforeend', '<span class="pm-rosca-n" aria-hidden="true"><b>' + tot.toLocaleString('pt-BR') + '</b><small>' + 'no site' + '</small></span>');
+    });
+  }
+
   /* ---------- a cada desenho do Início ---------- */
   function aplica() {
-    atalhoMenu(); folha(); ac1(); todosPrimeiro(document.body); secoes(); reguas(); funilNums(); milhares(); tfEtiquetas(); [].forEach.call(document.querySelectorAll('input[type="search"][id]'), etiquetas);
+    atalhoMenu(); folha(); ac1(); todosPrimeiro(document.body); secoes(); reguas(); funilNums(); milhares(); tfEtiquetas(); agencRosca(); [].forEach.call(document.querySelectorAll('input[type="search"][id]'), etiquetas);
     var ini = document.querySelector('.rd-inicio'); if (!ini || ini.dataset.pm === '1') return;
     ini.dataset.pm = '1';
     var sec = ini.querySelector('.rd-agora'); if (sec) { filtro(sec); acoes(sec); }
