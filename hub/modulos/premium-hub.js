@@ -240,7 +240,7 @@
   /* ---------- F2-2) Financeiro: valor em pílula pela situação — pago em maré, a vencer neutro, atrasado em coral ---------- */
   // Só as abas do módulo financeiro. Situação lida do que a linha já mostra (vencida há…, em aberto, selo da cobrança, data de pagamento);
   // o sinal + / − continua dizendo se entra ou sai. Nada é recalculado: só a roupa do valor muda.
-  var FIN = { financeiro: 1, 'fin-receber': 1, 'fin-despesas': 1, 'fin-pagar': 1, 'fin-juridico': 1 };
+  var FIN = { financeiro: 1, receita: 1, vendas: 1, 'fin-receber': 1, 'fin-despesas': 1, 'fin-pagar': 1, 'fin-juridico': 1 };   // 28/11/2026 (revisão): + Receitas e Vendas, que ficavam com as células cheias
   function secaoDe(tab) {
     var n = tab.closest('.tabela') || tab, d = n.closest('details'), k = 0;
     if (d && d.querySelector(':scope > summary')) return d.querySelector(':scope > summary').textContent;
