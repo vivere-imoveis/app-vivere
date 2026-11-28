@@ -100,7 +100,7 @@
     var svg = sec.querySelector('svg[role="img"]'); if (!svg) return;
     var tot = 0; [].forEach.call(sec.querySelectorAll('[data-rd-fx] > span:last-child > b'), function (b) { tot += parseInt(b.textContent, 10) || 0; });
     var w = document.createElement('span'); w.className = 'pm-rosca'; svg.before(w); w.appendChild(svg);
-    if (tot) w.insertAdjacentHTML('beforeend', '<span class="pm-rosca-n" aria-hidden="true"><b>' + tot + '</b><small>' + (tot === 1 ? 'imóvel' : 'imóveis') + '</small></span>');
+    if (tot) w.insertAdjacentHTML('beforeend', '<span class="pm-rosca-n" aria-hidden="true"><b>' + tot.toLocaleString('pt-BR') + '</b><small>' + (tot === 1 ? 'imóvel' : 'imóveis') + '</small></span>');
   }
 
   /* ---------- 5) tarefa feita no Início: aviso com Desfazer ---------- */
@@ -124,12 +124,14 @@
   /* ---------- 6) busca rápida Ctrl K (F1c): lead ou imóvel de qualquer tela, sem animação ---------- */
   var semAc = function (t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
   var BK = { el: null, res: [], i: 0 };
+  var donoDe = function (l) { try { var p = l._dono && Sx().G && Sx().G.paineis && Sx().G.paineis[l._dono]; return p ? String(p.curto || p.nome || '') : ''; } catch (e) { return ''; } };   // gestor: dois leads com o mesmo nome em painéis diferentes
+  var ROT_INT = { comprador: 'Comprador', locatario_anual: 'Locatário anual', locatario_temporada: 'Locatário temporada', vendedor: 'Vendedor', locador_anual: 'Locador anual', locador_temporada: 'Locador temporada' };   // os mesmos rótulos de INTERESSES do painel.js (a_definir fica de fora)
   function bkIndice() {
     var out = [], S = Sx() || {};
     try {
-      Object.keys(S.leads || {}).forEach(function (id) { var l = S.leads[id] || {}; if (!l.nome && !l.telefone) return;
-        out.push({ t: 'lead', id: id, a: l.nome || 'Lead sem nome', b: [l.etapa, l.interesse || '', String(l.telefone || '')].filter(Boolean).join(' · '),
-          k: semAc([l.nome, l.telefone, String(l.telefone || '').replace(/\D/g, ''), l.email, l.etapa].join(' ')) }); });
+      Object.keys(S.leads || {}).forEach(function (id) { var l = S.leads[id] || {}, nm = String(l.nome || '').trim(); if (!nm && !l.telefone && !l.email) return;
+        out.push({ t: 'lead', id: id, a: nm || 'Lead sem nome', b: [donoDe(l), l.etapa, ROT_INT[l.interesse] || '', String(l.telefone || '') || String(l.email || '')].filter(Boolean).join(' · '),
+          k: semAc([nm, l.telefone, String(l.telefone || '').replace(/\D/g, ''), l.email, l.etapa, ROT_INT[l.interesse]].join(' ')) }); });
       Object.keys(S.meus || {}).forEach(function (id) { var m = S.meus[id] || {};
         out.push({ t: 'imv', id: id, a: (m.ref || id) + (m.bairro ? ' · ' + m.bairro : ''), b: [m.tipo, m.edificio, m.logradouro || m.end].filter(Boolean).join(' · '),
           k: semAc([m.ref, id, m.bairro, m.edificio, m.logradouro, m.end, m.tipo].join(' ')) }); });
@@ -199,10 +201,10 @@
     if (!top.length) return;
     var brlF = function (v) { try { return typeof P.brl === 'function' ? P.brl(v) : ''; } catch (e) { return ''; } };
     var src = function (id) { try { return typeof P.capaSrc === 'function' ? P.capaSrc(id) : ''; } catch (e) { return ''; } };
-    var nomeC = function (n) { var p = String(n || 'Lead').trim().split(/\s+/); return p.length > 1 ? p[0] + ' ' + p[p.length - 1].charAt(0) + '.' : p[0]; };
+    var nomeC = function (n) { var p = (String(n || '').trim() || 'Lead').split(/\s+/); return p.length > 1 ? p[0] + ' ' + p[p.length - 1].charAt(0) + '.' : p[0]; };
     var its = top.map(function (g, n) { var it = g.it, f = src(it.id), l1 = g.leads[0][1] || {};
       return '<div class="rd-it pm-cb-it"><span class="pm-cb-capa">' + (f ? '<img src="' + esc(f) + '" alt="" loading="lazy">' : ic('predio')) + '</span><div class="rd-it-t"><b>' + esc(it.ref || '') + (it.valor ? ' · ' + esc(brlF(it.valor)) : '') + '</b><span>Combina com <em class="sens pm-cb-n">' + esc(nomeC(l1.nome)) + '</em>' +
-        (g.leads.length > 1 ? ' e mais ' + (g.leads.length - 1) + (g.leads.length === 2 ? ' lead seu' : ' leads seus') : '') + (it.bairro ? ' · ' + esc(it.bairro) : '') + '</span></div><button class="b" type="button" data-pm-cb="' + n + '">' + ic('enviar') + 'Enviar</button></div>'; }).join('');
+        (g.leads.length > 1 ? ' e mais ' + (g.leads.length - 1).toLocaleString('pt-BR') + (g.leads.length === 2 ? ' lead seu' : ' leads seus') : '') + (it.bairro ? ' · ' + esc(it.bairro) : '') + '</span></div><button class="b" type="button" data-pm-cb="' + n + '">' + ic('enviar') + 'Enviar</button></div>'; }).join('');
     var sec = document.createElement('section'); sec.className = 'pm-combina'; sec.setAttribute('aria-labelledby', 'pmCbT'); sec._top = top;
     sec.innerHTML = '<div class="painel"><h2 id="pmCbT">Combina com seus leads <small>imóveis da pauta que batem com o perfil</small></h2>' + its + '</div>';
     var col = ini.querySelector('.rd-col1'); if (col) col.appendChild(sec);
@@ -213,7 +215,7 @@
     var gv = document.getElementById('pm-cb-gaveta'); if (gv) gv.remove();
     gv = document.createElement('div'); gv.id = 'pm-cb-gaveta';
     gv.innerHTML = '<div class="pm-k-fundo" data-pm-cb-fecha></div><div class="gaveta pm-cb-g" role="dialog" aria-modal="true" aria-label="Enviar ' + esc(g.it.ref || 'imóvel') + '"><div class="cab"><div><p class="mut peq" style="margin:0">Enviar aos leads que combinam</p><h3>' + esc(g.it.ref || 'Imóvel') + '</h3></div><button class="b" type="button" data-pm-cb-fecha>Fechar</button></div>' +
-      g.leads.map(function (x) { var h = ''; try { h = PM().htmlOferta(x[0], x[2]); } catch (e) { h = ''; } return '<div class="pm-cb-lead"><p class="pm-cb-nome sens">' + esc((x[1] || {}).nome || 'Lead') + '</p>' + h + '</div>'; }).join('') + '</div>';
+      g.leads.map(function (x) { var h = ''; try { h = PM().htmlOferta(x[0], x[2]); } catch (e) { h = ''; } return '<div class="pm-cb-lead"><p class="pm-cb-nome sens">' + esc(String((x[1] || {}).nome || '').trim() || 'Lead') + '</p>' + h + '</div>'; }).join('') + '</div>';
     document.body.appendChild(gv);
     var f = gv.querySelector('[data-pm-cb-fecha]'); if (f) f.focus();
   });
@@ -288,8 +290,8 @@
   var gS = guarda('localStorage');
   var REC = (function () { try { return JSON.parse(gS.get('painel-recolhidos', '{}')) || {}; } catch (e) { return {}; } })();
   var salvaRec = function () { gS.set('painel-recolhidos', JSON.stringify(REC)); };
-  var abaAtual = function () { var a = document.querySelector('nav.abas [aria-selected="true"]'); return a ? a.textContent.trim().replace(/\s*\d+$/, '') : ''; };
-  var tituloDe = function (h) { var c = h.cloneNode(true); [].forEach.call(c.querySelectorAll('button,.badge,.pill'), function (x) { x.remove(); }); return c.textContent.replace(/\(\d+\)|\d+/g, '').replace(/\s+/g, ' ').trim().slice(0, 80); };
+  var abaAtual = function () { var a = document.querySelector('nav.abas [aria-selected="true"]'); return a ? a.textContent.trim().replace(/\s*\d[\d.]*$/, '') : ''; };
+  var tituloDe = function (h) { var c = h.cloneNode(true); [].forEach.call(c.querySelectorAll('button,.badge,.pill,small'), function (x) { x.remove(); }); return c.textContent.replace(/\(\d+\)|\d+/g, '').replace(/\s+/g, ' ').trim().slice(0, 80); };
   var irmaos = function (h) {
     var cab = h.parentElement && h.parentElement.matches('section.sec > div:first-child') ? h.parentElement : null;   // título no cabeçalho de uma seção: recolhe o resto da seção
     if (cab) { var R = [], m = cab.nextElementSibling; while (m) { R.push(m); m = m.nextElementSibling; } return R; }
@@ -327,13 +329,15 @@
     [].forEach.call(document.querySelectorAll('#conteudo .cartoes'), function (g) {
       var ok = !naInicio && !g.closest('.rd-inicio') && g.children.length >= 2 && [].every.call(g.children, function (x) { return x.matches('.cartao'); });
       g.classList.toggle('pm-regua', ok);
+      if (ok) [].forEach.call(g.querySelectorAll('.r,.s'), function (x) { if (!x.title) x.title = x.textContent.replace(/\s+/g, ' ').trim(); });
     });
   }
-  var termos = function (v) { return String(v || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean); };
+  var termos = function (v) { return String(v || '').split(/[;\n]|,(?!\d)|(?<!\d),/).map(function (t) { return t.trim(); }).filter(Boolean); };
   function etiquetas(inp) {
     if (!inp || !inp.id) return; var L = termos(inp.value), box = inp.parentElement && inp.parentElement.querySelector(':scope > .pm-chips[data-para="' + inp.id + '"]');
     if (L.length < 2) { if (box) box.remove(); return; }
-    if (!box) { box = document.createElement('div'); box.className = 'pm-chips'; box.dataset.para = inp.id; box.setAttribute('aria-label', 'Termos da busca'); inp.after(box); }
+    if (!box) { box = document.createElement('div'); box.className = 'pm-chips'; box.dataset.para = inp.id; box.setAttribute('aria-label', 'Termos da busca'); }
+    var ref = inp.nextElementSibling && inp.nextElementSibling.classList.contains('vz') ? inp.nextElementSibling : inp; if (ref.nextElementSibling !== box) ref.after(box);
     var h = L.map(function (t, i) { var e = esc(t); return '<span class="pm-chip">' + e + '<button type="button" data-pm-tira="' + i + '" aria-label="Tirar ' + e + ' da busca">×</button></span>'; }).join('');
     if (box._h !== h) { box._h = h; box.innerHTML = h; }
   }
