@@ -249,6 +249,7 @@
   }
   function situacao(td, aba) {
     var tr = td.parentElement, tx = tr.textContent;
+    if (aba === 'vendas') return tr.querySelector('.pill.ok') && !tr.querySelector('.pill.bad, .pill.warn') ? 'mare' : 'neutro';   // 28/11/2026: comissão a receber não é atraso (era coral pelo selo 'A receber')
     if (tr.querySelector('.pill.bad') || /vencida h[aá]|atrasad/i.test(tx)) return 'coral';
     if (tr.querySelector('.pill.warn') || /\bem aberto\b/i.test(tx)) return 'neutro';
     var tab = td.closest('table'), hr = tab && tab.tHead && tab.tHead.rows[0], th = hr && hr.cells[td.cellIndex];
