@@ -152,7 +152,7 @@
       g.classList.add('ph-regua');
       [].forEach.call(k, function (x) { if (/border-color:\s*var\(--bad\)/.test(x.getAttribute('style') || '')) x.classList.add('ph-bad'); });
     });
-    if (!ini) [].forEach.call(c.querySelectorAll('.kpis'), function (g) { if (g.children.length >= 2) g.classList.add('ph-regua'); });
+    if (!ini) [].forEach.call(c.querySelectorAll('.kpis, .resumo-cob'), function (g) { if (g.children.length >= 2) g.classList.add('ph-regua'); });   // 28/11/2026: + quadros da Cobrança (Locação)
     [].forEach.call(c.querySelectorAll('.ph-regua'), cabe);
   }
   /* break-ui: número da régua nunca cortado — reduz a letra (22 → 19 → 16 → 14 px) e, no limite, quebra no espaço; só mede o que mudou */
@@ -381,6 +381,14 @@
       b.setAttribute('data-pm-n', ''); var t = b.textContent.trim(); if (/^\d{4,}$/.test(t)) b.textContent = (+t).toLocaleString('pt-BR');
     });
   }
+  /* ---------- 28/11/2026 (revisão): Locação › Resumo — células coloridas (.lr-mais / .lr-menos) viram as mesmas pílulas do Financeiro:
+     o que entrou em maré; nota, corretores e descontos (saídas) em cinza neutro, como a despesa paga (decisão do Cleiton, 27/11/2026) ---------- */
+  function lrPilulas(c) {
+    [].forEach.call(c.querySelectorAll('td.lr-mais:not(.ph-pil-td), td.lr-menos:not(.ph-pil-td)'), function (td) {
+      if (!td.firstChild) return; var sp = document.createElement('span'); while (td.firstChild) sp.appendChild(td.firstChild); td.appendChild(sp); td.classList.add('ph-pil-td');
+      veste(sp, td.classList.contains('lr-mais') ? 'mare' : 'neutro');
+    });
+  }
   function aplica() {
     var c = document.getElementById('conteudo'); if (!c) return;
     [].forEach.call(c.querySelectorAll('.grade'), function (gr) { if (gr.querySelector(':scope > button.card[data-ci-f]')) { regua(gr); info(gr); } });
@@ -388,7 +396,7 @@
     [].forEach.call(c.querySelectorAll('.filtros.sub-op'), fio);
     [].forEach.call(c.querySelectorAll('.ph-regua, .filtros.sub-op'), bordas);
     if (BAL && !BAL.bt.isConnected) fechaBalao(false);
-    financeiro(c); maisLinhas(c); coletas(); funilNums(c); milhares(c);
+    financeiro(c); maisLinhas(c); coletas(); funilNums(c); milhares(c); lrPilulas(c);
     if (MENU && !MENU.bt.isConnected) fechaMenu(false);
   }
   var pend = false;
