@@ -277,9 +277,68 @@
   }
   document.addEventListener('pointerup', soltaArrasto); document.addEventListener('pointercancel', soltaArrasto);
 
+  /* ---------- F3 · comum a todas as abas (pedidos do Cleiton, 27/11/2026 21h): "Todos" primeiro, seções que se recolhem, busca em etiquetas ---------- */
+  var ehTodos = function (b) { return /^tod[ao]s\b/i.test((b.textContent || '').trim()); };
+  function todosPrimeiro(raiz) {
+    [].forEach.call(raiz.querySelectorAll('.chips, .filtros'), function (f) {
+      var bts = [].filter.call(f.children, function (x) { return x.tagName === 'BUTTON'; }); if (bts.length < 2) return;
+      var t = bts.filter(ehTodos)[0]; if (t && t !== bts[0]) bts[0].before(t);
+    });
+  }
+  var gS = guarda('localStorage');
+  var REC = (function () { try { return JSON.parse(gS.get('painel-recolhidos', '{}')) || {}; } catch (e) { return {}; } })();
+  var salvaRec = function () { gS.set('painel-recolhidos', JSON.stringify(REC)); };
+  var abaAtual = function () { var a = document.querySelector('nav.abas [aria-selected="true"]'); return a ? a.textContent.trim().replace(/\s*\d+$/, '') : ''; };
+  var tituloDe = function (h) { var c = h.cloneNode(true); [].forEach.call(c.querySelectorAll('button,.badge,.pill'), function (x) { x.remove(); }); return c.textContent.replace(/\(\d+\)|\d+/g, '').replace(/\s+/g, ' ').trim().slice(0, 80); };
+  var irmaos = function (h) { var L = [], n = h.nextElementSibling; while (n && !n.matches('h2,.pm-tudo')) { L.push(n); n = n.nextElementSibling; } return L; };
+  function pinta(h, f) {
+    irmaos(h).forEach(function (x) { x.classList.toggle('pm-recolhido', f); });
+    var b = h.querySelector(':scope > .pm-rec'); if (b) { b.setAttribute('aria-expanded', String(!f)); b.setAttribute('aria-label', (f ? 'Abrir ' : 'Recolher ') + tituloDe(h)); }
+    h.classList.toggle('pm-h-fechado', f);
+  }
+  function secoes() {
+    var c = document.getElementById('conteudo'), aba = abaAtual(); if (!c) return;
+    var hs = [].filter.call(document.querySelectorAll('#conteudo .painel > h2, #sobre .painel > h2'), function (h) { return irmaos(h).length && tituloDe(h); });
+    hs.forEach(function (h) {
+      var k = (h.closest('#sobre') ? 'gaveta' : aba) + '|' + tituloDe(h); h.dataset.pmK = k;
+      if (!h.querySelector(':scope > .pm-rec')) { var b = document.createElement('button'); b.type = 'button'; b.className = 'pm-rec'; b.title = 'Recolher ou abrir esta parte';
+        b.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'; h.appendChild(b); }
+      var f = !!REC[k]; if (h.classList.contains('pm-h-fechado') !== f || irmaos(h).some(function (x) { return x.classList.contains('pm-recolhido') !== f; })) pinta(h, f);
+    });
+    var doc = hs.filter(function (h) { return !h.closest('#sobre'); }), bar = c.querySelector(':scope > .pm-tudo');
+    if (doc.length < 2) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.className = 'pm-tudo'; bar.innerHTML = '<button type="button" class="b" data-pm-tudo="1"></button>'; c.prepend(bar); }
+    var todosF = doc.every(function (h) { return REC[h.dataset.pmK]; }), b0 = bar.firstChild, tx = todosF ? 'Abrir tudo' : 'Recolher tudo';
+    if (b0.textContent !== tx) { b0.textContent = tx; b0.dataset.pmTudo = todosF ? 'abrir' : 'recolher'; }
+  }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('.pm-rec, [data-pm-tudo]'); if (!b) return;
+    ev.preventDefault(); ev.stopPropagation();
+    if (b.classList.contains('pm-rec')) { var h = b.parentElement, k = h.dataset.pmK, f = !REC[k]; if (f) REC[k] = 1; else delete REC[k]; pinta(h, f); }
+    else { var fecha = b.dataset.pmTudo === 'recolher'; [].forEach.call(document.querySelectorAll('#conteudo .painel > h2[data-pm-k]'), function (h) { if (fecha) REC[h.dataset.pmK] = 1; else delete REC[h.dataset.pmK]; pinta(h, fecha); }); }
+    salvaRec(); secoes();
+  }, true);
+  var termos = function (v) { return String(v || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean); };
+  function etiquetas(inp) {
+    if (!inp || !inp.id) return; var L = termos(inp.value), box = inp.parentElement && inp.parentElement.querySelector(':scope > .pm-chips[data-para="' + inp.id + '"]');
+    if (L.length < 2) { if (box) box.remove(); return; }
+    if (!box) { box = document.createElement('div'); box.className = 'pm-chips'; box.dataset.para = inp.id; box.setAttribute('aria-label', 'Termos da busca'); inp.after(box); }
+    var h = L.map(function (t, i) { var e = esc(t); return '<span class="pm-chip">' + e + '<button type="button" data-pm-tira="' + i + '" aria-label="Tirar ' + e + ' da busca">×</button></span>'; }).join('');
+    if (box._h !== h) { box._h = h; box.innerHTML = h; }
+  }
+  document.addEventListener('input', function (ev) { var t = ev.target; if (t && t.matches && t.matches('input[type="search"][id]')) etiquetas(t); }, true);
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('[data-pm-tira]'); if (!b) return;
+    ev.preventDefault(); ev.stopPropagation();
+    var box = b.closest('.pm-chips'), inp = box && document.getElementById(box.dataset.para); if (!inp) return;
+    var L = termos(inp.value); L.splice(+b.dataset.pmTira, 1); inp.value = L.join(', ');
+    inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true }));
+    try { inp.focus({ preventScroll: true }); } catch (e) { }
+  }, true);
+
   /* ---------- a cada desenho do Início ---------- */
   function aplica() {
-    atalhoMenu(); folha(); ac1();
+    atalhoMenu(); folha(); ac1(); todosPrimeiro(document.body); secoes(); [].forEach.call(document.querySelectorAll('input[type="search"][id]'), etiquetas);
     var ini = document.querySelector('.rd-inicio'); if (!ini || ini.dataset.pm === '1') return;
     ini.dataset.pm = '1';
     var sec = ini.querySelector('.rd-agora'); if (sec) { filtro(sec); acoes(sec); }
