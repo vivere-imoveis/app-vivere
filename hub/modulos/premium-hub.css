@@ -249,3 +249,79 @@ html.ph-on #conteudo .tabela.ta-cartao>table.ci-tab>tbody>tr>td.ph-acao::before{
 
 /* --- Fora da camada, resolvido daqui: o aviso "só leitura" do HUB na web (hub-web.js) sobe acima da barra de baixo do celular --- */
 html.ph-on body.tc-on #hubweb-aviso{bottom:calc(86px + env(safe-area-inset-bottom))}
+
+/* ===== F3 (27/11/2026, 23h55): acabamento de Leads, Locação, Gestão e Construções =====
+   1) Visões do CRM (Kanban, Pipeline, Funil, Agenda: o mesmo código do painel, nucleo-2.js) no padrão da F5b do painel — regras copiadas do
+      premium.css do app, só com html.ph-on na frente (?premium=0 desliga); premium-hub.js põe o número do Funil numa coluna própria. */
+/* Visões: seletor e "✦ Conversa" com resposta ao toque */
+html.ph-on .vcrm-chips .vcrm-b,html.ph-on .vk .vk-card .copiar{transition:transform var(--t-press) var(--ease-out),background-color .15s ease,color .15s ease,border-color .15s ease}
+html.ph-on .vcrm-chips .vcrm-b:active:not(:focus-visible),html.ph-on .vk .vk-card .copiar:active:not(:focus-visible){transform:scale(.97)}
+/* Kanban: colunas sem moldura, cabeçalho limpo, contador discreto */
+html.ph-on .vcrm-v .vk{gap:12px}
+html.ph-on .vk .vk-col{border-color:transparent;border-radius:12px;background:color-mix(in srgb,var(--soft) 85%,transparent)}
+html.ph-on .vk .vk-cab{text-transform:none;letter-spacing:0;font:500 13.5px/1.3 var(--body);color:var(--ink);border-bottom:0;padding:11px 12px 4px;gap:8px}
+html.ph-on .vk .vk-cab{align-items:baseline}
+html.ph-on .vk .vk-cab>span{min-width:0;overflow-wrap:anywhere}   /* nome longo de etapa quebra linha em vez de sumir em reticências */
+html.ph-on .vk .vk-cab b{flex:none;font:500 12px/1 var(--body);color:var(--muted);font-variant-numeric:tabular-nums}
+html.ph-on .vk .vk-soma{border-bottom:0;padding:0 12px 6px;font-size:12px;font-variant-numeric:tabular-nums}
+html.ph-on .vk .vk-lista{padding:6px 8px 10px;gap:8px}
+html.ph-on .vk .vk-card{border-color:transparent;border-radius:10px;padding:10px 12px;box-shadow:var(--sh-1);transition:box-shadow .2s var(--ease-out)}
+html.ph-on .vk .vk-card.alerta{border-left:1px solid transparent;box-shadow:inset 2px 0 0 var(--bad),var(--sh-1)}   /* atrasado: fio coral, sem cor nova */
+html.ph-on .vk .vk-card .vk-val,html.ph-on .vk .vk-card .vk-s{font-variant-numeric:tabular-nums}
+html.ph-on .vk .vk-card .vk-mv select{width:0;border-color:color-mix(in srgb,var(--line) 85%,transparent);border-radius:7px;padding:4px 6px}
+html.ph-on .vk-fantasma{border-color:transparent!important;box-shadow:var(--sh-3)!important}
+html.ph-on .vk .vk-nome:hover,html.ph-on .va .vk-nome:hover{text-decoration:none}
+@media (hover:hover) and (pointer:fine){
+  html.ph-on .vk .vk-card[data-vk-drag]:hover{box-shadow:var(--sh-2)}
+  html.ph-on .vk .vk-card.alerta[data-vk-drag]:hover{box-shadow:inset 2px 0 0 var(--bad),var(--sh-2)}
+  html.ph-on .vk .vk-nome:hover,html.ph-on .va .vk-nome:hover{text-decoration:underline;text-underline-offset:2px}
+}
+/* Pipeline: linhas em cartão, barra fina, números alinhados; ação vencida em coral */
+html.ph-on .vp{gap:8px}
+html.ph-on .vp .vp-l{border-color:transparent;border-radius:10px;box-shadow:var(--sh-1);padding:10px 12px;transition:transform var(--t-press) var(--ease-out),background-color .15s ease}
+html.ph-on .vp .vp-l:hover:not([disabled]){border-color:transparent}
+html.ph-on .vp .vp-l:active:not([disabled]):not(:focus-visible){transform:scale(.98)}
+html.ph-on .vp .vp-l:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+html.ph-on .vp .vp-bar{height:8px;background:color-mix(in srgb,var(--line) 70%,transparent)}
+html.ph-on .vp .vp-n,html.ph-on .vp .vp-d{font-variant-numeric:tabular-nums}
+html.ph-on .vp .vp-a .pill.media{background:var(--bad-bg);color:var(--bad)}
+@media (min-width:641px){html.ph-on .vp .vp-l{grid-template-columns:190px minmax(80px,1fr) 90px;grid-template-areas:"e bar n" "d a a"}} /* etiquetas de alerta ao lado da média, sem empilhar na coluna estreita */
+@media (hover:hover) and (pointer:fine){html.ph-on .vp .vp-l:hover:not([disabled]){background:color-mix(in srgb,var(--soft) 55%,var(--panel))}}
+/* Funil: barras proporcionais a partir da mesma linha e o número numa coluna própria (premium.js põe .pm-vf-n) */
+html.ph-on .vf.pm-vf{gap:10px}
+html.ph-on .vf.pm-vf .vf-l{grid-template-columns:minmax(96px,150px) minmax(0,1fr) 64px;grid-template-areas:"rot trilho n" ". conv conv";gap:3px 12px}
+html.ph-on .vf.pm-vf .vf-trilho{justify-content:flex-start;height:22px;border-radius:6px;background:color-mix(in srgb,var(--line) 55%,transparent);overflow:hidden}
+html.ph-on .vf.pm-vf .vf-bar{height:100%;min-width:4px;padding:0;border-radius:6px;background:color-mix(in srgb,var(--brass) 82%,var(--panel))}
+html.ph-on .vf.pm-vf .vf-bar>b{display:none}
+html.ph-on .vf.pm-vf .vf-l.saida{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+html.ph-on .vf.pm-vf .vf-l.saida .vf-bar{background:color-mix(in srgb,var(--muted) 55%,var(--panel))}
+html.ph-on .vf.pm-vf .vf-conv{text-align:left;font-variant-numeric:tabular-nums}
+html.ph-on .pm-vf-n{grid-area:n;justify-self:end;font:500 17px/1 var(--display);font-variant-numeric:tabular-nums lining-nums;color:var(--ink)}
+@media (max-width:640px){html.ph-on .vf.pm-vf .vf-l{grid-template-columns:88px minmax(0,1fr) 44px;gap:3px 8px}html.ph-on .pm-vf-n{font-size:15px}}
+/* Agenda: grupos em cartão; vencidas em coral; hoje marcado com o fio de latão */
+html.ph-on .va .va-g,html.ph-on .va .va-g.bad,html.ph-on .va .va-g.warn{position:relative;border-color:transparent;border-radius:12px;box-shadow:var(--sh-1);padding:10px 12px}
+html.ph-on .va .va-cab{text-transform:none;letter-spacing:0;font:500 13.5px/1.3 var(--body);color:var(--ink);margin-bottom:4px}
+html.ph-on .va .va-cab b{margin-left:4px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+html.ph-on .va .va-g.warn .va-cab{color:var(--ink)}
+html.ph-on .va .va-g.warn::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:2px;border-radius:2px;background:var(--brass)}
+html.ph-on .va .va-g.bad .va-d{color:var(--bad)}
+html.ph-on .va .va-i{border-top-color:color-mix(in srgb,var(--line) 60%,transparent);padding:6px 0}
+html.ph-on .va .va-d{font-variant-numeric:tabular-nums}
+/* Leads e Tarefas: tabela e cartões do celular com sombra fina no lugar da borda (só CSS, sem :has: Lista dos leads e irmãos do filtro de Tarefas) */
+@media (min-width:641px){html.ph-on :is(.vcrm-v,[aria-label="Filtrar tarefas"] ~ div)>.tabela,html.ph-on [aria-label="Filtrar tarefas"] ~ .tabela{border-color:transparent;box-shadow:var(--sh-1)}}
+html.ph-on :is(.vcrm-v,[aria-label="Filtrar tarefas"] ~ div)>.lista-m>.cm,html.ph-on [aria-label="Filtrar tarefas"] ~ .lista-m>.cm{border-color:transparent;border-radius:12px;box-shadow:var(--sh-1)}
+html.ph-on :is(.vcrm-v,[aria-label="Filtrar tarefas"] ~ div)>.lista-m>.cm:hover,html.ph-on [aria-label="Filtrar tarefas"] ~ .lista-m>.cm:hover{border-color:transparent}
+@media (hover:hover) and (pointer:fine){html.ph-on :is(.vcrm-v,[aria-label="Filtrar tarefas"] ~ div)>.lista-m>.cm:hover,html.ph-on [aria-label="Filtrar tarefas"] ~ .lista-m>.cm:hover{background:color-mix(in srgb,var(--soft) 50%,var(--panel))}}
+
+/* 2) Tabelas de todas as áreas (não só o Financeiro): cabeçalho discreto sem caixa alta e números à direita com algarismos de mesma largura */
+html.ph-on #conteudo .tabela thead th{font:500 12px var(--body);color:var(--muted);text-transform:none;letter-spacing:0}
+html.ph-on #conteudo .tabela thead th button{text-transform:none;letter-spacing:0}
+html.ph-on #conteudo .tabela td.n,html.ph-on #conteudo .tabela th.n{text-align:right;font-variant-numeric:tabular-nums lining-nums}
+html.ph-on #conteudo .tabela td{font-variant-numeric:tabular-nums lining-nums}
+/* 3) Situação em etiquetas (prancha 5): selos de situação com o ponto da cor na frente; o neutro fica sem ponto. Nenhuma cor nova. */
+html.ph-on #conteudo .pill{font-weight:500;letter-spacing:0}
+html.ph-on #conteudo .pill:is(.ok,.warn,.bad){display:inline-flex;align-items:center;gap:5px}
+html.ph-on #conteudo .pill:is(.ok,.warn,.bad)::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.85}
+html.ph-on #conteudo .ph-regua .pill::before{content:none}
+/* 4) Leads › Relatórios do CRM: a barra da conversão por etapa em latão, mais legível que o cinza translúcido */
+html.ph-on #conteudo .rcrm-bar{background:color-mix(in srgb,var(--brass) 85%,var(--panel));opacity:1;height:6px;border-radius:3px;margin-left:6px;vertical-align:middle}

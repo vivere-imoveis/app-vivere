@@ -366,6 +366,21 @@
   }
 
   /* ---------- a cada desenho ---------- */
+  /* ---------- F3 (27/11/2026): visões do CRM — número do Funil numa coluna própria e milhares com ponto (igual ao painel, F5b) ---------- */
+  function funilNums(c) {
+    [].forEach.call(c.querySelectorAll('.vf:not(.pm-vf)'), function (vf) {
+      [].forEach.call(vf.querySelectorAll('.vf-l'), function (l) {
+        var b = l.querySelector('.vf-bar > b'); if (!b || l.querySelector('.pm-vf-n')) return;
+        var n = parseInt(b.textContent, 10), sp = document.createElement('span'); sp.className = 'pm-vf-n'; sp.textContent = isNaN(n) ? b.textContent : n.toLocaleString('pt-BR'); l.appendChild(sp);
+      });
+      vf.classList.add('pm-vf');
+    });
+  }
+  function milhares(c) {
+    [].forEach.call(c.querySelectorAll(':is(.vk-cab, .va-cab, .vp-n) > b:not([data-pm-n])'), function (b) {
+      b.setAttribute('data-pm-n', ''); var t = b.textContent.trim(); if (/^\d{4,}$/.test(t)) b.textContent = (+t).toLocaleString('pt-BR');
+    });
+  }
   function aplica() {
     var c = document.getElementById('conteudo'); if (!c) return;
     [].forEach.call(c.querySelectorAll('.grade'), function (gr) { if (gr.querySelector(':scope > button.card[data-ci-f]')) { regua(gr); info(gr); } });
@@ -373,7 +388,7 @@
     [].forEach.call(c.querySelectorAll('.filtros.sub-op'), fio);
     [].forEach.call(c.querySelectorAll('.ph-regua, .filtros.sub-op'), bordas);
     if (BAL && !BAL.bt.isConnected) fechaBalao(false);
-    financeiro(c); maisLinhas(c); coletas();
+    financeiro(c); maisLinhas(c); coletas(); funilNums(c); milhares(c);
     if (MENU && !MENU.bt.isConnected) fechaMenu(false);
   }
   var pend = false;
