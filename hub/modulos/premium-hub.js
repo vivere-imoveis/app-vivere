@@ -59,7 +59,12 @@
     el.innerHTML = '<p>' + p.innerHTML + '</p>';
     document.body.appendChild(el);
     var r = bt.getBoundingClientRect(), w = el.offsetWidth, x = Math.max(16, Math.min(r.left + scrollX - 8, scrollX + innerWidth - w - 16));
-    el.style.left = x + 'px'; el.style.top = (r.bottom + scrollY + 8) + 'px';
+    // break-ui: o balão cabe na tela — acima da barra de baixo do celular; se faltar espaço embaixo e sobrar em cima, abre para cima; rola por dentro
+    var tb = document.querySelector('body.tc-on .tc-barra'), fundo = tb && tb.offsetParent !== null ? tb.getBoundingClientRect().top - 8 : innerHeight - 16;
+    var h = el.offsetHeight, abaixo = fundo - (r.bottom + 8), acima = r.top - 16;
+    if (h > abaixo && acima > abaixo) { var mh = Math.min(h, acima); el.style.maxHeight = mh + 'px'; el.style.top = (r.top + scrollY - 8 - mh) + 'px'; el.style.setProperty('--ph-oy', '100%'); }
+    else { if (h > abaixo) el.style.maxHeight = Math.max(120, abaixo) + 'px'; el.style.top = (r.bottom + scrollY + 8) + 'px'; }
+    el.style.left = x + 'px';
     el.style.setProperty('--ph-ox', Math.round(r.left + scrollX + r.width / 2 - x) + 'px');   // nasce do botão
     bt.setAttribute('aria-expanded', 'true'); BAL = { el: el, bt: bt };
   });
@@ -81,6 +86,7 @@
     }
     ind.style.transform = 'translateX(' + x + 'px)'; ind.style.width = w + 'px';
     ind.dataset.x = x; ind.dataset.w = w; ULT[ch] = { x: x, w: w };
+    if (lin.scrollWidth > lin.clientWidth + 1 && (x < lin.scrollLeft || x + w > lin.scrollLeft + lin.clientWidth)) lin.scrollLeft = Math.max(0, x - (lin.clientWidth - w) / 2);   // break-ui: aba ativa fora da vista
   }
 
   /* ---------- 5) "Todos" sempre primeiro (pedido do Cleiton, 27/11/2026 21h) ---------- */
@@ -97,7 +103,7 @@
   var REC = (function () { try { return JSON.parse((guarda() || {}).getItem && guarda().getItem('hub-recolhidos') || '{}') || {}; } catch (e) { return {}; } })();
   var salvaRec = function () { try { var g = guarda(); if (g) g.setItem('hub-recolhidos', JSON.stringify(REC)); } catch (e) { } };
   var abaAtual = function () { var a = document.querySelector('#conteudo .filtros.sub-op .btn[aria-pressed="true"]') || document.querySelector('#ml .ml-s[aria-selected="true"]') || document.querySelector('#ml [aria-current="page"]'); return a ? a.textContent.trim().replace(/\s*\d+$/, '') : ''; };
-  var tituloDe = function (h) { var c = h.cloneNode(true); [].forEach.call(c.querySelectorAll('button,.badge'), function (x) { x.remove(); }); return c.textContent.trim().slice(0, 80); };
+  var tituloDe = function (h) { var c = h.cloneNode(true); [].forEach.call(c.querySelectorAll('button,.badge'), function (x) { x.remove(); }); return c.textContent.trim().replace(/\d[\d.,]*/g, '#').slice(0, 80); };
   function irmaos(h) { var L = [], n = h.nextElementSibling; while (n && !n.matches('h2,.ph-tudo')) { L.push(n); n = n.nextElementSibling; }
     // título dentro de uma caixa só com a explicação (ex.: Funil dos corretores): recolhe também o que vem depois da caixa, até a próxima seção com título
     var cx = h.parentElement; if (cx && cx.id !== 'conteudo' && L.every(function (x) { return x.matches('.nota,p'); })) {
@@ -147,14 +153,34 @@
       [].forEach.call(k, function (x) { if (/border-color:\s*var\(--bad\)/.test(x.getAttribute('style') || '')) x.classList.add('ph-bad'); });
     });
     if (!ini) [].forEach.call(c.querySelectorAll('.kpis'), function (g) { if (g.children.length >= 2) g.classList.add('ph-regua'); });
+    [].forEach.call(c.querySelectorAll('.ph-regua'), cabe);
   }
+  /* break-ui: número da régua nunca cortado — reduz a letra (22 → 19 → 16 → 14 px) e, no limite, quebra no espaço; só mede o que mudou */
+  function cabe(g) {
+    [].forEach.call(g.querySelectorAll(':scope > * > div:nth-child(2), :scope > * > .num'), function (n) {
+      var k = n.textContent + '|' + n.clientWidth; if (n.dataset.phFit === k) return;
+      var L = [n].concat([].slice.call(n.querySelectorAll('*'))), tam = function (v) { L.forEach(function (e) { if (v) e.style.setProperty('font-size', v, 'important'); else e.style.removeProperty('font-size'); }); };   // o densidade.js põe 22px!important no .g-n de dentro
+      tam(''); n.classList.remove('ph-num-quebra');
+      var px = [19, 16, 14], i = 0; while (n.scrollWidth > n.clientWidth + 1 && i < px.length) tam(px[i++] + 'px');
+      if (n.scrollWidth > n.clientWidth + 1) n.classList.add('ph-num-quebra');
+      n.dataset.phFit = n.textContent + '|' + n.clientWidth;
+    });
+    [].forEach.call(g.querySelectorAll(':scope > * > .nota, :scope > * > .rot, :scope > * > .sub'), function (t) { var x = t.textContent.replace(/\s+/g, ' ').trim(); if (x && t.title !== x) t.title = x; });
+  }
+  /* break-ui: régua e sub-abas que não cabem — a borda esmaece do lado em que há mais (rolagem com o dedo ou a barra fina do mouse) */
+  function bordas(el) {
+    var d = el.scrollWidth - el.clientWidth, e = d > 2 && el.scrollLeft > 2, r = d > 2 && el.scrollLeft < d - 2;
+    if (el.classList.contains('ph-rola-e') !== e) el.classList.toggle('ph-rola-e', e);
+    if (el.classList.contains('ph-rola-d') !== r) el.classList.toggle('ph-rola-d', r);
+  }
+  document.addEventListener('scroll', function (ev) { var t = ev.target; if (t && t.classList && (t.classList.contains('ph-regua') || t.classList.contains('sub-op'))) bordas(t); }, { capture: true, passive: true });
 
   /* ---------- F1b-2) busca em etiquetas removíveis: cada termo separado por vírgula vira uma etiqueta com × ---------- */
   var termos = function (v) { return String(v || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean); };
   function etiquetas(inp) {
     var L = termos(inp.value), box = inp.parentElement && inp.parentElement.querySelector(':scope > .ph-chips[data-para="' + inp.id + '"]');
     if (L.length < 2) { if (box) box.remove(); return; }
-    if (!box) { box = document.createElement('div'); box.className = 'ph-chips'; box.dataset.para = inp.id; box.setAttribute('aria-label', 'Termos da busca'); inp.after(box); }
+    if (!box) { box = document.createElement('div'); box.className = 'ph-chips'; box.dataset.para = inp.id; box.setAttribute('aria-label', 'Termos da busca'); inp.parentElement.appendChild(box); }
     var h = L.map(function (t, i) { var e = t.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
       return '<span class="ph-chip">' + e + '<button type="button" data-ph-tira="' + i + '" aria-label="Tirar ' + e + ' da busca">×</button></span>'; }).join('');
     if (box._h !== h) { box._h = h; box.innerHTML = h; }
@@ -193,6 +219,7 @@
     if (on) {
       if (!pe) { pe = document.createElement('div'); pe.id = 'ph-ml-pe'; pe.setAttribute('role', 'group'); pe.setAttribute('aria-label', 'Coletas, tema e privacidade'); b.appendChild(pe); }
       els.forEach(function (e) { if (e.parentElement === pe) return; if (!e._phCasa || !e._phCasa.isConnected) { e._phCasa = document.createComment('ph-casa:' + e.id); e.before(e._phCasa); } pe.appendChild(e); });
+      var hp = pe.offsetHeight + 'px'; if (b.style.getPropertyValue('--ph-pe-h') !== hp) b.style.setProperty('--ph-pe-h', hp);   // break-ui: menu lateral não fica atrás do rodapé
     } else {
       els.forEach(function (e) { if (e.parentElement === pe && e._phCasa && e._phCasa.isConnected) e._phCasa.before(e); });
       if (pe && !pe.children.length) pe.remove();
@@ -205,6 +232,7 @@
     [].forEach.call(c.querySelectorAll('.grade'), function (gr) { if (gr.querySelector(':scope > button.card[data-ci-f]')) { regua(gr); info(gr); } });
     todosPrimeiro(c); secoes(c); reguas(c); ajudas(c); [].forEach.call(buscas(), etiquetas); rodape();
     [].forEach.call(c.querySelectorAll('.filtros.sub-op'), fio);
+    [].forEach.call(c.querySelectorAll('.ph-regua, .filtros.sub-op'), bordas);
     if (BAL && !BAL.bt.isConnected) fechaBalao(false);
   }
   var pend = false;

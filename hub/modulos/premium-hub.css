@@ -65,7 +65,7 @@ html.ph-on #conteudo .ph-regua>.ph-alerta>div:nth-child(2){color:var(--warn)!imp
 .ph-i:active{transform:scale(.94)}
 .ph-i:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .ph-i[aria-expanded="true"]{color:var(--ink);box-shadow:inset 0 0 0 1px var(--brass)}
-.ph-balao{position:absolute;z-index:30;max-width:min(560px,calc(100vw - 32px));padding:12px 14px;border-radius:10px;background:var(--panel);box-shadow:var(--sh-2);font:400 13px/1.5 var(--body);color:var(--ink);text-transform:none;letter-spacing:0;transform-origin:var(--ph-ox,12px) 0;animation:ph-pop var(--t-pop) var(--ease-out) both;text-align:left}
+.ph-balao{position:absolute;z-index:50;overflow:auto;overscroll-behavior:contain;max-width:min(560px,calc(100vw - 32px));padding:12px 14px;border-radius:10px;background:var(--panel);box-shadow:var(--sh-2);font:400 13px/1.5 var(--body);color:var(--ink);text-transform:none;letter-spacing:0;transform-origin:var(--ph-ox,12px) var(--ph-oy,0);animation:ph-pop var(--t-pop) var(--ease-out) both;text-align:left}
 .ph-balao p{margin:0}
 @keyframes ph-pop{from{opacity:0;transform:scale(.96) translateY(-2px)}}
 /* 4) Abas com o fio de latão que desliza */
@@ -124,11 +124,11 @@ html.ph-on #conteudo h2.ph-h-fechado{opacity:.85}
 @media (hover:hover) and (pointer:fine){.ph-aj-bt:hover{color:var(--ink)}}
 /* Rodapé do menu lateral: coletas, tema e privacidade (computador, menu lateral) */
 #ph-ml-pe{position:fixed;left:0;bottom:0;z-index:41;width:var(--ml-w,236px);box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:10px 10px calc(10px + env(safe-area-inset-bottom));background:var(--material);box-shadow:0 -1px 0 color-mix(in srgb,var(--line) 70%,transparent),1px 0 0 color-mix(in srgb,var(--line) 70%,transparent)}
-body.ml-on #ml{padding-bottom:64px!important}
+body.ml-on #ml{padding-bottom:calc(var(--ph-pe-h,56px) + 8px)!important}
 #ph-ml-pe .coletas{margin:0 auto 0 0!important;flex:1 1 auto;min-width:0;position:relative}
 #ph-ml-pe .col-res>summary{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;font-size:11.5px}
 #ph-ml-pe .col-h{display:none}
-#ph-ml-pe .col-res[open]>:not(summary){position:absolute;left:0;bottom:calc(100% + 8px);width:min(340px,80vw);max-height:60vh;overflow:auto;padding:10px 12px;border-radius:10px;background:var(--panel);box-shadow:var(--sh-2);z-index:2;transform-origin:12px 100%;animation:ph-pop var(--t-pop) var(--ease-out) both}
+#ph-ml-pe .col-res[open]>:not(summary){position:absolute;left:0;top:auto;right:auto;max-width:none;bottom:calc(100% + 8px);width:min(340px,80vw);max-height:60vh;overflow:auto;padding:10px 12px;border-radius:10px;background:var(--panel);box-shadow:var(--sh-2);z-index:2;transform-origin:12px 100%;animation:ph-pop var(--t-pop) var(--ease-out) both}
 #ph-ml-pe .tema-btn{width:32px;height:32px;flex:none;font-size:15px}
 body.ml-min #ph-ml-pe{width:58px;flex-direction:column;padding-inline:0}
 body.ml-min #ph-ml-pe .col-tx{display:none}
@@ -150,3 +150,33 @@ html.ph-on #conteudo .ph-regua .ph-oculta{display:none!important}
 #ph-ml-pe .col-res{min-width:0;max-width:100%}
 #ph-ml-pe .col-res>summary{display:flex;align-items:center;min-width:0}
 #ph-ml-pe .col-tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+
+/* ===== Break-ui (27/11/2026, crítico independente): consertos com a carga de pior caso ===== */
+/* Números da régua nunca cortados: sem reticências; o premium-hub.js reduz a letra quando não cabe e, no limite, quebra no espaço */
+html.ph-on #conteudo .ph-regua>*>div:nth-child(2),html.ph-on #conteudo .ph-regua>.kpi>.num{text-overflow:clip!important;overflow:visible!important}
+html.ph-on #conteudo .ph-regua .ph-num-quebra,html.ph-on #conteudo .ph-regua .ph-num-quebra span{white-space:normal!important}
+/* Texto de apoio da régua: até 2 linhas (o <br> do HUB vira a 2ª linha) em vez de cortar no meio da palavra; o texto inteiro fica no title */
+html.ph-on #conteudo .ph-regua>*>.nota:last-child:not(:first-child):not(.ph-oculta),html.ph-on #conteudo .ph-regua>.kpi>.sub{white-space:normal!important;display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:2!important;overflow:hidden;text-overflow:clip;line-height:1.35}
+/* Régua e sub-abas que não cabem: rolagem visível para o mouse e borda que esmaece do lado em que há mais (classes do premium-hub.js) */
+@media (hover:hover) and (pointer:fine){html.ph-on #conteudo .ph-regua,html.ph-on #conteudo .filtros.sub-op{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted) 45%,transparent) transparent}}
+html.ph-on #conteudo .ph-rola-d{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent)}
+html.ph-on #conteudo .ph-rola-e{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 44px),transparent)}
+html.ph-on #conteudo .ph-rola-e.ph-rola-d{-webkit-mask-image:linear-gradient(to right,transparent,#000 44px,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(to right,transparent,#000 44px,#000 calc(100% - 44px),transparent)}
+/* Rodapé do menu lateral: o resumo das coletas em linha inteira (legível), tema e privacidade abaixo, à direita */
+body:not(.ml-min) #ph-ml-pe{flex-wrap:wrap;row-gap:8px;justify-content:flex-end}
+body:not(.ml-min) #ph-ml-pe .coletas{flex:1 1 100%!important;margin:0!important}
+body:not(.ml-min) #ph-ml-pe .col-res>summary{white-space:normal;max-width:100%;border-radius:12px}
+body:not(.ml-min) #ph-ml-pe .col-tx{white-space:normal;overflow:visible;text-overflow:clip}
+/* A frase que deu lugar aos quadradinhos/à barra some de fato (a regra do texto de apoio, mais forte, a mostrava de novo) */
+html.ph-on #conteudo .ph-regua>*>.nota.ph-oculta:last-child:not(:first-child){display:none!important}
+/* Régua que não cabe no computador (701 px ou mais): quebra em mais linhas em vez de esconder quadros fora da vista — regra da casa "nada escondido" (27/11/2026) */
+@media (min-width:701px){
+  html.ph-on #conteudo .ph-regua{flex-wrap:wrap!important;overflow:hidden!important}
+  html.ph-on #conteudo .ph-regua>*{flex:1 1 140px;margin:-1px 0 0 -1px!important}
+  html.ph-on #conteudo .ph-regua>*::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:1px;background:color-mix(in srgb,var(--line) 80%,transparent)}
+  html.ph-on #conteudo .ph-regua>*::after{content:"";position:absolute;left:12px;right:12px;top:0;height:1px;background:color-mix(in srgb,var(--line) 80%,transparent)}
+  html.ph-on #conteudo .ph-regua.ph-rola-d,html.ph-on #conteudo .ph-regua.ph-rola-e{-webkit-mask-image:none;mask-image:none}
+}
+/* Texto de apoio (.sub) de qualquer quadro da régua, não só .kpi: até 2 linhas, sem invadir o quadro de baixo */
+html.ph-on #conteudo .ph-regua>*>.sub{white-space:normal!important;display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden!important;font-size:11.5px!important;color:var(--muted)}
+html.ph-on #conteudo .ph-regua>*>.num{text-overflow:clip!important;overflow:visible!important}
