@@ -23,7 +23,7 @@
   var PM = function () { return window.PAINEL_PM || {}; };   // ponte do painel.js (trocas-premium-f1)
   var Sx = function () { return PM().S || null; };
   var leadDe = function (id) { var S = Sx(); return (S && S.leads && S.leads[id]) || null; };
-  var numZap = function (t) { try { if (typeof PM().zapNum === 'function') return PM().zapNum(t); } catch (e) { } var d = String(t || '').replace(/\D/g, ''); if (d.indexOf('55') === 0 && d.length >= 12) d = d.slice(2); return d.replace(/^0+/, ''); };
+  var numZap = function (t) { try { if (typeof PM().zapIntl === 'function') return PM().zapIntl(t); if (typeof PM().zapNum === 'function') return '55' + PM().zapNum(t); } catch (e) { } var d = String(t || '').replace(/\D/g, ''); if (d.indexOf('55') === 0 && d.length >= 12) d = d.slice(2); return d.replace(/^0+/, ''); };
 
   /* ---------- 1) filtro do Agora ---------- */
   var TIPOS = [['todos', 'Todos'], ['leads', 'Leads'], ['imoveis', 'Imóveis'], ['tarefas', 'Tarefas']];
@@ -68,7 +68,7 @@
       var ab = it.querySelector('[data-lead]'); if (!ab || it.querySelector('.pm-acoes')) return;
       var id = ab.dataset.lead, l = leadDe(id) || {}, nome = l.nome || 'o cliente', tel = numZap(l.telefone);
       var w = document.createElement('span'); w.className = 'pm-acoes'; w.setAttribute('role', 'group'); w.setAttribute('aria-label', 'Ações rápidas');
-      w.innerHTML = (tel.length >= 10 ? '<a class="b pm-ac" href="https://wa.me/55' + esc(tel) + '" target="_blank" rel="noopener" aria-label="WhatsApp de ' + esc(nome) + '" title="WhatsApp">' + ic('balao') + '</a>' : '') +
+      w.innerHTML = (tel.length >= 10 ? '<a class="b pm-ac" href="https://wa.me/' + esc(tel) + '" target="_blank" rel="noopener" aria-label="WhatsApp de ' + esc(nome) + '" title="WhatsApp">' + ic('balao') + '</a>' : '') +
         '<button class="b pm-ac" type="button" data-conversa="lead:' + esc(id) + '" aria-label="Feito: registrar o que foi feito com ' + esc(nome) + '" title="Feito: registrar a conversa">' + ic('feito') + '</button>' +
         '<button class="b pm-ac pm-ac-tx" type="button" data-lead="' + esc(id) + '">Abrir</button>';
       ab.before(w); it.classList.add('pm-com-acoes');
@@ -230,7 +230,7 @@
     [].forEach.call(document.querySelectorAll('.rd-agora .rd-it [data-lead]'), function (ab) {
       var it = ab.closest('.rd-it'); if (!it || it.querySelector('.pm-ac1')) return;
       var id = ab.dataset.lead, l = leadDe(id) || {}, tel = numZap(l.telefone); if (tel.length < 10) return;
-      var a = document.createElement('a'); a.className = 'b pm-ac1'; a.href = 'https://wa.me/55' + tel; a.target = '_blank'; a.rel = 'noopener';
+      var a = document.createElement('a'); a.className = 'b pm-ac1'; a.href = 'https://wa.me/' + tel; a.target = '_blank'; a.rel = 'noopener';
       a.setAttribute('aria-label', 'WhatsApp de ' + (l.nome || 'o cliente')); a.title = 'WhatsApp'; a.innerHTML = ic('balao');
       ab.before(a);
     });
@@ -333,7 +333,7 @@
       if (ok) [].forEach.call(g.querySelectorAll('.r,.s'), function (x) { if (!x.title) x.title = x.textContent.replace(/\s+/g, ' ').trim(); });
     });
   }
-  var termos = function (v) { return String(v || '').split(/[;\n]|,(?!\d)|(?<!\d),/).map(function (t) { return t.trim(); }).filter(Boolean); };
+  var termos = function (v) { return String(v || '').split(/[;\n]|,(?!\d)|(?<!\d),|(?<=[A-Za-zÀ-ÿ]\d*),/).map(function (t) { return t.trim(); }).filter(Boolean); };
   function etiquetas(inp) {
     if (!inp || !inp.id) return; var L = termos(inp.value), box = inp.parentElement && inp.parentElement.querySelector(':scope > .pm-chips[data-para="' + inp.id + '"]');
     if (L.length < 2) { if (box) box.remove(); return; }

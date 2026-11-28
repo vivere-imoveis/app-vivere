@@ -184,7 +184,7 @@
 
   /* ---------- F1b-2) busca em etiquetas removíveis: cada termo separado por vírgula vira uma etiqueta com × ---------- */
   // F2 (27/11/2026): mesma separação da busca do núcleo (baTermos): ponto e vírgula, quebra de linha e vírgula que não está entre dígitos — "1,5 mi" fica inteiro
-  var termos = function (v) { return String(v || '').split(/[;\n]|,(?!\d)|(?<!\d),/).map(function (t) { return t.trim(); }).filter(Boolean); };
+  var termos = function (v) { return String(v || '').split(/[;\n]|,(?!\d)|(?<!\d),|(?<=[A-Za-zÀ-ÿ]\d*),/).map(function (t) { return t.trim(); }).filter(Boolean); };
   function etiquetas(inp) {
     var L = termos(inp.value), box = inp.parentElement && inp.parentElement.querySelector(':scope > .ph-chips[data-para="' + inp.id + '"]');
     if (L.length < 2) { if (box) box.remove(); return; }

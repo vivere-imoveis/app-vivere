@@ -123,8 +123,8 @@ function pintaColetas(){
     const quando=x.em?new Date(x.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'sem coleta';
     return `<span class="chip ${esc(st)}" title="${esc(x.msg||'')}"><i></i>${nomes[k]} · ${esc(st==='falhou'?'falhou':quando)}</span>`}).join('');
   const hora=ult?new Date(ult).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'sem coleta';
-  const txt=falha?`${falha===1?'1 coleta falhou':falha+' coletas falharam'} · ${ok} de ${ks.length} em dia`:`Coletas em dia · ${ok} de ${ks.length}`;
-  const html=`<details class="col-res"><summary class="chip ${falha?'falhou':ok===ks.length?'ok':'pulado'}" title="Ver a última coleta de cada fonte"><i></i><span class="col-tx">${txt}</span><span class="col-h">· ${esc(hora)}</span></summary><div class="col-det">${chips}</div></details>`;
+  const txt=falha?`${falha===1?'1 coleta falhou':falha+' coletas falharam'} · ${ok} de ${ks.length} em dia`:ok?`Coletas em dia · ${ok} de ${ks.length}`:(ult?'Nenhuma coleta em dia':'Nenhuma coleta registrada'); /* trocas-premium-f7 */
+  const html=`<details class="col-res"><summary class="chip ${falha?'falhou':ok===ks.length?'ok':'pulado'}" title="Ver a última coleta de cada fonte"><i></i><span class="col-tx">${txt}</span>${ult?`<span class="col-h">· ${esc(hora)}</span>`:''}</summary><div class="col-det">${chips}</div></details>`;
   if(el._h===html) return; const aberto=!!el.querySelector('details[open]'); el._h=html; el.innerHTML=html; if(aberto) el.firstElementChild.open=true;
   el.classList.toggle('com-falha',!!falha);
 }
@@ -1069,14 +1069,14 @@ const numBR=s=>{ s=String(s); if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) return +s
 const soDig=s=>String(s||'').replace(/\D/g,'');
 // 26/10/2026: CPF, CNPJ, telefone, CEP e e-mail viram termos próprios (antes, "123.456.789-00" virava valor)
 function baTermos(q){ const out=[];
-  String(q||'').split(/[;\n]|,(?!\d)|(?<!\d),/).forEach(parte=>{ let p=parte;
+  String(q||'').split(/[;\n]|,(?!\d)|(?<!\d),|(?<=[A-Za-zÀ-ÿ]\d*),/).forEach(parte=>{ let p=parte;
     p=p.replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)*/g,m=>{ out.push({tipo:'mail',e:m.toLowerCase(),rot:m}); return ' '; });
     p=p.replace(/(?:\+?55\s?)?\(?\d[\d.\-\/()\s]{3,}\d/g,m=>{ const d=soDig(m), fmt=/[-\/()]/.test(m), pontos=/\./.test(m);
       if(d.length>=10||(d.length>=8&&(fmt||!pontos))||(d.length>=5&&fmt&&!/^\d{1,3}(\.\d{3})+$/.test(m.trim()))){ out.push({tipo:'doc',d,rot:m.trim()}); return ' '; } return m; });
     if(p.trim()) baTermos0(p).forEach(t=>out.push(t)); });
   const vis=new Set(); return out.filter(x=>{ const k=JSON.stringify([x.tipo,x.campo,x.n,x.v,x.s,x.d,x.e]); if(vis.has(k)) return false; vis.add(k); return true; }); }
 function baTermos0(q){ const out=[];
-  String(q||'').split(/[;\n]|,(?!\d)|(?<!\d),|\.(?!\d)|(?<!\d)\./).forEach(parte=>{ let t=semAc(parte).replace(/\s+/g,' ').trim(); if(!t) return;
+  String(q||'').split(/[;\n]|,(?!\d)|(?<!\d),|(?<=[A-Za-zÀ-ÿ]\d*),|\.(?!\d)|(?<!\d)\./).forEach(parte=>{ let t=semAc(parte).replace(/\s+/g,' ').trim(); if(!t) return;
     BA_NUM.forEach(([campo,re,rot])=>{ t=t.replace(re,(m,n)=>{ out.push({tipo:'num',campo,n:+n,rot:rot(+n)}); return ' '; }); });
     t=t.replace(/(\d+(?:[.,]\d+)?)\s*(?:milhoes|milhao|mi|mm)(?![a-z])(?:\s*e\s*(\d{1,3})(?:\s*mil)?(?![a-z\d]))?/g,(m,a,b)=>{ out.push(baValor(numBR(a)*1e6+(b?+b*1e3:0))); return ' '; });
     t=t.replace(/(\d+(?:[.,]\d+)?)\s*(?:mil|k)(?![a-z])/g,(m,a)=>{ out.push(baValor(numBR(a)*1e3)); return ' '; });

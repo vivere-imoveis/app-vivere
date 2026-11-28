@@ -568,6 +568,7 @@ const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 const digitos = (s) => String(s || '').replace(/\D/g, '');
 window.escUrl = (u) => { const s = String(u == null ? '' : u).trim(), t = s.replace(/[\u0000-\u0020\u007f]/g, ''), m = /^([a-z][a-z0-9+.\-]*):/i.exec(t); return (m && !/^(https?|mailto|tel)$/i.test(m[1]) ? '#' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }; /* higiene-lucas */ /* revisão do Lucas, painel #16 */
 const zapNum = (s) => { let d = digitos(s); if (d.startsWith('55') && d.length >= 12) d = d.slice(2); return d.replace(/^0+/, ''); }; /* painel #5: o 55 entra uma vez só */
+const zapIntl = (s) => { const t = String(s || '').trim(), d = digitos(t); if (!d) return ''; if (/^(\+|00)/.test(t)) { const x = t.startsWith('00') ? d.slice(2) : d; return x.startsWith('55') ? '55' + zapNum(x) : x; } const d0 = d.replace(/^0+/, ''); if (d0.length >= 12 && !d0.startsWith('55')) return d0; return '55' + zapNum(d0); }; /* trocas-premium-f7: com o código do país (estrangeiro segue como veio) */
 // Valor pontuado (Nicolas, 26/10/2026): 1.250.000 enquanto digita; grava só o número. Aceita centavos depois da vírgula.
 const numVlr = (s) => { if (s == null || s === '') return null; if (typeof s === 'number') return isFinite(s) ? s : null;
   { const u = String(s).toLowerCase().replace(/r\$|\s/g, '').match(/^(\d[\d.]*(?:,\d+)?)(mi|milh[oõ]es|milh[aã]o|mil|k)$/);   // trocas-usabilidade-f1 (Lucas #6)
@@ -593,7 +594,7 @@ const BA = (() => {
   const CONECT = new Set('e com de do da dos das no na nos nas em ou ate r$ reais imovel imoveis valor'.split(' '));
   const valor = (v) => { const f = (n) => n >= 1e6 ? 'R$ ' + (n / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' mi' : brl0(n); return { tipo: 'valor', v, min: v * 0.8, max: v * 1.2, rot: f(v) + ' ± 20%' }; };
   function termos0(q) { const out = [];
-    String(q || '').split(/[;\n]|,(?!\d)|(?<!\d),|\.(?!\d)|(?<!\d)\./).forEach((parte) => { let t = semAc(parte).replace(/\s+/g, ' ').trim(); if (!t) return;
+    String(q || '').split(/[;\n]|,(?!\d)|(?<!\d),|(?<=[A-Za-zÀ-ÿ]\d*),|\.(?!\d)|(?<!\d)\./).forEach((parte) => { let t = semAc(parte).replace(/\s+/g, ' ').trim(); if (!t) return;
       NUM.forEach(([campo, re, rot]) => { t = t.replace(re, (m, n) => { out.push({ tipo: 'num', campo, n: +n, rot: rot(+n) }); return ' '; }); });
       t = t.replace(/(\d+(?:[.,]\d+)?)\s*(?:milhoes|milhao|mi|mm)(?![a-z])(?:\s*e\s*(\d{1,3})(?:\s*mil)?(?![a-z\d]))?/g, (m, a, b) => { out.push(valor(numBR(a) * 1e6 + (b ? +b * 1e3 : 0))); return ' '; });
       t = t.replace(/(\d+(?:[.,]\d+)?)\s*(?:mil|k)(?![a-z])/g, (m, a) => { out.push(valor(numBR(a) * 1e3)); return ' '; });
@@ -602,7 +603,7 @@ const BA = (() => {
       const s = w.join(' '); if (s.length >= 2) out.push({ tipo: 'txt', s, rot: s }); });
     return out; }
   function termos(q) { const out = [];
-    String(q || '').split(/[;\n]|,(?!\d)|(?<!\d),/).forEach((parte) => { let p = parte;
+    String(q || '').split(/[;\n]|,(?!\d)|(?<!\d),|(?<=[A-Za-zÀ-ÿ]\d*),/).forEach((parte) => { let p = parte;
       p = p.replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)*/g, (m) => { out.push({ tipo: 'mail', e: m.toLowerCase(), rot: m }); return ' '; });
       p = p.replace(/(?:\+?55\s?)?\(?\d[\d.\-\/()\s]{3,}\d/g, (m) => { const d = soDig(m), fmt = /[-\/()]/.test(m), pontos = /\./.test(m);
         if (d.length >= 10 || (d.length >= 8 && (fmt || !pontos)) || (d.length >= 5 && fmt && !/^\d{1,3}(\.\d{3})+$/.test(m.trim()))) { out.push({ tipo: 'doc', d, rot: m.trim() }); return ' '; } return m; });
@@ -2823,7 +2824,7 @@ function gavetaLead(id) {
   const refs = S.vitrine.map((v) => v.ref).filter(Boolean);
   return `<div class="gaveta" role="dialog" aria-modal="true" aria-label="Lead">
     <div class="cab"><div><p class="mut peq" style="margin:0">${novo ? 'Cadastrar' : 'Lead · ' + esc(l.campanha || 'sem origem')}</p><h3>${novo ? 'Novo lead' : esc(l.nome)}</h3>${novo ? '' : pillFunil(l) + pillLado(l) + pillInt(l)}${novo ? '' : `<p class="mut peq" style="margin:4px 0 0">Entrada em ${dt(l.entrada)}</p>${autorLin(l, 'mut peq', 1)}`}</div><button class="b" type="button" data-fechar>Fechar</button></div>
-    ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoRespLead(id)}${blocoResumoIA(id)}${blocoPerfilIA(id)}${blocoCorAnun(id, l)}`}
+    ${novo ? '' : `<div class="prop"><div class="t">Contato</div><div class="linha"><b style="font-size:17px">${esc(fone(l.telefone))}</b><button class="copiar" type="button" data-copiar="${esc(digitos(l.telefone))}">Copiar</button>${digitos(l.telefone) ? `<a class="b" href="https://wa.me/${esc(zapIntl(l.telefone))}" target="_blank" rel="noopener">Abrir no WhatsApp</a>` : ''}<button class="b p" type="button" data-conversa="lead:${esc(id)}">✦ Atualizar por resumo</button></div></div>${blocoRespLead(id)}${blocoResumoIA(id)}${blocoPerfilIA(id)}${blocoCorAnun(id, l)}`}
     <form id="fLead" class="form" data-id="${esc(id || '')}">
       ${novo ? `<label class="c inteiro">Nome<input id="lNome" required></label><label class="c">Telefone<input id="lTel" inputmode="tel" required></label><label class="c">Origem<select id="lOrig">${['Indicação', 'Plantão', 'Portal', 'Instagram', 'Site', 'Outro'].map((o) => `<option>${o}</option>`).join('')}</select></label>` : `<label class="c inteiro">Nome<input id="lNomeEd" value="${esc(l.nome || '')}" required></label><label class="c">Telefone<input id="lTelEd" inputmode="tel" value="${esc(l.telefone || '')}"></label><label class="c">E-mail<input id="lMailEd" type="email" value="${esc(l.email || '')}"></label>`}
       <label class="c">Interesse<select id="lInt">${optInt(novo ? 'a_definir' : interesseDe(l))}</select></label>
@@ -2862,14 +2863,14 @@ function gavetaLead(id) {
 
 // ---------- Oportunidades: aba ----------
 function htmlOferta(leadId, x) {
-  const it = x.it, l = S.leads[leadId] || {}, tel = zapNum(l.telefone), msg = OP.mensagem(l, it, (String(S.info.saudacao || '').trim() || S.info.corretor || '').split(' ')[0]);
+  const it = x.it, l = S.leads[leadId] || {}, tel = zapIntl(l.telefone), msg = OP.mensagem(l, it, (String(S.info.saudacao || '').trim() || S.info.corretor || '').split(' ')[0]);
   const fat = it.origem === 'emp' ? `<span>${esc(it.tipologias || 'tipologias a confirmar')}</span>${it.entrega ? `<span>entrega ${esc(it.entrega)}</span>` : ''}` : fatosCurtos(it);
   const det = it.origem === 'site' ? `<button class="b" type="button" data-abre="vit:${esc(it.id)}">Detalhes</button>` : S.meus[it.id] ? `<button class="b" type="button" data-pmver="${esc(it.id)}">Detalhes</button>` : '';
   return `<div class="op-of cap${x.ia ? ' ia' : ''}"><span class="selo-cap">🟢 PAUTA · pode ofertar</span><div class="com-capa">${capaHtml(it.id, it)}<div class="txt"><div class="l1"><span class="ref">${esc(it.ref || '')}</span><span class="peq mut">${esc(it.origem === 'emp' ? 'Empreendimento' : it.tipo || '')} · ${esc(it.bairro || '')}</span><span class="v">${it.valor ? curtoBRL(it.valor) : it.origem === 'emp' ? 'sob consulta' : '—'}</span></div>
     <div class="cm-fat">${fat}</div>
     ${x.ia ? `<div class="mot">✦ ${esc(x.ia)}</div>` : ''}${x.motivos && x.motivos.length ? `<div class="chips2">${x.motivos.map((m) => `<span>${esc(m)}</span>`).join('')}</div>` : ''}
     ${x.alerta ? `<div class="falta">${esc(x.alerta)}</div>` : ''}</div></div>
-    <div class="acoes">${tel ? `<a class="b p" href="https://wa.me/55${esc(tel)}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" data-opof="${esc(leadId)}|${esc(it.id)}">Ofertar no WhatsApp</a>` : ''}<button class="b${tel ? '' : ' p'}" type="button" data-opcopia="${esc(leadId)}|${esc(it.id)}">${tel ? 'Copiar mensagem' : 'Copiar e marcar ofertado'}</button><button class="b" type="button" data-opdesc="${esc(leadId)}|${esc(it.id)}">Descartar</button>${det}${it.link && it.origem !== 'fora' ? `<a class="b" href="${escUrl(it.link)}" target="_blank" rel="noopener">${it.origem === 'emp' ? 'Site' : 'Anúncio'}</a>` : ''}${it.lat != null ? `<button class="b" type="button" data-vermapa="${esc(it.id)}">🗺</button>` : ''}</div></div>`;
+    <div class="acoes">${tel ? `<a class="b p" href="https://wa.me/${esc(tel)}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" data-opof="${esc(leadId)}|${esc(it.id)}">Ofertar no WhatsApp</a>` : ''}<button class="b${tel ? '' : ' p'}" type="button" data-opcopia="${esc(leadId)}|${esc(it.id)}">${tel ? 'Copiar mensagem' : 'Copiar e marcar ofertado'}</button><button class="b" type="button" data-opdesc="${esc(leadId)}|${esc(it.id)}">Descartar</button>${det}${it.link && it.origem !== 'fora' ? `<a class="b" href="${escUrl(it.link)}" target="_blank" rel="noopener">${it.origem === 'emp' ? 'Site' : 'Anúncio'}</a>` : ''}${it.lat != null ? `<button class="b" type="button" data-vermapa="${esc(it.id)}">🗺</button>` : ''}</div></div>`;
 }
 const OPL_CSS = `.opl-wrap{container-type:inline-size;min-width:0;display:grid;gap:8px}
 .opl-res{display:grid;gap:4px;font-size:13px;padding:10px 12px;background:var(--soft);border-radius:8px}
@@ -3156,7 +3157,7 @@ function vImoveis() {
   ${pizzaAgenc(todos, fm.fx)}
   <div class="chips" role="group" aria-label="Filtrar"><button type="button" data-fm="sit|" aria-pressed="${!fm.sit}">Todos (${todos.length})</button><button type="button" data-fm="sit|ativo" aria-pressed="${fm.sit === 'ativo'}">Ativos no site (${todos.filter((m) => m.ativo).length})</button><button type="button" data-fm="sit|inativo" aria-pressed="${fm.sit === 'inativo'}">Inativos (${todos.filter((m) => !m.ativo).length})</button>${fins.length > 1 ? fins.map((f) => `<button type="button" data-fm="fin|${esc(f)}" aria-pressed="${fm.fin === f}">${esc(f)}</button>`).join('') : ''}</div>
   <div class="chips" role="group" aria-label="Ordenar"><span class="mut peq" style="align-self:center">Ordenar por</span>${cols.map(([k, l]) => `<button type="button" data-ordm="${k}" aria-pressed="${st.c === k}">${l}${st.c === k ? (st.d > 0 ? ' ▲' : ' ▼') : ' ↕'}</button>`).join('')}</div>
-  <p class="mut peq" style="margin:0">${M.length} de ${todos.length} imóveis</p>`;
+  <p class="mut peq" style="margin:0">${M.length} de ${todos.length} imóve${todos.length === 1 ? 'l' : 'is'}</p>`; /* trocas-premium-f7 */
   if (!todos.length) h += '<div class="painel vazio">Nenhum imóvel agenciado por você no site ainda.</div>';
   else if (!M.length) h += '<div class="painel vazio">Nenhum imóvel com essa busca.</div>';
   h += navM(false);
@@ -4296,7 +4297,7 @@ function blocoRespLead(id) {
   const c = LR_CLASSE[r.classe] || [r.classe ? String(r.classe) : '', ''];
   const pill = c[0] ? `<span class="pill${c[1] ? ' ' + c[1] : ''}">${esc(c[0])}</span> ` : '';
   const perg = String(r.pergunta || '').trim(), l = S.leads[id] || {};
-  const zap = digitos(l.telefone) ? `<a class="b" href="https://wa.me/55${esc(zapNum(l.telefone))}?text=${encodeURIComponent(r.resposta)}" target="_blank" rel="noopener">Abrir no WhatsApp com o texto</a>` : '';
+  const zap = digitos(l.telefone) ? `<a class="b" href="https://wa.me/${esc(zapIntl(l.telefone))}?text=${encodeURIComponent(r.resposta)}" target="_blank" rel="noopener">Abrir no WhatsApp com o texto</a>` : '';
   return `<div class="painel" id="lrBox"><div class="linha" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><h2 style="margin:0">✍️ 1ª resposta pronta</h2><span class="linha" style="flex-wrap:wrap;gap:6px"><button class="b p" type="button" data-copiar="${esc(r.resposta)}">Copiar resposta</button>${zap}</span></div>
     ${pill || r.motivo ? `<p class="peq" style="margin:8px 0 0">${pill}${esc(r.motivo || '')}</p>` : ''}
     <div style="margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere">${esc(r.resposta)}</div>
@@ -5805,7 +5806,7 @@ vInicio = vInicioRD;
 document.addEventListener('toggle', (ev) => { const t = ev.target; if (!t || !t.matches || !t.matches('details[data-rd-g]')) return; const k = t.dataset.rdG; if (!S.rdAbertos) S.rdAbertos = new Set([...document.querySelectorAll('details[data-rd-g][open]')].map((d) => d.dataset.rdG)); if (t.open) S.rdAbertos.add(k); else S.rdAbertos.delete(k); }, true);
 document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('[data-rd-prazos]'); if (!t) return; ev.preventDefault(); window.VIVERE_RD.prazos(); });
 window.PAINEL_ABA = () => S.aba; window.PAINEL_IR = (k) => { S.aba = k; try { sessionStorage.setItem('painel.aba', k); } catch (e) {} render(); window.scrollTo(0, 0); };   // tarefas-prazos
-window.PAINEL_PM = { S, zapNum, toast, brl, leadsComOfertas: () => leadsComOfertas(), opsCache: (i, l) => opsCache(i, l), htmlOferta: (i, x) => htmlOferta(i, x), capaSrc: (i) => capaSrc(i) };   // trocas-premium-f1 (27/11/2026): o que o premium.js usa
+window.PAINEL_PM = { S, zapNum, zapIntl, toast, brl, leadsComOfertas: () => leadsComOfertas(), opsCache: (i, l) => opsCache(i, l), htmlOferta: (i, x) => htmlOferta(i, x), capaSrc: (i) => capaSrc(i) };   // trocas-premium-f1 (27/11/2026): o que o premium.js usa
 window.addEventListener('vivere-regioes', () => { try { if (!document.querySelector('[aria-modal=true], dialog[open]')) render(); } catch (e) { } });   // 171: lista de regiões chegou do banco
 window.VIVERE_RD = { prazos: () => (window.ABA_APP ? window.ABA_APP.abre('prazos') : abrir('prazos')), htmlPrazos: () => painelPrazos() }; /* trocas-abas-app */
 // "Prazos da Vivere" também no Mais do celular (nav-celular.js espelha #btnPrazosApp) e na lateral do computador
