@@ -135,17 +135,82 @@
     salvaRec(); aplica();
   }, true);
 
+  /* ---------- F1b-1) régua de uma linha em toda área (quadros grandes só no Início, regra de 22/11) ---------- */
+  var noInicio = function () { var g = document.querySelector('#abas button[data-grupo][aria-selected="true"]'); return !!(g && /in[ií]cio/i.test(g.textContent)); };
+  var ehQuadro = function (x) { return x.matches('.card') && x.children.length >= 2 && x.children.length <= 4 && x.children[0].matches('.nota') && /font-size/.test(x.children[1].getAttribute('style') || ''); };
+  function reguas(c) {
+    var ini = noInicio();
+    [].forEach.call(c.querySelectorAll('.grade'), function (g) {
+      var k = g.children; if (k.length < 2 || ![].every.call(k, ehQuadro)) return;
+      if (ini && !g.querySelector(':scope > [data-ci-f]')) return;
+      g.classList.add('ph-regua');
+      [].forEach.call(k, function (x) { if (/border-color:\s*var\(--bad\)/.test(x.getAttribute('style') || '')) x.classList.add('ph-bad'); });
+    });
+    if (!ini) [].forEach.call(c.querySelectorAll('.kpis'), function (g) { if (g.children.length >= 2) g.classList.add('ph-regua'); });
+  }
+
+  /* ---------- F1b-2) busca em etiquetas removíveis: cada termo separado por vírgula vira uma etiqueta com × ---------- */
+  var termos = function (v) { return String(v || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean); };
+  function etiquetas(inp) {
+    var L = termos(inp.value), box = inp.parentElement && inp.parentElement.querySelector(':scope > .ph-chips[data-para="' + inp.id + '"]');
+    if (L.length < 2) { if (box) box.remove(); return; }
+    if (!box) { box = document.createElement('div'); box.className = 'ph-chips'; box.dataset.para = inp.id; box.setAttribute('aria-label', 'Termos da busca'); inp.after(box); }
+    var h = L.map(function (t, i) { var e = t.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+      return '<span class="ph-chip">' + e + '<button type="button" data-ph-tira="' + i + '" aria-label="Tirar ' + e + ' da busca">×</button></span>'; }).join('');
+    if (box._h !== h) { box._h = h; box.innerHTML = h; }
+  }
+  var buscas = function () { return document.querySelectorAll('#conteudo input[type="search"][id], #ba-q'); };
+  document.addEventListener('input', function (ev) { var t = ev.target; if (t && t.matches && t.matches('input[type="search"][id]')) etiquetas(t); }, true);
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('[data-ph-tira]'); if (!b) return;
+    ev.preventDefault(); ev.stopPropagation();
+    var box = b.closest('.ph-chips'), inp = box && document.getElementById(box.dataset.para); if (!inp) return;
+    var L = termos(inp.value); L.splice(+b.dataset.phTira, 1); inp.value = L.join(', ');
+    inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true }));
+    try { inp.focus({ preventScroll: true }); } catch (e) { }
+  }, true);
+
+  /* ---------- F1b-3) ajuda da busca ampla recolhida numa linha ("Como buscar") ---------- */
+  var AJ = (function () { try { return (guarda() || {}).getItem && guarda().getItem('hub-ajuda-busca') === '1'; } catch (e) { return false; } })();
+  function ajudas(c) {
+    [].forEach.call(c.querySelectorAll('.ba-ajuda'), function (a) {
+      if (!a.querySelector(':scope > .ph-aj-bt')) { var b = document.createElement('button'); b.type = 'button'; b.className = 'ph-aj-bt'; a.prepend(b); }
+      var bt = a.querySelector(':scope > .ph-aj-bt'), tx = AJ ? 'Esconder a explicação' : 'Como buscar (não precisa ser exato)';
+      a.classList.toggle('ph-aj-fechada', !AJ); if (bt.textContent !== tx) { bt.textContent = tx; bt.setAttribute('aria-expanded', String(AJ)); }
+    });
+  }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('.ph-aj-bt'); if (!b) return;
+    ev.preventDefault(); ev.stopPropagation(); AJ = !AJ; try { var g = guarda(); if (g) g.setItem('hub-ajuda-busca', AJ ? '1' : '0'); } catch (e) { }
+    ajudas(document.getElementById('conteudo') || document);
+  }, true);
+
+  /* ---------- F1b-4) rodapé do menu lateral: coletas, tema e privacidade; no topo ficam Metas, A captar e Painéis ---------- */
+  var PE_IDS = ['coletas', 'tema-btn', 'btnPrivado'];
+  function rodape() {
+    var b = document.body, on = b.classList.contains('ml-on') && !b.classList.contains('tc-on'), pe = document.getElementById('ph-ml-pe');
+    var els = PE_IDS.map(function (id) { return document.getElementById(id); }).filter(Boolean);
+    if (on) {
+      if (!pe) { pe = document.createElement('div'); pe.id = 'ph-ml-pe'; pe.setAttribute('role', 'group'); pe.setAttribute('aria-label', 'Coletas, tema e privacidade'); b.appendChild(pe); }
+      els.forEach(function (e) { if (e.parentElement === pe) return; if (!e._phCasa || !e._phCasa.isConnected) { e._phCasa = document.createComment('ph-casa:' + e.id); e.before(e._phCasa); } pe.appendChild(e); });
+    } else {
+      els.forEach(function (e) { if (e.parentElement === pe && e._phCasa && e._phCasa.isConnected) e._phCasa.before(e); });
+      if (pe && !pe.children.length) pe.remove();
+    }
+  }
+
   /* ---------- a cada desenho ---------- */
   function aplica() {
     var c = document.getElementById('conteudo'); if (!c) return;
     [].forEach.call(c.querySelectorAll('.grade'), function (gr) { if (gr.querySelector(':scope > button.card[data-ci-f]')) { regua(gr); info(gr); } });
-    todosPrimeiro(c); secoes(c);
+    todosPrimeiro(c); secoes(c); reguas(c); ajudas(c); [].forEach.call(buscas(), etiquetas); rodape();
     [].forEach.call(c.querySelectorAll('.filtros.sub-op'), fio);
     if (BAL && !BAL.bt.isConnected) fechaBalao(false);
   }
   var pend = false;
   var mo = new MutationObserver(function () { if (pend) return; pend = true; requestAnimationFrame(function () { pend = false; aplica(); }); });
-  function liga() { mo.observe(document.body, { childList: true, subtree: true }); aplica(); }
+  var moB = new MutationObserver(function () { if (pend) return; pend = true; requestAnimationFrame(function () { pend = false; aplica(); }); });
+  function liga() { mo.observe(document.body, { childList: true, subtree: true }); moB.observe(document.body, { attributes: true, attributeFilter: ['class'] }); aplica(); }
   if (document.body) liga(); else document.addEventListener('DOMContentLoaded', liga);
   addEventListener('resize', function () { [].forEach.call(document.querySelectorAll('#conteudo .filtros.sub-op .ph-ind'), function (i) { i.dataset.x = ''; }); aplica(); });
 })();

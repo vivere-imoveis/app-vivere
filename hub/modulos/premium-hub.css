@@ -33,27 +33,32 @@ html.ph-on body.ml-on #ml{background:var(--material);border-right-color:transpar
 html.ph-on #ml .ml-g[aria-current="page"],html.ph-on #ml [aria-current="page"],html.ph-on #ml .ml-s[aria-selected="true"]{background:var(--panel)!important;box-shadow:var(--sh-1),inset 3px 0 0 var(--brass)!important;border-radius:8px}
 
 /* ===== Imóveis › Imóveis cadastrados (prancha 5) ===== */
-/* 1) Os 7 quadros viram uma régua de uma linha; clicar num número continua filtrando a lista */
-html.ph-on #conteudo .grade:has(>button.card[data-ci-f]){display:flex!important;gap:0!important;margin-bottom:12px!important;background:var(--panel);border-radius:12px;box-shadow:var(--sh-1);overflow-x:auto;scrollbar-width:none}
-html.ph-on #conteudo .grade:has(>button.card[data-ci-f])::-webkit-scrollbar{display:none}
-html.ph-on #conteudo .grade>button.card[data-ci-f]{flex:1 1 0;min-width:112px;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent;padding:10px 14px 11px!important;position:relative}
-html.ph-on #conteudo .grade>button.card[data-ci-f]+button.card[data-ci-f]::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:1px;background:color-mix(in srgb,var(--line) 80%,transparent)}
-html.ph-on #conteudo .grade>button.card[data-ci-f]>.nota:first-child{text-transform:none!important;letter-spacing:0!important;font-size:12px!important;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-html.ph-on #conteudo .grade>button.card[data-ci-f]>div:nth-child(2){font:500 22px/1.15 var(--display)!important;margin:3px 0 2px!important;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
-html.ph-on #conteudo .grade>button.card[data-ci-f]>div:nth-child(2) small{font:400 12px var(--body);color:var(--muted);margin-left:3px}
-html.ph-on #conteudo .grade>button.card[data-ci-f]>.nota:last-child{font-size:11.5px!important;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-html.ph-on #conteudo .grade>button.card[data-ci-f][aria-pressed="true"]{background:var(--soft)!important;box-shadow:inset 0 -2px 0 var(--brass)!important}
-html.ph-on #conteudo .grade>button.card[data-ci-f]:first-child[aria-pressed="true"]{border-radius:12px 0 0 12px!important}
-html.ph-on #conteudo .grade>button.card[data-ci-f]:last-child[aria-pressed="true"]{border-radius:0 12px 12px 0!important}
-html.ph-on #conteudo .grade>button.card[data-ci-f]:active{transform:none}
-@media (hover:hover) and (pointer:fine){html.ph-on #conteudo .grade>button.card[data-ci-f]:not([aria-pressed="true"]):hover{background:color-mix(in srgb,var(--soft) 60%,transparent)}}
+/* 1) Quadros viram uma régua de uma linha em toda área, menos no Início (clique continua filtrando) — .ph-regua posta pelo premium-hub.js */
+html.ph-on #conteudo .ph-regua{display:flex!important;gap:0!important;margin:0 0 14px!important;background:var(--panel);border-radius:12px;box-shadow:var(--sh-1);overflow-x:auto;scrollbar-width:none;grid-template-columns:none!important}
+html.ph-on #conteudo .ph-regua::-webkit-scrollbar{display:none}
+html.ph-on #conteudo .ph-regua>*{flex:1 1 0;min-width:112px;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;padding:10px 14px 11px!important;position:relative;gap:1px!important;margin:0!important}
+html.ph-on #conteudo .ph-regua>*+*::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:1px;background:color-mix(in srgb,var(--line) 80%,transparent)}
+html.ph-on #conteudo .ph-regua>*>.nota:first-child,html.ph-on #conteudo .ph-regua .kpi .rot,html.ph-on #conteudo .ph-regua>.kpi>.rot{text-transform:none!important;letter-spacing:0!important;font:400 12px var(--body)!important;color:var(--muted)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.ph-on #conteudo .ph-regua>*>div:nth-child(2),html.ph-on #conteudo .ph-regua>.kpi>.num{font:500 22px/1.15 var(--display)!important;margin:3px 0 2px!important;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.ph-on #conteudo .ph-regua>*>div:nth-child(2) small{font:400 12px var(--body);color:var(--muted);margin-left:3px}
+html.ph-on #conteudo .ph-regua>*>.nota:last-child:not(:first-child),html.ph-on #conteudo .ph-regua>.kpi>.sub{font-size:11.5px!important;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block!important;-webkit-line-clamp:unset!important}
+html.ph-on #conteudo .ph-regua>[aria-pressed="true"],html.ph-on #conteudo .ph-regua>[aria-selected="true"]{background:var(--soft)!important;box-shadow:inset 0 -2px 0 var(--brass)!important}
+html.ph-on #conteudo .ph-regua>.ph-bad>div:nth-child(2),html.ph-on #conteudo .ph-regua>.kpi.alerta>.num{color:var(--bad)!important}
+html.ph-on #conteudo .ph-regua>*:active{transform:none}
+@media (hover:hover) and (pointer:fine){html.ph-on #conteudo .ph-regua>button:not([aria-pressed="true"]):hover,html.ph-on #conteudo .ph-regua>.kpi:hover{background:color-mix(in srgb,var(--soft) 60%,transparent)!important}}
+@media (max-width:700px){
+  html.ph-on #conteudo .ph-regua{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:1px!important;background:color-mix(in srgb,var(--line) 75%,transparent);overflow:hidden}
+  html.ph-on #conteudo .ph-regua>*{min-width:0;background:var(--panel)!important}
+  html.ph-on #conteudo .ph-regua>*+*::before{display:none}
+  html.ph-on #conteudo .ph-regua>*:last-child:nth-child(odd){grid-column:1/-1}
+}
 /* 2) Destaques como 8 quadradinhos e Endereço incompleto com barra */
 .ph-dots{display:flex;gap:3px;margin-top:5px}
 .ph-dots i{width:8px;height:8px;border-radius:2px;background:color-mix(in srgb,var(--line) 85%,transparent)}
 .ph-dots i.on{background:var(--brass)}
 .ph-barra{display:block;height:4px;border-radius:2px;margin-top:6px;background:color-mix(in srgb,var(--line) 85%,transparent);overflow:hidden}
 .ph-barra i{display:block;height:100%;border-radius:2px;background:var(--warn)}
-html.ph-on #conteudo .grade>button.card[data-ci-f].ph-alerta>div:nth-child(2){color:var(--warn)}
+html.ph-on #conteudo .ph-regua>.ph-alerta>div:nth-child(2){color:var(--warn)!important}
 /* 3) Texto explicativo no "i" do título, num balão que nasce do botão */
 .ph-oculta{display:none!important}
 .ph-i{all:unset;box-sizing:border-box;display:inline-grid;place-items:center;width:22px;height:22px;margin-left:8px;border-radius:50%;font:600 12px/1 var(--body);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer;vertical-align:2px;position:relative;transition:transform var(--t-press) var(--ease-out),color .15s ease}
@@ -100,3 +105,48 @@ html.ph-on #conteudo h2.ph-h-fechado{opacity:.85}
 .ph-tudo{display:flex;justify-content:flex-end;margin:0 0 6px}
 .ph-tudo .btn{font-size:12px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.ph-rec svg{transition:none}}
+
+/* ===== F1b (27/11/2026, 21h30) ===== */
+/* Busca em etiquetas removíveis */
+.ph-chips{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px}
+.ph-chip{display:inline-flex;align-items:center;gap:2px;padding:2px 4px 2px 9px;border-radius:999px;background:color-mix(in srgb,var(--brass) 16%,transparent);color:var(--ink);font:500 12px/1.4 var(--body);max-width:100%;overflow-wrap:anywhere}
+.ph-chip button{all:unset;box-sizing:border-box;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;transition:transform var(--t-press) var(--ease-out),background-color .15s ease}
+.ph-chip button:active{transform:scale(.9)}
+.ph-chip button:focus-visible{outline:2px solid var(--accent)}
+@media (hover:hover) and (pointer:fine){.ph-chip button:hover{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--ink)}}
+/* Ajuda da busca ampla numa linha */
+.ph-aj-bt{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font:500 12.5px var(--body);color:var(--muted)}
+.ph-aj-bt::before{content:"i";display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--line);font:600 11px/1 var(--body)}
+.ph-aj-bt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ba-ajuda:not(.ph-aj-fechada)>.ph-aj-bt{margin-bottom:6px}
+.ba-ajuda.ph-aj-fechada{padding-block:6px!important}
+.ba-ajuda.ph-aj-fechada>:not(.ph-aj-bt){display:none!important}
+@media (hover:hover) and (pointer:fine){.ph-aj-bt:hover{color:var(--ink)}}
+/* Rodapé do menu lateral: coletas, tema e privacidade (computador, menu lateral) */
+#ph-ml-pe{position:fixed;left:0;bottom:0;z-index:41;width:var(--ml-w,236px);box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:10px 10px calc(10px + env(safe-area-inset-bottom));background:var(--material);box-shadow:0 -1px 0 color-mix(in srgb,var(--line) 70%,transparent),1px 0 0 color-mix(in srgb,var(--line) 70%,transparent)}
+body.ml-on #ml{padding-bottom:64px!important}
+#ph-ml-pe .coletas{margin:0 auto 0 0!important;flex:1 1 auto;min-width:0;position:relative}
+#ph-ml-pe .col-res>summary{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;font-size:11.5px}
+#ph-ml-pe .col-h{display:none}
+#ph-ml-pe .col-res[open]>:not(summary){position:absolute;left:0;bottom:calc(100% + 8px);width:min(340px,80vw);max-height:60vh;overflow:auto;padding:10px 12px;border-radius:10px;background:var(--panel);box-shadow:var(--sh-2);z-index:2;transform-origin:12px 100%;animation:ph-pop var(--t-pop) var(--ease-out) both}
+#ph-ml-pe .tema-btn{width:32px;height:32px;flex:none;font-size:15px}
+body.ml-min #ph-ml-pe{width:58px;flex-direction:column;padding-inline:0}
+body.ml-min #ph-ml-pe .col-tx{display:none}
+body:not(.ml-on) #ph-ml-pe{display:none}
+@media print{#ph-ml-pe{display:none}}
+/* Celular e tablet (topo compacto do HUB): barra de baixo flutuante e gaveta "Mais" com a curva das folhas */
+html.ph-on body.tc-on .tc-barra{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));padding:5px!important;border:0;border-radius:24px;background:color-mix(in srgb,var(--panel) 80%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(20px);backdrop-filter:saturate(1.6) blur(20px);box-shadow:var(--sh-2)}
+@media (min-width:701px){html.ph-on body.tc-on .tc-barra{left:50%;right:auto;width:min(560px,calc(100vw - 24px));translate:-50% 0}}
+html.ph-on body.tc-on .tc-barra button{border-radius:19px;transition:transform var(--t-press) var(--ease-out),background-color .2s var(--ease-out)}
+html.ph-on body.tc-on .tc-barra button:active{transform:scale(.94)}
+html.ph-on body.tc-on .tc-barra button[aria-current="page"]{background:color-mix(in srgb,var(--brass) 14%,transparent)}
+html.ph-on body.tc-on{padding-bottom:calc(86px + env(safe-area-inset-bottom))!important}
+html.ph-on .tc-gav{animation:ph-sobe 420ms var(--ease-drawer) both!important;box-shadow:var(--sh-2)}
+@keyframes ph-sobe{from{transform:translateY(100%)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){html.ph-on .tc-gav{animation:ph-fade .15s linear both!important}#ph-ml-pe .col-res[open]>:not(summary){animation:none}}
+@media (prefers-reduced-transparency:reduce){html.ph-on body.tc-on .tc-barra{background:var(--panel);-webkit-backdrop-filter:none;backdrop-filter:none}}
+html.ph-on #conteudo .ph-regua .ph-oculta{display:none!important}
+#ph-ml-pe .coletas{display:flex;min-width:0;flex-wrap:nowrap}
+#ph-ml-pe .col-res{min-width:0;max-width:100%}
+#ph-ml-pe .col-res>summary{display:flex;align-items:center;min-width:0}
+#ph-ml-pe .col-tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}

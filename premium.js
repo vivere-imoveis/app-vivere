@@ -269,7 +269,7 @@
     if (p.length > 1) { var u = p[p.length - 1], q = p[0]; v = (u[0] - q[0]) / Math.max(1, u[1] - q[1]); }   // px por ms
     g.classList.remove('pm-arrasta'); g.classList.add('pm-solta'); g.parentElement.style.background = '';
     if (!a.moveu && ev && ev.target.closest && ev.target.closest('.pm-alca')) { g.style.transform = ''; fechaFolha(g); return; }   // toque na alça: fecha
-    if (a.dy > g.offsetHeight * .3 || v > .5) {
+    if (a.dy > g.offsetHeight * .3 || (v > .11 && a.dy > 24)) {   // velocidade: um peteleco basta (padrão do Emil, ~0,11 px/ms)
       g.style.transform = 'translateY(100%)'; recuo(false);
       var feito = false, vai = function () { if (feito) return; feito = true; fechaFolha(g); };
       g.addEventListener('transitionend', vai, { once: true }); setTimeout(vai, 460);
