@@ -394,6 +394,21 @@
       if (!alvo) return; var sp = document.createElement('span'); alvo.before(sp); sp.appendChild(alvo); td.classList.add('ph-pil-td'); veste(sp, 'mare');
     });
   }
+  /* ---------- 28/11/2026 (pedido do Cleiton): Metas, A captar e os Painéis abrem em nova aba — e, se o aplicativo onde o HUB está
+     aberto não deixar abrir (no Claude a nova aba depende de quem mostra a página), o endereço vai copiado e um aviso diz para colar.
+     O clique continua sendo o do próprio link (nada é impedido). ---------- */
+  var avLink = null;
+  function avisoLink(txt) {
+    if (!avLink) { avLink = document.createElement('div'); avLink.id = 'ph-link-aviso'; avLink.setAttribute('role', 'status'); avLink.setAttribute('aria-live', 'polite'); document.body.appendChild(avLink); }
+    avLink.textContent = txt; avLink.classList.add('ph-vis'); clearTimeout(avLink._t); avLink._t = setTimeout(function () { avLink.classList.remove('ph-vis'); }, 6000);
+  }
+  document.addEventListener('click', function (ev) {
+    var a = ev.target.closest && ev.target.closest('a[href][target="_blank"]'); if (!a || ev.defaultPrevented) return;
+    if (!a.matches('.lk-metas, #paineis-menu a, .tc-gav a, header a')) return;
+    var url = a.href, nome = (a.textContent || '').replace(/[↗▾]/g, '').trim() || 'a página';
+    var ok = function () { avisoLink('Abrindo ' + nome + ' em nova aba. Se não abrir, o endereço já está copiado: cole na barra do navegador.'); };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, function () { avisoLink('Abrindo ' + nome + ' em nova aba. Se não abrir, use o botão com o direito do mouse › Copiar link.'); }); else ok(); } catch (e) { ok(); }
+  });
   function aplica() {
     var c = document.getElementById('conteudo'); if (!c) return;
     [].forEach.call(c.querySelectorAll('.grade'), function (gr) { if (gr.querySelector(':scope > button.card[data-ci-f]')) { regua(gr); info(gr); } });

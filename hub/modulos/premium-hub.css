@@ -333,3 +333,8 @@ html.ph-on #conteudo .ph-regua>.card.alerta>.num{color:var(--bad)!important}
 /* 6) Locação › Resumo (28/11/2026, revisão): as células cheias de verde e vermelho viram pílulas, como no Financeiro (premium-hub.js › lrPilulas) */
 html.ph-on #conteudo td.ph-pil-td.lr-mais,html.ph-on #conteudo td.ph-pil-td.lr-menos,html.ph-on #conteudo td.ph-pil-td.lr-l{background:transparent!important;color:inherit!important;font-weight:inherit}
 html.ph-on #conteudo td.ph-pil-td.lr-l b{color:inherit}
+/* 7) Aviso dos links que abrem em nova aba (premium-hub.js › avisoLink), no padrão dos avisos de canto */
+#ph-link-aviso{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));z-index:80;transform:translate(-50%,12px);max-width:min(440px,calc(100vw - 32px));padding:10px 14px;border-radius:12px;background:#141a26;color:#f4f5f0;font:14px/1.4 var(--body,system-ui);box-shadow:0 12px 32px -8px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s var(--ease-out,ease),transform .25s var(--ease-out,ease)}
+#ph-link-aviso.ph-vis{opacity:1;transform:translate(-50%,0)}
+body.tc-on #ph-link-aviso{bottom:calc(92px + env(safe-area-inset-bottom))}
+@media (prefers-reduced-motion:reduce){#ph-link-aviso{transition:opacity .15s linear;transform:translate(-50%,0)}}
