@@ -1,0 +1,102 @@
+@charset "UTF-8";
+/* premium-hub.css — camada premium do HUB VIVERE (27/11/2026, tarefa vis-repaginacao-premium-hub, F1: camada comum + Imóveis, prancha 5).
+   Mesmas regras do painel (premium.css): curvas e tempos do Emil, sombra fina no lugar da borda, números alinhados,
+   toque que encolhe, hover só com mouse, reduced-motion e reduced-transparency. Só aparência: nada de leitura nova nem gravação.
+   Regras da casa: nenhuma cor de destaque nova (latão, alerta e ok já existentes), ícones de traço, quadros grandes só no Início.
+   Desliga no aparelho com ?premium=0 (premium-hub.js tira a classe ph-on do <html>). */
+:root{
+  --ease-out:cubic-bezier(.23,1,.32,1); --ease-in-out:cubic-bezier(.77,0,.175,1); --ease-drawer:cubic-bezier(.32,.72,0,1);
+  --t-press:160ms; --t-pop:180ms; --t-tab:280ms;
+  --sh-1:0 0 0 1px rgba(16,22,34,.06),0 1px 2px rgba(16,22,34,.05),0 2px 8px -2px rgba(16,22,34,.06);
+  --sh-2:0 0 0 1px rgba(16,22,34,.06),0 4px 10px -2px rgba(16,22,34,.08),0 18px 40px -12px rgba(16,22,34,.18);
+  --material:color-mix(in srgb,var(--soft) 55%,var(--bg));
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --sh-1:0 0 0 1px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.035),0 2px 8px -2px rgba(0,0,0,.45);
+  --sh-2:0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.04),0 18px 40px -12px rgba(0,0,0,.6);
+  --material:#0f131a}}
+:root[data-theme="dark"]{
+  --sh-1:0 0 0 1px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.035),0 2px 8px -2px rgba(0,0,0,.45);
+  --sh-2:0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.04),0 18px 40px -12px rgba(0,0,0,.6);
+  --material:#0f131a}
+
+html.ph-on body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-tap-highlight-color:transparent}
+/* Cartões e tabelas: sombra fina no lugar da borda (a borda fica transparente: nada muda de lugar) */
+html.ph-on #conteudo .card,html.ph-on #conteudo .tabela,html.ph-on .kpi{border-color:transparent!important;box-shadow:var(--sh-1)}
+html.ph-on #conteudo .card{border-radius:10px}
+html.ph-on .kpi .num,html.ph-on #conteudo td,html.ph-on .badge{font-variant-numeric:tabular-nums lining-nums}
+/* Toque que encolhe e volta; hover só com mouse */
+html.ph-on .btn,html.ph-on #ml button{transition:transform var(--t-press) var(--ease-out),background-color .15s ease,border-color .15s ease,box-shadow .2s var(--ease-out),color .15s ease}
+html.ph-on .btn:active,html.ph-on #ml button:active{transform:scale(.97)}
+/* Menu lateral como material: um pouco mais denso que o conteúdo; o ativo é um cartão com o fio de latão */
+html.ph-on body.ml-on #ml{background:var(--material);border-right-color:transparent;box-shadow:1px 0 0 color-mix(in srgb,var(--line) 70%,transparent)}
+html.ph-on #ml .ml-g[aria-current="page"],html.ph-on #ml [aria-current="page"],html.ph-on #ml .ml-s[aria-selected="true"]{background:var(--panel)!important;box-shadow:var(--sh-1),inset 3px 0 0 var(--brass)!important;border-radius:8px}
+
+/* ===== Imóveis › Imóveis cadastrados (prancha 5) ===== */
+/* 1) Os 7 quadros viram uma régua de uma linha; clicar num número continua filtrando a lista */
+html.ph-on #conteudo .grade:has(>button.card[data-ci-f]){display:flex!important;gap:0!important;margin-bottom:12px!important;background:var(--panel);border-radius:12px;box-shadow:var(--sh-1);overflow-x:auto;scrollbar-width:none}
+html.ph-on #conteudo .grade:has(>button.card[data-ci-f])::-webkit-scrollbar{display:none}
+html.ph-on #conteudo .grade>button.card[data-ci-f]{flex:1 1 0;min-width:112px;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent;padding:10px 14px 11px!important;position:relative}
+html.ph-on #conteudo .grade>button.card[data-ci-f]+button.card[data-ci-f]::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:1px;background:color-mix(in srgb,var(--line) 80%,transparent)}
+html.ph-on #conteudo .grade>button.card[data-ci-f]>.nota:first-child{text-transform:none!important;letter-spacing:0!important;font-size:12px!important;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.ph-on #conteudo .grade>button.card[data-ci-f]>div:nth-child(2){font:500 22px/1.15 var(--display)!important;margin:3px 0 2px!important;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+html.ph-on #conteudo .grade>button.card[data-ci-f]>div:nth-child(2) small{font:400 12px var(--body);color:var(--muted);margin-left:3px}
+html.ph-on #conteudo .grade>button.card[data-ci-f]>.nota:last-child{font-size:11.5px!important;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.ph-on #conteudo .grade>button.card[data-ci-f][aria-pressed="true"]{background:var(--soft)!important;box-shadow:inset 0 -2px 0 var(--brass)!important}
+html.ph-on #conteudo .grade>button.card[data-ci-f]:first-child[aria-pressed="true"]{border-radius:12px 0 0 12px!important}
+html.ph-on #conteudo .grade>button.card[data-ci-f]:last-child[aria-pressed="true"]{border-radius:0 12px 12px 0!important}
+html.ph-on #conteudo .grade>button.card[data-ci-f]:active{transform:none}
+@media (hover:hover) and (pointer:fine){html.ph-on #conteudo .grade>button.card[data-ci-f]:not([aria-pressed="true"]):hover{background:color-mix(in srgb,var(--soft) 60%,transparent)}}
+/* 2) Destaques como 8 quadradinhos e Endereço incompleto com barra */
+.ph-dots{display:flex;gap:3px;margin-top:5px}
+.ph-dots i{width:8px;height:8px;border-radius:2px;background:color-mix(in srgb,var(--line) 85%,transparent)}
+.ph-dots i.on{background:var(--brass)}
+.ph-barra{display:block;height:4px;border-radius:2px;margin-top:6px;background:color-mix(in srgb,var(--line) 85%,transparent);overflow:hidden}
+.ph-barra i{display:block;height:100%;border-radius:2px;background:var(--warn)}
+html.ph-on #conteudo .grade>button.card[data-ci-f].ph-alerta>div:nth-child(2){color:var(--warn)}
+/* 3) Texto explicativo no "i" do título, num balão que nasce do botão */
+.ph-oculta{display:none!important}
+.ph-i{all:unset;box-sizing:border-box;display:inline-grid;place-items:center;width:22px;height:22px;margin-left:8px;border-radius:50%;font:600 12px/1 var(--body);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer;vertical-align:2px;position:relative;transition:transform var(--t-press) var(--ease-out),color .15s ease}
+.ph-i:active{transform:scale(.94)}
+.ph-i:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ph-i[aria-expanded="true"]{color:var(--ink);box-shadow:inset 0 0 0 1px var(--brass)}
+.ph-balao{position:absolute;z-index:30;max-width:min(560px,calc(100vw - 32px));padding:12px 14px;border-radius:10px;background:var(--panel);box-shadow:var(--sh-2);font:400 13px/1.5 var(--body);color:var(--ink);text-transform:none;letter-spacing:0;transform-origin:var(--ph-ox,12px) 0;animation:ph-pop var(--t-pop) var(--ease-out) both;text-align:left}
+.ph-balao p{margin:0}
+@keyframes ph-pop{from{opacity:0;transform:scale(.96) translateY(-2px)}}
+/* 4) Abas com o fio de latão que desliza */
+html.ph-on #conteudo .filtros.sub-op{position:relative;gap:2px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid color-mix(in srgb,var(--line) 80%,transparent);margin-bottom:14px;padding-bottom:0}
+html.ph-on #conteudo .filtros.sub-op::-webkit-scrollbar{display:none}
+html.ph-on #conteudo .filtros.sub-op .btn{background:none!important;border-color:transparent!important;border-radius:6px 6px 0 0;color:var(--muted);padding:8px 11px 9px;font-size:13px}
+html.ph-on #conteudo .filtros.sub-op .btn[aria-pressed="true"]{color:var(--ink)!important;font-weight:600}
+html.ph-on #conteudo .filtros.sub-op .btn:active{transform:none}
+@media (hover:hover) and (pointer:fine){html.ph-on #conteudo .filtros.sub-op .btn:not([aria-pressed="true"]):hover{color:var(--ink);background:color-mix(in srgb,var(--soft) 60%,transparent)!important}}
+.ph-ind{position:absolute;left:0;bottom:0;height:2px;border-radius:2px;background:var(--brass);width:0;pointer-events:none;transition:transform var(--t-tab) var(--ease-in-out),width var(--t-tab) var(--ease-in-out)}
+/* 6) Tabela densa e legível */
+html.ph-on #conteudo .ci-tab td{padding-top:8px;padding-bottom:8px}
+html.ph-on #conteudo .ci-tab td.ci-foto{width:64px}
+html.ph-on #conteudo .ci-tab td.ci-foto img{width:56px;border:0;border-radius:8px;box-shadow:0 0 0 1px color-mix(in srgb,var(--ink) 8%,transparent)}
+html.ph-on #conteudo .ci-tab thead th{font-size:12px;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0}
+html.ph-on #conteudo .ci-chip{border-radius:6px;font-weight:500;padding:1px 7px}
+@media (hover:hover) and (pointer:fine){html.ph-on #conteudo .ci-tab tbody tr:hover>td{background:color-mix(in srgb,var(--soft) 55%,transparent)}}
+
+@media (prefers-reduced-motion:reduce){
+  html.ph-on .btn,html.ph-on #ml button,.ph-i{transition:background-color .15s ease,color .15s ease}
+  html.ph-on .btn:active,html.ph-on #ml button:active,.ph-i:active{transform:none}
+  .ph-balao{animation:ph-fade .15s linear both} @keyframes ph-fade{from{opacity:0}}
+  .ph-ind{transition:none}
+}
+@media (prefers-reduced-transparency:reduce){html.ph-on body.ml-on #ml{background:var(--panel)}}
+
+/* ===== Pedidos do Cleiton na prévia (27/11/2026, 21h): "Todos" primeiro (premium-hub.js) e seções que se recolhem ===== */
+.ph-recolhido{display:none!important}
+html.ph-on #conteudo h2:has(>.ph-rec){display:flex;align-items:center;gap:0}
+.ph-rec{all:unset;box-sizing:border-box;display:inline-grid;place-items:center;width:26px;height:26px;margin:-4px -4px -4px auto;flex:none;border-radius:6px;color:var(--muted);cursor:pointer;transition:transform var(--t-press) var(--ease-out),background-color .15s ease,color .15s ease}
+.ph-rec svg{transition:transform 220ms var(--ease-out)}
+.ph-rec[aria-expanded="false"] svg{transform:rotate(-90deg)}
+.ph-rec:active{transform:scale(.94)}
+.ph-rec:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+@media (hover:hover) and (pointer:fine){.ph-rec:hover{color:var(--ink);background:color-mix(in srgb,var(--soft) 70%,transparent)}}
+html.ph-on #conteudo h2.ph-h-fechado{opacity:.85}
+.ph-tudo{display:flex;justify-content:flex-end;margin:0 0 6px}
+.ph-tudo .btn{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.ph-rec svg{transition:none}}
