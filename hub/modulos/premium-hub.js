@@ -161,6 +161,13 @@
       var k = n.textContent + '|' + n.clientWidth; if (n.dataset.phFit === k) return;
       var L = [n].concat([].slice.call(n.querySelectorAll('*'))), tam = function (v) { L.forEach(function (e) { if (v) e.style.setProperty('font-size', v, 'important'); else e.style.removeProperty('font-size'); }); };   // o densidade.js põe 22px!important no .g-n de dentro
       tam(''); n.classList.remove('ph-num-quebra');
+      // decisão do Cleiton (27/11/2026): valor em reais que não cabe vira formato curto (R$ 12,3 mi), com o valor inteiro no title
+      var alvo = !n.children.length ? n : (n.children.length === 1 && !n.children[0].children.length ? n.children[0] : null);
+      if (alvo && n.scrollWidth > n.clientWidth + 1) {
+        var t0 = alvo.textContent, m = t0.match(/^(\s*[+\u2212-]?\s*)R\$\s*([\d.]+)(?:,\d+)?(\s*)$/);
+        if (m) { var v = +m[2].replace(/\./g, ''); if (v >= 1e6) { var u = v >= 1e9 ? [1e9, 'bi'] : [1e6, 'mi'];
+          alvo.textContent = m[1] + 'R$ ' + (v / u[0]).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' ' + u[1]; n.title = t0.trim(); } }
+      }
       var px = [19, 16, 14], i = 0; while (n.scrollWidth > n.clientWidth + 1 && i < px.length) tam(px[i++] + 'px');
       if (n.scrollWidth > n.clientWidth + 1) n.classList.add('ph-num-quebra');
       n.dataset.phFit = n.textContent + '|' + n.clientWidth;
