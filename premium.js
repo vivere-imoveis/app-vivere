@@ -352,9 +352,33 @@
     try { inp.focus({ preventScroll: true }); } catch (e) { }
   }, true);
 
+  /* ---------- F5b · Leads e Tarefas (27/11/2026): número do Funil numa coluna própria; etiquetas de prioridade e situação ---------- */
+  function funilNums() {   // a barra fica proporcional desde a mesma linha; o número sai da barra (não some quando ela é curta)
+    [].forEach.call(document.querySelectorAll('#conteudo .vf:not(.pm-vf)'), function (vf) {
+      [].forEach.call(vf.querySelectorAll('.vf-l'), function (l) {
+        var b = l.querySelector('.vf-bar > b'); if (!b || l.querySelector('.pm-vf-n')) return;
+        var n = parseInt(b.textContent, 10), s = document.createElement('span'); s.className = 'pm-vf-n'; s.textContent = isNaN(n) ? b.textContent : n.toLocaleString('pt-BR'); l.appendChild(s);
+      });
+      vf.classList.add('pm-vf');
+    });
+  }
+  function milhares() {   // contadores do Kanban, da Agenda e do Pipeline com ponto de milhar (1.284), como no resto do painel
+    [].forEach.call(document.querySelectorAll('#conteudo :is(.vk-cab, .va-cab, .vp-n) > b:not([data-pm-n])'), function (b) {
+      b.setAttribute('data-pm-n', ''); var t = b.textContent.trim(); if (/^\d{4,}$/.test(t)) b.textContent = (+t).toLocaleString('pt-BR');
+    });
+  }
+  var PRI_TX = { 'alta': 'alta', 'média': 'media', 'media': 'media', 'baixa': 'baixa' }, SIT_TX = { 'atrasada': 'atr', 'hoje': 'hoje' };
+  function tfEtiquetas() {   // só na aba Tarefas: a prioridade vira etiqueta de contorno; "Atrasada" fica coral e "Hoje" em latão
+    var f = document.querySelector('#conteudo section.sec > .chips > [data-tf-filtro]'), sec = f && f.parentElement.parentElement; if (!sec) return;
+    [].forEach.call(sec.querySelectorAll('.pill:not([data-pm-et])'), function (p) {
+      var t = (p.textContent || '').trim().toLowerCase(); p.setAttribute('data-pm-et', '');
+      if (PRI_TX[t]) p.classList.add('pm-pri', 'pm-pri-' + PRI_TX[t]); else if (SIT_TX[t]) p.classList.add('pm-sit', 'pm-sit-' + SIT_TX[t]);
+    });
+  }
+
   /* ---------- a cada desenho do Início ---------- */
   function aplica() {
-    atalhoMenu(); folha(); ac1(); todosPrimeiro(document.body); secoes(); reguas(); [].forEach.call(document.querySelectorAll('input[type="search"][id]'), etiquetas);
+    atalhoMenu(); folha(); ac1(); todosPrimeiro(document.body); secoes(); reguas(); funilNums(); milhares(); tfEtiquetas(); [].forEach.call(document.querySelectorAll('input[type="search"][id]'), etiquetas);
     var ini = document.querySelector('.rd-inicio'); if (!ini || ini.dataset.pm === '1') return;
     ini.dataset.pm = '1';
     var sec = ini.querySelector('.rd-agora'); if (sec) { filtro(sec); acoes(sec); }

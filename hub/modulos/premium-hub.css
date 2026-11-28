@@ -180,3 +180,72 @@ html.ph-on #conteudo .ph-regua>*>.nota.ph-oculta:last-child:not(:first-child){di
 /* Texto de apoio (.sub) de qualquer quadro da régua, não só .kpi: até 2 linhas, sem invadir o quadro de baixo */
 html.ph-on #conteudo .ph-regua>*>.sub{white-space:normal!important;display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden!important;font-size:11.5px!important;color:var(--muted)}
 html.ph-on #conteudo .ph-regua>*>.num{text-overflow:clip!important;overflow:visible!important}
+
+/* ===== F2 (27/11/2026): acabamento por área — Início, Financeiro, Imóveis cadastrados (padrão da prancha 5) ===== */
+/* --- Início: cartões de pendências mais leves — sombra fina no lugar da borda, faixa de prioridade fina, título e contadores discretos --- */
+html.ph-on #conteudo .pend{border-color:transparent;box-shadow:var(--sh-1);border-radius:10px}
+html.ph-on #conteudo .pend+.pend{margin-top:10px}
+html.ph-on #conteudo .pend .faixa{width:3px;justify-self:start;border-radius:0 2px 2px 0}
+html.ph-on #conteudo .pend .tit{font-weight:500;font-size:14.5px;line-height:1.4;letter-spacing:-.003em;text-transform:none}
+html.ph-on #conteudo .pend .corpo{padding-right:14px}
+html.ph-on #conteudo .pend .det{font-size:12.5px;line-height:1.45}
+html.ph-on #conteudo .pend .meta{gap:4px 10px;font-size:12px;font-variant-numeric:tabular-nums lining-nums;align-items:center}
+html.ph-on #conteudo .pend .meta .pill{font-size:11.5px;font-weight:500;padding:1px 8px;background:color-mix(in srgb,var(--soft) 80%,transparent);color:var(--muted);text-transform:none;letter-spacing:0}
+html.ph-on #conteudo .pend .meta .cod{font-weight:500;letter-spacing:0;color:var(--ink)}
+html.ph-on #conteudo .pend .acoes .btn{font-size:12.5px;padding:5px 10px;border-color:transparent;background:color-mix(in srgb,var(--soft) 75%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--line) 70%,transparent)}
+@media (hover:hover) and (pointer:fine){html.ph-on #conteudo .pend .acoes .btn:hover{background:var(--soft);color:var(--ink)}}
+html.ph-on #conteudo .pend.dispensada{opacity:.62;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--line) 70%,transparent)}
+html.ph-on #conteudo .fpend-sel select{text-transform:none;letter-spacing:0}
+
+/* --- Financeiro: valor em pílula pela situação (premium-hub.js › financeiro) — maré = pago, neutro = a vencer, coral = atrasado ---
+   Cores do HUB: maré = --teal (o "verde-azulado" da prioridade baixa), coral = --bad; nenhuma cor nova. O sinal + / − continua no valor. */
+html.ph-on.ph-fin #conteudo td.ph-pil-td{background:transparent!important;color:inherit!important;font-weight:inherit}
+html.ph-on .ph-pil,html.ph-on span.ph-pil.vmais,html.ph-on span.ph-pil.vmenos{display:inline-flex!important;align-items:center;padding:1px 9px!important;border-radius:999px!important;white-space:nowrap;font-variant-numeric:tabular-nums lining-nums;font-weight:500;line-height:1.5}
+html.ph-on .ph-pil.ph-mare{color:var(--teal)!important;background:color-mix(in srgb,var(--teal) 13%,transparent)!important}
+html.ph-on .ph-pil.ph-neutro{color:var(--ink)!important;background:var(--soft)!important}
+html.ph-on .ph-pil.ph-coral{color:var(--bad)!important;background:var(--bad-bg)!important}
+html.ph-on .ph-pil.ph-total{color:var(--ink)!important;background:var(--soft)!important;font-weight:600}
+html.ph-on.ph-fin #conteudo td.ph-pil-td b{font-weight:600}
+/* a pílula nunca parte o valor (as listas em cartão do núcleo forçam white-space:normal em todo span) */
+html.ph-on #conteudo table>tbody>tr>td span.ph-pil,html.ph-on #conteudo table>tbody>tr>td span.ph-pil *{white-space:nowrap!important}
+/* números alinhados à direita e com algarismos de mesma largura; cabeçalho discreto, sem caixa alta (prancha 5) */
+html.ph-on.ph-fin #conteudo .tabela td.n,html.ph-on.ph-fin #conteudo .tabela th.n{text-align:right;font-variant-numeric:tabular-nums lining-nums}
+html.ph-on.ph-fin #conteudo .tabela thead th{font:500 12px var(--body);color:var(--muted);text-transform:none;letter-spacing:0}
+/* régua do Financeiro: a pílula no tamanho do número, sem engordar o quadro */
+html.ph-on #conteudo .ph-regua .ph-pil{padding:0 10px!important;line-height:1.3;max-width:100%}
+html.ph-on #conteudo .ph-regua .ph-num-quebra .ph-pil{white-space:normal}
+
+/* --- Imóveis › Imóveis cadastrados: botão "…" no fim da linha e o menu das ações (premium-hub.js › maisLinhas / abreMenu) --- */
+.ph-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+html.ph-on #conteudo table.ci-tab th.ph-acao-h,html.ph-on #conteudo table.ci-tab td.ph-acao{width:44px;padding-left:2px;padding-right:8px;text-align:right}
+html.ph-on #conteudo table.ci-tab td.ph-acao{padding-top:4px}
+.ph-mais{all:unset;box-sizing:border-box;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:8px;color:var(--muted);cursor:pointer;transition:transform var(--t-press) var(--ease-out),background-color .15s ease,color .15s ease}
+.ph-mais:active{transform:scale(.97)}
+.ph-mais:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ph-mais[aria-expanded="true"]{color:var(--ink);background:var(--soft)}
+@media (hover:hover) and (pointer:fine){.ph-mais:hover{color:var(--ink);background:color-mix(in srgb,var(--soft) 80%,transparent)}}
+@media (pointer:coarse){.ph-mais{width:40px;height:40px}}
+/* lista em cartões (celular e lista estreita): o "…" fica no canto do cartão, sem rótulo de coluna */
+@media (max-width:760px){
+  html.ph-on #conteudo table.ci-tab>tbody>tr{position:relative}
+  html.ph-on #conteudo table.ci-tab>tbody>tr>td.ph-acao{position:absolute;top:4px;right:4px;width:auto;padding:0!important;grid-column:auto!important}
+  html.ph-on #conteudo table.ci-tab>tbody>tr>td.ph-acao::before{display:none!important}
+}
+html.ph-on #conteudo .tabela.ta-cartao>table.ci-tab>tbody>tr{position:relative}
+html.ph-on #conteudo .tabela.ta-cartao>table.ci-tab>tbody>tr>td.ph-acao{position:absolute;top:4px;right:4px;width:auto;padding:0!important}
+html.ph-on #conteudo .tabela.ta-cartao>table.ci-tab>tbody>tr>td.ph-acao::before{display:none!important}
+/* o menu: tamanho natural (largura do maior item), dentro da tela, nasce do botão */
+.ph-menu{position:fixed;z-index:60;box-sizing:border-box;min-width:180px;max-width:min(360px,calc(100vw - 16px));overflow:auto;overscroll-behavior:contain;padding:5px;border-radius:12px;background:var(--panel);box-shadow:var(--sh-2);display:flex;flex-direction:column;gap:2px;animation:ph-pop 160ms var(--ease-out) both}
+.ph-menu.ph-sem-anim{animation:none}
+.ph-mi{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;justify-content:space-between;min-height:34px;padding:8px 10px;border-radius:8px;font:400 13.5px/1.4 var(--body);color:var(--ink);cursor:pointer;text-align:left;overflow-wrap:anywhere}
+.ph-mi svg{flex:none;color:var(--muted)}
+.ph-mi:focus-visible{background:var(--soft);outline:2px solid var(--accent);outline-offset:-2px}
+.ph-mi:active{background:var(--soft)}
+@media (hover:hover) and (pointer:fine){.ph-mi:hover{background:var(--soft)}}
+@media (pointer:coarse){.ph-mi{min-height:44px;font-size:14.5px}}
+@media (prefers-reduced-motion:reduce){.ph-mais{transition:background-color .15s ease,color .15s ease}.ph-mais:active{transform:none}.ph-menu{animation:ph-fade .12s linear both}}
+@media (prefers-reduced-transparency:reduce){.ph-menu{box-shadow:0 0 0 1px var(--line),0 8px 24px rgba(0,0,0,.18)}}
+@media print{.ph-mais,.ph-menu{display:none!important}}
+
+/* --- Fora da camada, resolvido daqui: o aviso "só leitura" do HUB na web (hub-web.js) sobe acima da barra de baixo do celular --- */
+html.ph-on body.tc-on #hubweb-aviso{bottom:calc(86px + env(safe-area-inset-bottom))}

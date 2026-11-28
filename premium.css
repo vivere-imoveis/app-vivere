@@ -253,3 +253,83 @@ section.sec>div:first-child>h2:has(>.pm-rec){padding-right:30px}
   .pill{white-space:normal;overflow-wrap:anywhere;max-width:100%}
   .opl-gr>span{white-space:normal!important;overflow-wrap:anywhere;min-width:0}
 }
+
+/* ===== F5b · acabamento por aba: Leads (Kanban, Pipeline, Funil, Agenda) e Tarefas (27/11/2026) =====
+   Sombra fina no lugar da borda, números alinhados, cabeçalhos sem caixa alta, atrasado só em coral (--bad), hoje com o fio de latão.
+   Resposta ao toque só no que é botão; :not(:focus-visible) = troca pelo teclado não anima. Hover só com mouse. */
+/* Visões: seletor e "✦ Conversa" com resposta ao toque */
+.vcrm-chips .vcrm-b,.vk .vk-card .copiar{transition:transform var(--t-press) var(--ease-out),background-color .15s ease,color .15s ease,border-color .15s ease}
+.vcrm-chips .vcrm-b:active:not(:focus-visible),.vk .vk-card .copiar:active:not(:focus-visible){transform:scale(.97)}
+/* Kanban: colunas sem moldura, cabeçalho limpo, contador discreto */
+.vcrm-v .vk{gap:12px}
+.vk .vk-col{border-color:transparent;border-radius:12px;background:color-mix(in srgb,var(--soft) 85%,transparent)}
+.vk .vk-cab{text-transform:none;letter-spacing:0;font:500 13.5px/1.3 var(--body);color:var(--ink);border-bottom:0;padding:11px 12px 4px;gap:8px}
+.vk .vk-cab{align-items:baseline}
+.vk .vk-cab>span{min-width:0;overflow-wrap:anywhere}   /* nome longo de etapa quebra linha em vez de sumir em reticências */
+.vk .vk-cab b{flex:none;font:500 12px/1 var(--body);color:var(--muted);font-variant-numeric:tabular-nums}
+.vk .vk-soma{border-bottom:0;padding:0 12px 6px;font-size:12px;font-variant-numeric:tabular-nums}
+.vk .vk-lista{padding:6px 8px 10px;gap:8px}
+.vk .vk-card{border-color:transparent;border-radius:10px;padding:10px 12px;box-shadow:var(--sh-1);transition:box-shadow .2s var(--ease-out)}
+.vk .vk-card.alerta{border-left:1px solid transparent;box-shadow:inset 2px 0 0 var(--bad),var(--sh-1)}   /* atrasado: fio coral, sem cor nova */
+.vk .vk-card .vk-val,.vk .vk-card .vk-s{font-variant-numeric:tabular-nums}
+.vk .vk-card .vk-mv select{width:0;border-color:color-mix(in srgb,var(--line) 85%,transparent);border-radius:7px;padding:4px 6px}
+.vk-fantasma{border-color:transparent!important;box-shadow:var(--sh-3)!important}
+.vk .vk-nome:hover,.va .vk-nome:hover{text-decoration:none}
+@media (hover:hover) and (pointer:fine){
+  .vk .vk-card[data-vk-drag]:hover{box-shadow:var(--sh-2)}
+  .vk .vk-card.alerta[data-vk-drag]:hover{box-shadow:inset 2px 0 0 var(--bad),var(--sh-2)}
+  .vk .vk-nome:hover,.va .vk-nome:hover{text-decoration:underline;text-underline-offset:2px}
+}
+/* Pipeline: linhas em cartão, barra fina, números alinhados; ação vencida em coral */
+.vp{gap:8px}
+.vp .vp-l{border-color:transparent;border-radius:10px;box-shadow:var(--sh-1);padding:10px 12px;transition:transform var(--t-press) var(--ease-out),background-color .15s ease}
+.vp .vp-l:hover:not([disabled]){border-color:transparent}
+.vp .vp-l:active:not([disabled]):not(:focus-visible){transform:scale(.98)}
+.vp .vp-l:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.vp .vp-bar{height:8px;background:color-mix(in srgb,var(--line) 70%,transparent)}
+.vp .vp-n,.vp .vp-d{font-variant-numeric:tabular-nums}
+.vp .vp-a .pill.media{background:var(--bad-bg);color:var(--bad)}
+@media (min-width:641px){.vp .vp-l{grid-template-columns:190px minmax(80px,1fr) 90px;grid-template-areas:"e bar n" "d a a"}}   /* etiquetas de alerta ao lado da média, sem empilhar na coluna estreita */
+@media (hover:hover) and (pointer:fine){.vp .vp-l:hover:not([disabled]){background:color-mix(in srgb,var(--soft) 55%,var(--panel))}}
+/* Funil: barras proporcionais a partir da mesma linha e o número numa coluna própria (premium.js põe .pm-vf-n) */
+.vf.pm-vf{gap:10px}
+.vf.pm-vf .vf-l{grid-template-columns:minmax(96px,150px) minmax(0,1fr) 64px;grid-template-areas:"rot trilho n" ". conv conv";gap:3px 12px}
+.vf.pm-vf .vf-trilho{justify-content:flex-start;height:22px;border-radius:6px;background:color-mix(in srgb,var(--line) 55%,transparent);overflow:hidden}
+.vf.pm-vf .vf-bar{height:100%;min-width:4px;padding:0;border-radius:6px;background:color-mix(in srgb,var(--brass) 82%,var(--panel))}
+.vf.pm-vf .vf-bar>b{display:none}
+.vf.pm-vf .vf-l.saida{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.vf.pm-vf .vf-l.saida .vf-bar{background:color-mix(in srgb,var(--muted) 55%,var(--panel))}
+.vf.pm-vf .vf-conv{text-align:left;font-variant-numeric:tabular-nums}
+.pm-vf-n{grid-area:n;justify-self:end;font:500 17px/1 var(--display);font-variant-numeric:tabular-nums lining-nums;color:var(--ink)}
+@media (max-width:640px){.vf.pm-vf .vf-l{grid-template-columns:88px minmax(0,1fr) 44px;gap:3px 8px}.pm-vf-n{font-size:15px}}
+/* Agenda: grupos em cartão; vencidas em coral; hoje marcado com o fio de latão */
+.va .va-g,.va .va-g.bad,.va .va-g.warn{position:relative;border-color:transparent;border-radius:12px;box-shadow:var(--sh-1);padding:10px 12px}
+.va .va-cab{text-transform:none;letter-spacing:0;font:500 13.5px/1.3 var(--body);color:var(--ink);margin-bottom:4px}
+.va .va-cab b{margin-left:4px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+.va .va-g.warn .va-cab{color:var(--ink)}
+.va .va-g.warn::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:2px;border-radius:2px;background:var(--brass)}
+.va .va-g.bad .va-d{color:var(--bad)}
+.va .va-i{border-top-color:color-mix(in srgb,var(--line) 60%,transparent);padding:6px 0}
+.va .va-d{font-variant-numeric:tabular-nums}
+/* Leads e Tarefas: tabela e cartões do celular com sombra fina no lugar da borda (só CSS, sem :has: Lista dos leads e irmãos do filtro de Tarefas) */
+@media (min-width:641px){:is(.vcrm-v,[aria-label="Filtrar tarefas"] ~ div)>.tabela,[aria-label="Filtrar tarefas"] ~ .tabela{border-color:transparent;box-shadow:var(--sh-1)}}
+:is(.vcrm-v,[aria-label="Filtrar tarefas"] ~ div)>.lista-m>.cm,[aria-label="Filtrar tarefas"] ~ .lista-m>.cm{border-color:transparent;border-radius:12px;box-shadow:var(--sh-1)}
+:is(.vcrm-v,[aria-label="Filtrar tarefas"] ~ div)>.lista-m>.cm:hover,[aria-label="Filtrar tarefas"] ~ .lista-m>.cm:hover{border-color:transparent}
+@media (hover:hover) and (pointer:fine){:is(.vcrm-v,[aria-label="Filtrar tarefas"] ~ div)>.lista-m>.cm:hover,[aria-label="Filtrar tarefas"] ~ .lista-m>.cm:hover{background:color-mix(in srgb,var(--soft) 50%,var(--panel))}}
+/* Tarefas: ✓ e título na mesma linha; prioridade e situação em etiquetas discretas (premium.js marca as etiquetas) */
+/* Tarefas no celular: ✓, título e prioridade na 1ª linha; Recado, Lembrete e o realce da busca descem para baixo do título (break-ui: a 320 px o título ficava espremido) */
+[aria-label="Filtrar tarefas"] ~ .lista-m .cm-l1{flex-wrap:wrap;align-items:flex-start;column-gap:8px;row-gap:0}
+[aria-label="Filtrar tarefas"] ~ .lista-m .cm-l1 .cm-nome{flex:1 1 0;padding-top:2px}
+[aria-label="Filtrar tarefas"] ~ .lista-m .cm-l1>.cm-v{flex:none;order:1;margin-top:3px}
+[aria-label="Filtrar tarefas"] ~ .lista-m .cm-l1::after{content:"";flex-basis:100%;order:2;height:0}
+[aria-label="Filtrar tarefas"] ~ .lista-m .cm-l1>:is(.pill,.ba-hit){order:3;flex:none;margin:4px 0 0}
+[aria-label="Filtrar tarefas"] ~ .lista-m .cm-l1>.cm-nome+:is(.pill,.ba-hit){margin-left:34px}   /* alinha com o título, depois do ✓ (26 px + 8) */
+.pill.pm-pri,.pill.pm-sit{letter-spacing:0;font-weight:500}
+.pill.pm-pri{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--line) 95%,transparent)}
+.pill.pm-pri-alta{color:var(--ink);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 30%,transparent)}
+.pill.pm-sit-atr{background:var(--bad-bg);color:var(--bad)}
+.pill.pm-sit-hoje{background:color-mix(in srgb,var(--brass) 15%,transparent);color:var(--brass)}
+@media (prefers-reduced-motion:reduce){
+  .vcrm-chips .vcrm-b:active,.vk .vk-card .copiar:active,.vp .vp-l:active:not([disabled]){transform:none}
+  .vk .vk-card,.vp .vp-l{transition:none}
+}

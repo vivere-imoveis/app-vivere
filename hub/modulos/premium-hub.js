@@ -183,7 +183,8 @@
   document.addEventListener('scroll', function (ev) { var t = ev.target; if (t && t.classList && (t.classList.contains('ph-regua') || t.classList.contains('sub-op'))) bordas(t); }, { capture: true, passive: true });
 
   /* ---------- F1b-2) busca em etiquetas removíveis: cada termo separado por vírgula vira uma etiqueta com × ---------- */
-  var termos = function (v) { return String(v || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean); };
+  // F2 (27/11/2026): mesma separação da busca do núcleo (baTermos): ponto e vírgula, quebra de linha e vírgula que não está entre dígitos — "1,5 mi" fica inteiro
+  var termos = function (v) { return String(v || '').split(/[;\n]|,(?!\d)|(?<!\d),/).map(function (t) { return t.trim(); }).filter(Boolean); };
   function etiquetas(inp) {
     var L = termos(inp.value), box = inp.parentElement && inp.parentElement.querySelector(':scope > .ph-chips[data-para="' + inp.id + '"]');
     if (L.length < 2) { if (box) box.remove(); return; }
@@ -198,7 +199,7 @@
     var b = ev.target.closest && ev.target.closest('[data-ph-tira]'); if (!b) return;
     ev.preventDefault(); ev.stopPropagation();
     var box = b.closest('.ph-chips'), inp = box && document.getElementById(box.dataset.para); if (!inp) return;
-    var L = termos(inp.value); L.splice(+b.dataset.phTira, 1); inp.value = L.join(', ');
+    var L = termos(inp.value); L.splice(+b.dataset.phTira, 1); inp.value = L.join(', ');   // ", " (vírgula e espaço) nunca fica entre dígitos: "1,5 mi" volta inteiro
     inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true }));
     try { inp.focus({ preventScroll: true }); } catch (e) { }
   }, true);
@@ -233,6 +234,137 @@
     }
   }
 
+  /* ================= F2 (27/11/2026): acabamento por área — Início, Financeiro, Imóveis cadastrados ================= */
+  var abaId = function () { var s = document.querySelector('#ml .ml-s[aria-selected="true"]'); if (s && s.dataset.mlS) return s.dataset.mlS; try { return localStorage.getItem('hubv.aba') || ''; } catch (e) { return ''; } };
+
+  /* ---------- F2-2) Financeiro: valor em pílula pela situação — pago em maré, a vencer neutro, atrasado em coral ---------- */
+  // Só as abas do módulo financeiro. Situação lida do que a linha já mostra (vencida há…, em aberto, selo da cobrança, data de pagamento);
+  // o sinal + / − continua dizendo se entra ou sai. Nada é recalculado: só a roupa do valor muda.
+  var FIN = { financeiro: 1, 'fin-receber': 1, 'fin-despesas': 1, 'fin-pagar': 1, 'fin-juridico': 1 };
+  function secaoDe(tab) {
+    var n = tab.closest('.tabela') || tab, d = n.closest('details'), k = 0;
+    if (d && d.querySelector(':scope > summary')) return d.querySelector(':scope > summary').textContent;
+    n = n.previousElementSibling; while (n && k++ < 6) { if (n.matches('h2,h3')) return n.textContent; n = n.previousElementSibling; }
+    return '';
+  }
+  function situacao(td, aba) {
+    var tr = td.parentElement, tx = tr.textContent;
+    if (tr.querySelector('.pill.bad') || /vencida h[aá]|atrasad/i.test(tx)) return 'coral';
+    if (tr.querySelector('.pill.warn') || /\bem aberto\b/i.test(tx)) return 'neutro';
+    var tab = td.closest('table'), hr = tab && tab.tHead && tab.tHead.rows[0], th = hr && hr.cells[td.cellIndex];
+    if (th && /resultado/i.test(th.textContent) && td.classList.contains('vmenos')) return 'coral';   // mês no vermelho
+    if (aba === 'fin-juridico' || /em aberto|a receber|a pagar/i.test(secaoDe(tab))) return 'neutro';
+    return 'mare';   // pago, recebido ou realizado
+  }
+  function veste(el, sit) { var c = 'ph-pil ph-' + sit; if (el.className.indexOf(c) < 0) { el.classList.remove('ph-mare', 'ph-neutro', 'ph-coral', 'ph-total'); el.classList.add('ph-pil', 'ph-' + sit); } }
+  function financeiro(c) {
+    var aba = abaId(), on = !!FIN[aba] && !!c.querySelector('section.painel');
+    if (document.documentElement.classList.contains('ph-fin') !== on) document.documentElement.classList.toggle('ph-fin', on);
+    if (!on) return;
+    [].forEach.call(c.querySelectorAll('.tabela td.vmais, .tabela td.vmenos'), function (td) {
+      if (td.querySelector('.pill')) return;   // "valor a definir" já é selo
+      var sit = situacao(td, aba), sp = td.querySelector(':scope > .ph-pil');
+      if (!sp) { if (!td.firstChild) return; sp = document.createElement('span'); while (td.firstChild) sp.appendChild(td.firstChild); td.appendChild(sp); td.classList.add('ph-pil-td'); }
+      veste(sp, sit);
+    });
+    // régua: cada quadro diz a situação do valor dele
+    [].forEach.call(c.querySelectorAll('.ph-regua > *'), function (q) {
+      var sp = q.querySelector(':scope > div:nth-child(2) span.vmais, :scope > div:nth-child(2) span.vmenos'); if (!sp) return;
+      var a = q.getAttribute('data-aba') || '', sit = aba === 'fin-juridico' ? 'neutro' : a === 'fin-pagar' ? (q.classList.contains('ph-bad') ? 'coral' : 'neutro')
+        : a === 'fin-receber' || a === 'fin-juridico' ? 'neutro' : !a && sp.classList.contains('vmenos') ? 'coral' : 'mare';
+      veste(sp, sit);
+    });
+    // totais no texto: destaque por peso, sem cor nova
+    [].forEach.call(c.querySelectorAll('.nota b > span.vmais, .nota b > span.vmenos'), function (sp) { if (!sp.classList.contains('ph-total')) { sp.classList.remove('ph-mare', 'ph-neutro', 'ph-coral'); sp.classList.add('ph-pil', 'ph-total'); } });
+  }
+
+  /* ---------- F2-3) Imóveis › Imóveis cadastrados: as ações da linha reunidas num botão "…" ---------- */
+  // O menu só repete o que a linha já oferece (abrir o cadastro, o contrato na Carteira, o anúncio no site, o empreendimento, a pessoa):
+  // cada item aciona o próprio link da linha, então nenhuma regra muda e nada se perde. Os links continuam onde estavam.
+  var MAIS_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg>';
+  var FORA_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>';
+  // vis: só ao abrir o menu (offsetParent força o cálculo de layout; na montagem das 100 linhas basta saber se há ação)
+  var acoesDe = function (tr, vis) { return [].filter.call(tr.querySelectorAll('button, a[href]'), function (b) { return !b.closest('.ph-acao') && !b.disabled && (!vis || b.offsetParent !== null); }); };
+  var limpa = function (t) { return String(t || '').replace(/\s+/g, ' ').trim(); };
+  function rotulo(b) {
+    var tx = limpa(b.textContent), ti = limpa(b.getAttribute('title') || b.getAttribute('aria-label'));
+    if (b.hasAttribute('data-ci-sel')) return 'Abrir o cadastro do imóvel';
+    if (b.hasAttribute('data-ci-emp')) return 'Abrir o empreendimento ' + tx;
+    if (!ti) return 'Abrir ' + tx;
+    return ti.toLowerCase().indexOf(tx.toLowerCase()) >= 0 || !tx ? ti : ti + ' · ' + tx;
+  }
+  function maisLinhas(c) {
+    [].forEach.call(c.querySelectorAll('table.ci-tab'), function (t) {
+      var hr = t.tHead && t.tHead.rows[0]; if (!hr || !t.tBodies[0]) return;
+      if (!hr.querySelector(':scope > .ph-acao-h')) { var th = document.createElement('th'); th.className = 'ph-acao-h'; th.innerHTML = '<span class="ph-sr">Ações</span>'; hr.appendChild(th); }
+      [].forEach.call(t.tBodies[0].rows, function (tr) {
+        if (tr.cells.length === 1) { var u = tr.cells[0]; if (u.colSpan > 1 && !u.dataset.phCs) { u.colSpan += 1; u.dataset.phCs = '1'; } return; }   // "Nenhum imóvel neste filtro"
+        if (tr.querySelector(':scope > td.ph-acao')) return;
+        var td = document.createElement('td'); td.className = 'ph-acao';
+        if (acoesDe(tr).length) {
+          var nome = limpa((tr.querySelector('[data-ci-sel]') || {}).textContent) || 'imóvel';
+          td.innerHTML = '<button type="button" class="ph-mais" aria-haspopup="menu" aria-expanded="false">' + MAIS_SVG + '</button>';
+          td.firstChild.setAttribute('aria-label', 'Ações de ' + nome); td.firstChild.title = 'Ações';
+        }
+        tr.appendChild(td);
+      });
+    });
+  }
+  var MENU = null;
+  function fechaMenu(volta) { if (!MENU) return; var b = MENU.bt; MENU.el.remove(); b.setAttribute('aria-expanded', 'false'); b.removeAttribute('aria-controls'); MENU = null; if (volta && b.isConnected) try { b.focus({ preventScroll: true }); } catch (e) { } }
+  function abreMenu(bt, teclado, ultimo) {
+    fechaMenu(false);
+    var tr = bt.closest('tr'), L = tr ? acoesDe(tr, true) : []; if (!L.length) return;
+    var el = document.createElement('div'); el.className = 'ph-menu' + (teclado ? ' ph-sem-anim' : ''); el.id = 'ph-menu'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', bt.getAttribute('aria-label'));
+    var vistos = {};
+    L.forEach(function (o) {
+      var r = rotulo(o), ch = r + '|' + (o.getAttribute('href') || '') + '|' + JSON.stringify(o.dataset); if (vistos[ch]) return; vistos[ch] = 1;   // só some o que é idêntico (mesmo rótulo e mesmo destino)
+      var it = document.createElement('button'); it.type = 'button'; it.className = 'ph-mi'; it.setAttribute('role', 'menuitem'); it.tabIndex = -1;
+      var fora = o.tagName === 'A' && o.target === '_blank';
+      it.innerHTML = '<span></span>' + (fora ? FORA_SVG : ''); it.firstChild.textContent = r; if (fora) it.setAttribute('aria-label', r + ' (abre em outra aba)');
+      it._alvo = o; el.appendChild(it);
+    });
+    document.body.appendChild(el);
+    // no tamanho natural, dentro da tela, acima da barra de baixo do celular; abre para cima se faltar espaço embaixo
+    var r = bt.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
+    var tb = document.querySelector('body.tc-on .tc-barra'), fundo = tb && tb.offsetParent !== null ? tb.getBoundingClientRect().top - 8 : innerHeight - 8;
+    var x = Math.max(8, Math.min(r.right - w, innerWidth - w - 8)), abaixo = fundo - r.bottom - 6, acima = r.top - 14, cima = h > abaixo && acima > abaixo;
+    if (h > (cima ? acima : abaixo)) { h = Math.max(120, cima ? acima : abaixo); el.style.maxHeight = h + 'px'; }
+    el.style.left = x + 'px'; el.style.top = (cima ? r.top - 6 - h : r.bottom + 6) + 'px';
+    el.style.transformOrigin = Math.round(Math.min(w, Math.max(0, r.left + r.width / 2 - x))) + 'px ' + (cima ? '100%' : '0');
+    bt.setAttribute('aria-expanded', 'true'); bt.setAttribute('aria-controls', el.id);
+    MENU = { el: el, bt: bt };
+    if (teclado) { var its = el.querySelectorAll('.ph-mi'); its[ultimo ? its.length - 1 : 0].focus({ preventScroll: true }); }
+  }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target, bt = t.closest && t.closest('.ph-mais');
+    if (bt) { ev.preventDefault(); ev.stopPropagation(); if (MENU && MENU.bt === bt) fechaMenu(false); else abreMenu(bt, ev.detail === 0); return; }
+    var it = t.closest && t.closest('.ph-menu .ph-mi');
+    if (it) { ev.preventDefault(); ev.stopPropagation(); var o = it._alvo; fechaMenu(false); if (o && o.isConnected) o.click(); return; }
+    if (MENU && !MENU.el.contains(t)) fechaMenu(false);
+  }, true);
+  document.addEventListener('keydown', function (ev) {
+    var k = ev.key, bt = ev.target.closest && ev.target.closest('.ph-mais');
+    if (bt && (k === 'ArrowDown' || k === 'ArrowUp')) { ev.preventDefault(); abreMenu(bt, true, k === 'ArrowUp'); return; }
+    if (!MENU) return;
+    if (k === 'Escape') { ev.preventDefault(); ev.stopPropagation(); fechaMenu(true); return; }
+    if (!MENU.el.contains(ev.target)) return;
+    var its = [].slice.call(MENU.el.querySelectorAll('.ph-mi')), i = its.indexOf(document.activeElement);
+    if (k === 'Tab') { ev.preventDefault(); fechaMenu(true); return; }
+    var j = k === 'ArrowDown' ? (i + 1) % its.length : k === 'ArrowUp' ? (i - 1 + its.length) % its.length : k === 'Home' ? 0 : k === 'End' ? its.length - 1 : -1;
+    if (j >= 0) { ev.preventDefault(); its[j].focus({ preventScroll: true }); }
+  }, true);
+  addEventListener('scroll', function () { fechaMenu(false); }, { passive: true });
+  addEventListener('resize', function () { fechaMenu(false); });
+
+  /* ---------- F2-4) "Coletas em dia · 0 de 9" sem coleta nenhuma: diz que não há coleta (o texto vem de nucleo-3.js › pintaColetas) ---------- */
+  function coletas() {
+    var t = document.querySelector('#coletas .col-tx'); if (!t || !/^Coletas em dia · 0 de \d+$/.test(t.textContent)) return;
+    var h = t.parentElement.querySelector('.col-h'), nunca = !h || /sem coleta/.test(h.textContent);
+    t.textContent = nunca ? 'Nenhuma coleta registrada' : 'Nenhuma coleta em dia';
+    if (h && nunca) h.classList.add('ph-oculta');
+  }
+
   /* ---------- a cada desenho ---------- */
   function aplica() {
     var c = document.getElementById('conteudo'); if (!c) return;
@@ -241,6 +373,8 @@
     [].forEach.call(c.querySelectorAll('.filtros.sub-op'), fio);
     [].forEach.call(c.querySelectorAll('.ph-regua, .filtros.sub-op'), bordas);
     if (BAL && !BAL.bt.isConnected) fechaBalao(false);
+    financeiro(c); maisLinhas(c); coletas();
+    if (MENU && !MENU.bt.isConnected) fechaMenu(false);
   }
   var pend = false;
   var mo = new MutationObserver(function () { if (pend) return; pend = true; requestAnimationFrame(function () { pend = false; aplica(); }); });
