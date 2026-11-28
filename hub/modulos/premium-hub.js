@@ -254,7 +254,7 @@
     var tab = td.closest('table'), hr = tab && tab.tHead && tab.tHead.rows[0], th = hr && hr.cells[td.cellIndex];
     if (th && /resultado/i.test(th.textContent) && td.classList.contains('vmenos')) return 'coral';   // mês no vermelho
     if (aba === 'fin-juridico' || /em aberto|a receber|a pagar/i.test(secaoDe(tab))) return 'neutro';
-    return 'mare';   // pago, recebido ou realizado
+    return td.classList.contains('vmenos') ? 'neutro' : 'mare';   // dinheiro que entrou em maré; saída paga fica neutra (decisão do Cleiton, 27/11/2026)
   }
   function veste(el, sit) { var c = 'ph-pil ph-' + sit; if (el.className.indexOf(c) < 0) { el.classList.remove('ph-mare', 'ph-neutro', 'ph-coral', 'ph-total'); el.classList.add('ph-pil', 'ph-' + sit); } }
   function financeiro(c) {
@@ -271,7 +271,7 @@
     [].forEach.call(c.querySelectorAll('.ph-regua > *'), function (q) {
       var sp = q.querySelector(':scope > div:nth-child(2) span.vmais, :scope > div:nth-child(2) span.vmenos'); if (!sp) return;
       var a = q.getAttribute('data-aba') || '', sit = aba === 'fin-juridico' ? 'neutro' : a === 'fin-pagar' ? (q.classList.contains('ph-bad') ? 'coral' : 'neutro')
-        : a === 'fin-receber' || a === 'fin-juridico' ? 'neutro' : !a && sp.classList.contains('vmenos') ? 'coral' : 'mare';
+        : a === 'fin-receber' || a === 'fin-juridico' ? 'neutro' : !a && sp.classList.contains('vmenos') ? 'coral' : sp.classList.contains('vmenos') ? 'neutro' : 'mare';
       veste(sp, sit);
     });
     // totais no texto: destaque por peso, sem cor nova

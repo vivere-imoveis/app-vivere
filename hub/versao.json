@@ -6,7 +6,7 @@
  "fora_por_serem_dados": [],
  "arquivos": {
   "hub-web.js": "1bbdb1558815e55b",
-  "index.html": "fae5ee54bd923f8d",
+  "index.html": "8c949d1fd599bf36",
   "modulos/acessos-seguranca.js": "463dd7444541c54d",
   "modulos/acessos.js": "9f307e145477da16",
   "modulos/acm.js": "11d14bfb53c61b00",
@@ -100,7 +100,7 @@
   "modulos/pessoas.js": "1ff7a791f2792038",
   "modulos/portais.js": "bac0d020e19b5ded",
   "modulos/premium-hub.css": "23cd4354ab24d8ba",
-  "modulos/premium-hub.js": "6f77be6988ef4455",
+  "modulos/premium-hub.js": "02c7746be351157c",
   "modulos/regioes-mapa.js": "2e21f1c4c5ca7c45",
   "modulos/regioes.js": "0442724c1b75c546",
   "modulos/registros.js": "5de5d20a9f7e37d2",
